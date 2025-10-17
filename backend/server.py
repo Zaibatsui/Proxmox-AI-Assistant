@@ -542,37 +542,65 @@ async def get_latest_scan(current_user: dict = Depends(get_current_user)):
 
 @api_router.get("/vms", response_model=List[VMConfig])
 async def get_vms(current_user: dict = Depends(get_current_user)):
-    # Mock VM list - in production, this would use proxmoxer API
-    mock_vms = [
-        VMConfig(
-            vmid="100",
-            name="ubuntu-desktop",
-            type="qemu",
-            status="running",
-            node="pve",
-            hostpci_devices=[]
-        ),
-        VMConfig(
-            vmid="101",
-            name="windows-gaming",
-            type="qemu",
-            status="stopped",
-            node="pve",
-            hostpci_devices=[
-                {"id": "hostpci0", "device": "0000:01:00.0", "pcie": True}
-            ]
-        ),
-        VMConfig(
-            vmid="200",
-            name="docker-host",
-            type="lxc",
-            status="running",
-            node="pve",
-            hostpci_devices=[]
-        )
-    ]
-    
-    return mock_vms
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        vms = []
+        nodes = proxmox.nodes.get()
+        
+        for node in nodes:
+            node_name = node['node']
+            
+            # Get QEMU VMs
+            try:
+                qemu_vms = proxmox.nodes(node_name).qemu.get()
+                for vm in qemu_vms:
+                    # Get VM config to check for hostpci devices
+                    vm_config = proxmox.nodes(node_name).qemu(vm['vmid']).config.get()
+                    
+                    hostpci_devices = []
+                    for key, value in vm_config.items():
+                        if key.startswith('hostpci'):
+                            # Parse hostpci config: "0000:01:00.0,pcie=1"
+                            hostpci_devices.append({
+                                "id": key,
+                                "device": value.split(',')[0] if ',' in value else value,
+                                "pcie": "pcie=1" in value
+                            })
+                    
+                    vms.append(VMConfig(
+                        vmid=str(vm['vmid']),
+                        name=vm.get('name', f"VM{vm['vmid']}"),
+                        type="qemu",
+                        status=vm.get('status', 'unknown'),
+                        node=node_name,
+                        hostpci_devices=hostpci_devices
+                    ))
+            except Exception as e:
+                logger.error(f"Error fetching QEMU VMs from {node_name}: {str(e)}")
+            
+            # Get LXC containers
+            try:
+                lxc_containers = proxmox.nodes(node_name).lxc.get()
+                for container in lxc_containers:
+                    vms.append(VMConfig(
+                        vmid=str(container['vmid']),
+                        name=container.get('name', f"CT{container['vmid']}"),
+                        type="lxc",
+                        status=container.get('status', 'unknown'),
+                        node=node_name,
+                        hostpci_devices=[]
+                    ))
+            except Exception as e:
+                logger.error(f"Error fetching LXC containers from {node_name}: {str(e)}")
+        
+        return vms
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching VMs: {str(e)}")
+        # Return empty list or mock data as fallback
+        return []
 
 # ==================== AI ASSISTANT ROUTES ====================
 

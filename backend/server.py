@@ -91,10 +91,16 @@ class Theme(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     theme_name: str  # cyan, purple, emerald, amber, blue, rose
+    background: str = "dark"  # dark, darker, midnight
+    card_style: str = "glass"  # glass, solid, bordered
+    accent_color: Optional[str] = None  # Optional custom accent
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ThemeUpdate(BaseModel):
     theme_name: str
+    background: Optional[str] = "dark"
+    card_style: Optional[str] = "glass"
+    accent_color: Optional[str] = None
 
 # ==================== DEVICE MODELS ====================
 

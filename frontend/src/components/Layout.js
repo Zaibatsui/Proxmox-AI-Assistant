@@ -55,14 +55,14 @@ function Layout({ children, onLogout, currentPage }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="mb-3 p-3 bg-slate-950/50 rounded-lg">
+          <div className="mb-3 p-3 rounded-lg theme-icon-bg">
             <p className="text-xs text-slate-500">Logged in as</p>
-            <p className="text-sm text-slate-200 font-semibold truncate">{username}</p>
+            <p className="text-sm font-semibold truncate theme-text">{username}</p>
           </div>
           <Button
             onClick={onLogout}
             variant="outline"
-            className="w-full bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700"
+            className="w-full theme-btn-primary text-white border-0"
             data-testid="logout-button"
           >
             <LogOut className="w-4 h-4 mr-2" />

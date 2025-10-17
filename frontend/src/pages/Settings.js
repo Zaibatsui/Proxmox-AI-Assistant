@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Server, Save, Trash2, CheckCircle } from "lucide-react";
+import { Server, Save, Trash2, CheckCircle, Palette, Check } from "lucide-react";
 import { toast } from "sonner";
+import { useTheme } from "../contexts/ThemeContext";
 
 function Settings({ onLogout }) {
   const [config, setConfig] = useState(null);

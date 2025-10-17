@@ -75,11 +75,11 @@ function Login({ onLogin }) {
                 className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
               />
             </div>
-            <ThemedButton
+            <Button
               type="submit"
               data-testid="submit-button"
               disabled={loading}
-              className="w-full"
+              className="w-full theme-btn-primary text-white"
             >
               {loading ? (
                 <span className="flex items-center gap-2">

@@ -677,17 +677,49 @@ Safety rules:
         # Get AI response
         response_text = await chat.send_message(user_message)
         
-        # Extract suggested commands (if any)
+        # Extract suggested actions (new JSON format)
         suggested_commands = []
-        if "COMMANDS:" in response_text:
+        actions_created = []
+        
+        if "ACTIONS:" in response_text:
             try:
                 import json
-                commands_start = response_text.find("COMMANDS:") + 9
-                commands_end = response_text.find("]", commands_start) + 1
-                commands_json = response_text[commands_start:commands_end].strip()
-                suggested_commands = json.loads(commands_json)
-            except:
-                pass
+                # Find JSON block
+                actions_start = response_text.find("```json", response_text.find("ACTIONS:"))
+                if actions_start != -1:
+                    actions_start = response_text.find("[", actions_start)
+                    actions_end = response_text.find("```", actions_start)
+                    actions_json = response_text[actions_start:actions_end].strip()
+                    
+                    actions_data = json.loads(actions_json)
+                    
+                    # Create action items from AI suggestions
+                    for action_item in actions_data:
+                        action = Action(
+                            user_id=current_user["user_id"],
+                            action_type=action_item.get("type", "unknown"),
+                            target=action_item.get("pci_address") or action_item.get("vmid", ""),
+                            parameters=action_item,
+                            status="pending"
+                        )
+                        
+                        action_doc = action.model_dump()
+                        action_doc['created_at'] = action_doc['created_at'].isoformat()
+                        if action_doc.get('executed_at'):
+                            action_doc['executed_at'] = action_doc['executed_at'].isoformat()
+                        
+                        await db.actions.insert_one(action_doc)
+                        actions_created.append({
+                            "id": action.id,
+                            "type": action.action_type,
+                            "description": action_item.get("description", "")
+                        })
+                        
+                        suggested_commands.append(action_item.get("description", ""))
+                    
+                    logger.info(f"Created {len(actions_created)} actions from AI response")
+            except Exception as e:
+                logger.error(f"Error parsing AI actions: {str(e)}")
         
         # Save AI interaction
         ai_response = AIResponse(

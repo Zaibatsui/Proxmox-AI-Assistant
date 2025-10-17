@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { useTheme } from "../contexts/ThemeContext";
 
 function Settings({ onLogout }) {
+  const { currentTheme, updateTheme, themes } = useTheme();
   const [config, setConfig] = useState(null);
   const [formData, setFormData] = useState({
     host: "",

@@ -263,6 +263,168 @@ function Settings({ onLogout }) {
             </Card>
           </div>
         </div>
+
+        {/* App Theme Settings - Collapsible */}
+        <Collapsible open={themeOpen} onOpenChange={setThemeOpen}>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 theme-icon-bg rounded-lg">
+                      <Palette className="w-5 h-5 theme-icon" />
+                    </div>
+                    <div className="text-left">
+                      <CardTitle className="text-slate-100">App Appearance</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Customize colors, backgrounds, and card styles
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`w-5 h-5 text-slate-400 transition-transform ${
+                      themeOpen ? "transform rotate-180" : ""
+                    }`}
+                  />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6 pt-0">
+                {/* Primary Color */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Primary Color</Label>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {Object.entries(themes).map(([key, theme]) => (
+                      <button
+                        key={key}
+                        onClick={async () => {
+                          const success = await updateTheme(key, background, cardStyle, null);
+                          if (success) {
+                            toast.success(`Theme changed to ${theme.name}`);
+                          } else {
+                            toast.error("Failed to update theme");
+                          }
+                        }}
+                        className={`relative group p-4 rounded-lg border-2 transition-all ${
+                          currentTheme === key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                        data-testid={`theme-${key}`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="w-12 h-12 rounded-full"
+                            style={{ backgroundColor: `rgb(${theme.primaryLight})` }}
+                          />
+                          <span className="text-xs font-medium text-slate-200">
+                            {theme.name}
+                          </span>
+                          {currentTheme === key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Background Color */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Background Style</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: "dark", name: "Dark", bg: "#020617" },
+                      { key: "darker", name: "Darker", bg: "#000000" },
+                      { key: "midnight", name: "Midnight", bg: "#0c1222" }
+                    ].map((bg) => (
+                      <button
+                        key={bg.key}
+                        onClick={async () => {
+                          const success = await updateTheme(currentTheme, bg.key, cardStyle, null);
+                          if (success) {
+                            toast.success(`Background changed to ${bg.name}`);
+                          }
+                        }}
+                        className={`relative p-4 rounded-lg border-2 transition-all ${
+                          background === bg.key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                        data-testid={`bg-${bg.key}`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="w-full h-12 rounded"
+                            style={{ backgroundColor: bg.bg }}
+                          />
+                          <span className="text-xs font-medium text-slate-200">
+                            {bg.name}
+                          </span>
+                          {background === bg.key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Card Style */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Card Style</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: "glass", name: "Glass", desc: "Translucent blur" },
+                      { key: "solid", name: "Solid", desc: "Opaque cards" },
+                      { key: "bordered", name: "Bordered", desc: "Clear borders" }
+                    ].map((style) => (
+                      <button
+                        key={style.key}
+                        onClick={async () => {
+                          const success = await updateTheme(currentTheme, background, style.key, null);
+                          if (success) {
+                            toast.success(`Card style changed to ${style.name}`);
+                          }
+                        }}
+                        className={`relative p-4 rounded-lg border-2 transition-all ${
+                          cardStyle === style.key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                        data-testid={`card-${style.key}`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="w-full h-12 rounded bg-slate-700 flex items-center justify-center text-2xl">
+                            {style.key === "glass" && "▢"}
+                            {style.key === "solid" && "■"}
+                            {style.key === "bordered" && "□"}
+                          </div>
+                          <span className="text-xs font-medium text-slate-200">
+                            {style.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {style.desc}
+                          </span>
+                          {cardStyle === style.key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
       </div>
     </Layout>
   );

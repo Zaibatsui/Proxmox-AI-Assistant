@@ -11,6 +11,7 @@ import ActionQueue from "./pages/ActionQueue";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
 import { Toaster } from "./components/ui/sonner";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;

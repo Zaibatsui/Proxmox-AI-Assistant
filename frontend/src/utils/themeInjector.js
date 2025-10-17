@@ -11,20 +11,13 @@ export function injectThemeStyles() {
   style.id = 'dynamic-theme-styles';
   style.textContent = `
     /* Primary Background Colors - Buttons */
-    .theme-btn-primary {
-      background-color: var(--theme-primary) !important;
-    }
-    
-    .theme-btn-primary:hover {
-      background-color: var(--theme-primary-dark) !important;
-    }
-    
-    /* Override cyan buttons */
+    .theme-btn-primary,
     button.bg-cyan-600,
     .bg-cyan-600 {
       background-color: var(--theme-primary) !important;
     }
     
+    .theme-btn-primary:hover,
     button.bg-cyan-600:hover,
     button.hover\\:bg-cyan-700:hover,
     .bg-cyan-700:hover {
@@ -37,32 +30,28 @@ export function injectThemeStyles() {
       color: var(--theme-primary) !important;
     }
     
-    /* Icon Backgrounds - keep transparency separate */
-    .theme-icon-bg,
-    .bg-cyan-500\\/10 {
+    /* Icon Backgrounds - with proper opacity */
+    .theme-icon-bg {
       background-color: var(--theme-primary) !important;
       opacity: 0.1 !important;
     }
     
-    .bg-cyan-500\\/20 {
-      background-color: var(--theme-primary) !important;
-      opacity: 0.2 !important;
-    }
-    
-    /* Text Colors */
-    .theme-text,
-    a.text-cyan-400,
-    span.text-cyan-400,
-    p.text-cyan-400 {
-      color: var(--theme-primary) !important;
-    }
-    
-    /* Active Navigation */
-    nav a[class*="bg-cyan-500/10"] {
+    /* Override cyan icon backgrounds */
+    .bg-cyan-500\\/10 {
       background-color: rgba(var(--theme-primary-rgb), 0.1) !important;
     }
     
-    nav a[class*="text-cyan-400"] {
+    .bg-cyan-500\\/20 {
+      background-color: rgba(var(--theme-primary-rgb), 0.2) !important;
+    }
+    
+    /* Text/Link Colors */
+    .theme-text {
+      color: var(--theme-primary) !important;
+    }
+    
+    a.text-cyan-400,
+    button.text-cyan-400 {
       color: var(--theme-primary) !important;
     }
   `;

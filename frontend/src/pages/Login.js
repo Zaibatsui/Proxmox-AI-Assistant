@@ -91,7 +91,7 @@ function Login({ onLogin }) {
                   {isLogin ? "Sign In" : "Create Account"}
                 </span>
               )}
-            </ThemedButton>
+            </Button>
           </form>
           <div className="mt-4 text-center">
             <button

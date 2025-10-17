@@ -84,6 +84,18 @@ class ProxmoxConfigResponse(BaseModel):
     verify_ssl: bool
     created_at: datetime
 
+# ==================== THEME MODELS ====================
+
+class Theme(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    theme_name: str  # cyan, purple, emerald, amber, blue, rose
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ThemeUpdate(BaseModel):
+    theme_name: str
+
 # ==================== DEVICE MODELS ====================
 
 class PCIDevice(BaseModel):

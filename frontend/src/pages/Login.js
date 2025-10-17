@@ -92,7 +92,7 @@ function Login({ onLogin }) {
                   {isLogin ? "Sign In" : "Create Account"}
                 </span>
               )}
-            </Button>
+            </ThemedButton>
           </form>
           <div className="mt-4 text-center">
             <button

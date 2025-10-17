@@ -102,6 +102,61 @@ function Settings({ onLogout }) {
           <p className="text-slate-400">Configure Proxmox API connection and preferences</p>
         </div>
 
+        {/* Theme Selector */}
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <Palette className="w-5 h-5 text-cyan-400" />
+              </div>
+              <div>
+                <CardTitle className="text-slate-100">Theme</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Choose your preferred color scheme
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+              {Object.entries(themes).map(([key, theme]) => (
+                <button
+                  key={key}
+                  onClick={async () => {
+                    const success = await updateTheme(key);
+                    if (success) {
+                      toast.success(`Theme changed to ${theme.name}`);
+                    } else {
+                      toast.error("Failed to update theme");
+                    }
+                  }}
+                  className={`relative group p-4 rounded-lg border-2 transition-all ${
+                    currentTheme === key
+                      ? "border-slate-400 bg-slate-800"
+                      : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                  }`}
+                  data-testid={`theme-${key}`}
+                >
+                  <div className="flex flex-col items-center gap-2">
+                    <div
+                      className="w-12 h-12 rounded-full"
+                      style={{ backgroundColor: theme.primaryLight }}
+                    />
+                    <span className="text-xs font-medium text-slate-200">
+                      {theme.name}
+                    </span>
+                    {currentTheme === key && (
+                      <div className="absolute top-2 right-2">
+                        <Check className="w-4 h-4 text-emerald-400" />
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">

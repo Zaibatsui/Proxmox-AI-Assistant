@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import axios from "axios";
 import { API } from "../App";
+import { injectThemeStyles } from "../utils/themeInjector";
 
 const ThemeContext = createContext();
 

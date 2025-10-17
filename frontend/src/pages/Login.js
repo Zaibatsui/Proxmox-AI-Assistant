@@ -99,8 +99,9 @@ function Login({ onLogin }) {
           <div className="mt-4 text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-cyan-400 hover:text-cyan-300 transition-colors"
+              className="text-sm hover:underline transition-colors"
               data-testid="toggle-auth-button"
+              style={{ color: 'var(--theme-primary)' }}
             >
               {isLogin ? "Need an account? Register" : "Already have an account? Sign in"}
             </button>

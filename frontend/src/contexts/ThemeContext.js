@@ -9,44 +9,44 @@ export const themes = {
   cyan: {
     name: "Cyan Ocean",
     primary: "cyan",
-    primaryLight: "rgb(6, 182, 212)",
-    primaryDark: "rgb(8, 145, 178)",
-    accent: "rgb(34, 211, 238)"
+    primaryLight: "6, 182, 212", // RGB for cyan-500
+    primaryDark: "8, 145, 178",
+    accent: "34, 211, 238"
   },
   purple: {
     name: "Purple Haze",
     primary: "purple",
-    primaryLight: "rgb(168, 85, 247)",
-    primaryDark: "rgb(126, 34, 206)",
-    accent: "rgb(192, 132, 252)"
+    primaryLight: "168, 85, 247",
+    primaryDark: "126, 34, 206",
+    accent: "192, 132, 252"
   },
   emerald: {
     name: "Emerald Forest",
     primary: "emerald",
-    primaryLight: "rgb(16, 185, 129)",
-    primaryDark: "rgb(5, 150, 105)",
-    accent: "rgb(52, 211, 153)"
+    primaryLight: "16, 185, 129",
+    primaryDark: "5, 150, 105",
+    accent: "52, 211, 153"
   },
   amber: {
     name: "Amber Sunset",
     primary: "amber",
-    primaryLight: "rgb(245, 158, 11)",
-    primaryDark: "rgb(217, 119, 6)",
-    accent: "rgb(251, 191, 36)"
+    primaryLight: "245, 158, 11",
+    primaryDark: "217, 119, 6",
+    accent: "251, 191, 36"
   },
   blue: {
     name: "Deep Blue",
     primary: "blue",
-    primaryLight: "rgb(59, 130, 246)",
-    primaryDark: "rgb(29, 78, 216)",
-    accent: "rgb(96, 165, 250)"
+    primaryLight: "59, 130, 246",
+    primaryDark: "29, 78, 216",
+    accent: "96, 165, 250"
   },
   rose: {
     name: "Rose Garden",
     primary: "rose",
-    primaryLight: "rgb(244, 63, 94)",
-    primaryDark: "rgb(225, 29, 72)",
-    accent: "rgb(251, 113, 133)"
+    primaryLight: "244, 63, 94",
+    primaryDark: "225, 29, 72",
+    accent: "251, 113, 133"
   }
 };
 

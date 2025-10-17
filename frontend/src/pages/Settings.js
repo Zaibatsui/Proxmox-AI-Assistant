@@ -140,7 +140,7 @@ function Settings({ onLogout }) {
                   <div className="flex flex-col items-center gap-2">
                     <div
                       className="w-12 h-12 rounded-full"
-                      style={{ backgroundColor: theme.primaryLight }}
+                      style={{ backgroundColor: `rgb(${theme.primaryLight})` }}
                     />
                     <span className="text-xs font-medium text-slate-200">
                       {theme.name}

@@ -41,17 +41,28 @@ function AIAssistant({ onLogout }) {
     try {
       const response = await axios.post(`${API}/ai/query`, { question: userQuestion });
       
+      // Check if actions were created
+      const hasActions = response.data.answer.includes("ACTIONS:");
+      
       // Add AI response
       setConversations(prev => [
         ...prev,
         {
           type: "ai",
           content: response.data.answer,
-          commands: response.data.suggested_commands
+          commands: response.data.suggested_commands,
+          hasActions: hasActions
         }
       ]);
 
-      toast.success("AI response received");
+      if (hasActions) {
+        toast.success("AI created actionable steps! Check the Actions page to execute them.", {
+          duration: 5000
+        });
+      } else {
+        toast.success("AI response received");
+      }
+      
       fetchHistory();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to get AI response");

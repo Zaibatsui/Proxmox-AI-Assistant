@@ -84,6 +84,9 @@ export function ThemeProvider({ children }) {
     root.style.setProperty("--theme-primary-dark", theme.primaryDark);
     root.style.setProperty("--theme-accent", theme.accent);
     
+    // Inject dynamic theme styles
+    injectThemeStyles();
+    
     // Store in localStorage for instant load
     localStorage.setItem("theme", themeName);
   };

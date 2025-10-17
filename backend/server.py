@@ -789,32 +789,216 @@ async def get_actions(current_user: dict = Depends(get_current_user), status_fil
     
     return actions
 
+async def execute_ssh_command(host: str, command: str) -> tuple[bool, str]:
+    """Execute command via SSH and return success status and output"""
+    try:
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        ssh_client.connect(host, username='root', timeout=10, look_for_keys=True, allow_agent=True)
+        
+        stdin, stdout, stderr = ssh_client.exec_command(command)
+        exit_status = stdout.channel.recv_exit_status()
+        
+        output = stdout.read().decode()
+        error = stderr.read().decode()
+        
+        ssh_client.close()
+        
+        full_output = output + error
+        return (exit_status == 0, full_output)
+    except Exception as e:
+        return (False, f"SSH Error: {str(e)}")
+
+async def execute_bind_driver_action(params: dict, proxmox_host: str, dry_run: bool = False) -> str:
+    """Bind PCI device to driver"""
+    pci_address = params.get('pci_address')
+    driver = params.get('driver', 'vfio-pci')
+    vendor_id = params.get('vendor_id')
+    device_id = params.get('device_id')
+    
+    commands = []
+    
+    # Unbind from current driver first
+    commands.append(f"echo '{pci_address}' > /sys/bus/pci/devices/{pci_address}/driver/unbind 2>/dev/null || true")
+    
+    # Load vfio-pci module
+    if driver == 'vfio-pci':
+        commands.append("modprobe vfio-pci")
+        # Add device IDs to vfio-pci
+        if vendor_id and device_id:
+            commands.append(f"echo '{vendor_id} {device_id}' > /sys/bus/pci/drivers/vfio-pci/new_id 2>/dev/null || true")
+    
+    # Bind to new driver
+    commands.append(f"echo '{pci_address}' > /sys/bus/pci/drivers/{driver}/bind")
+    
+    full_command = " && ".join(commands)
+    
+    if dry_run:
+        return f"[DRY RUN] Would execute:\n{full_command}"
+    
+    success, output = await execute_ssh_command(proxmox_host, full_command)
+    
+    if success:
+        return f"✓ Successfully bound {pci_address} to {driver}\n\nOutput:\n{output}"
+    else:
+        return f"✗ Failed to bind device\n\nError:\n{output}"
+
+async def execute_attach_to_vm_action(params: dict, user_id: str, dry_run: bool = False) -> str:
+    """Attach PCI device to VM via Proxmox API"""
+    try:
+        proxmox, config = await get_proxmox_connection(user_id)
+        
+        vmid = params.get('vmid')
+        pci_address = params.get('pci_address')
+        pcie = params.get('pcie', True)
+        
+        if dry_run:
+            return f"[DRY RUN] Would attach {pci_address} to VM {vmid} (PCIe={pcie})"
+        
+        # Get VM's node
+        vm_info = None
+        for node in proxmox.nodes.get():
+            try:
+                vm_info = proxmox.nodes(node['node']).qemu(vmid).status.current.get()
+                node_name = node['node']
+                break
+            except:
+                continue
+        
+        if not vm_info:
+            return f"✗ VM {vmid} not found"
+        
+        # Check if VM is running
+        if vm_info.get('status') == 'running':
+            return f"⚠ VM {vmid} is running. Please stop it first before attaching PCI devices."
+        
+        # Find next available hostpci slot
+        vm_config = proxmox.nodes(node_name).qemu(vmid).config.get()
+        next_slot = 0
+        for i in range(10):
+            if f'hostpci{i}' not in vm_config:
+                next_slot = i
+                break
+        
+        # Build hostpci config
+        hostpci_value = pci_address
+        if pcie:
+            hostpci_value += ",pcie=1"
+        
+        # Update VM config
+        proxmox.nodes(node_name).qemu(vmid).config.put(**{
+            f'hostpci{next_slot}': hostpci_value
+        })
+        
+        return f"✓ Successfully attached {pci_address} to VM {vmid} as hostpci{next_slot}"
+        
+    except Exception as e:
+        return f"✗ Failed to attach device: {str(e)}"
+
+async def execute_detach_from_vm_action(params: dict, user_id: str, dry_run: bool = False) -> str:
+    """Detach PCI device from VM"""
+    try:
+        proxmox, config = await get_proxmox_connection(user_id)
+        
+        vmid = params.get('vmid')
+        hostpci_id = params.get('hostpci_id', 'hostpci0')
+        
+        if dry_run:
+            return f"[DRY RUN] Would detach {hostpci_id} from VM {vmid}"
+        
+        # Find VM's node
+        node_name = None
+        for node in proxmox.nodes.get():
+            try:
+                proxmox.nodes(node['node']).qemu(vmid).status.current.get()
+                node_name = node['node']
+                break
+            except:
+                continue
+        
+        if not node_name:
+            return f"✗ VM {vmid} not found"
+        
+        # Remove hostpci config
+        proxmox.nodes(node_name).qemu(vmid).config.put(**{
+            'delete': hostpci_id
+        })
+        
+        return f"✓ Successfully detached {hostpci_id} from VM {vmid}"
+        
+    except Exception as e:
+        return f"✗ Failed to detach device: {str(e)}"
+
 @api_router.post("/actions/execute")
 async def execute_action(exec_data: ActionExecute, current_user: dict = Depends(get_current_user)):
     action_doc = await db.actions.find_one({"id": exec_data.action_id, "user_id": current_user["user_id"]})
     if not action_doc:
         raise HTTPException(status_code=404, detail="Action not found")
     
-    # Mock execution - in production, this would run actual commands via SSH/API
-    if exec_data.dry_run:
-        output = f"[DRY RUN] Would execute {action_doc['action_type']} on {action_doc['target']}"
-        await db.actions.update_one(
-            {"id": exec_data.action_id},
-            {"$set": {"dry_run_output": output}}
-        )
-    else:
-        output = f"[EXECUTED] {action_doc['action_type']} on {action_doc['target']} completed successfully"
+    action_type = action_doc['action_type']
+    params = action_doc['parameters']
+    
+    try:
+        # Get Proxmox connection for SSH host
+        config_doc = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+        proxmox_host = None
+        if config_doc:
+            proxmox_host = config_doc['host'].replace('https://', '').replace('http://', '').split(':')[0]
+        
+        # Execute based on action type
+        if action_type == "bind_driver":
+            if not proxmox_host:
+                output = "✗ Proxmox configuration not found"
+            else:
+                output = await execute_bind_driver_action(params, proxmox_host, exec_data.dry_run)
+        
+        elif action_type == "attach_to_vm":
+            output = await execute_attach_to_vm_action(params, current_user["user_id"], exec_data.dry_run)
+        
+        elif action_type == "detach_from_vm":
+            output = await execute_detach_from_vm_action(params, current_user["user_id"], exec_data.dry_run)
+        
+        else:
+            output = f"[NOT IMPLEMENTED] Action type '{action_type}' not yet implemented"
+        
+        # Update action in database
+        if exec_data.dry_run:
+            await db.actions.update_one(
+                {"id": exec_data.action_id},
+                {"$set": {"dry_run_output": output}}
+            )
+        else:
+            status = "executed" if "✓" in output else "failed"
+            await db.actions.update_one(
+                {"id": exec_data.action_id},
+                {"$set": {
+                    "status": status,
+                    "execution_output": output,
+                    "executed_at": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            await log_audit(current_user["user_id"], "action_executed", {
+                "action_id": exec_data.action_id,
+                "type": action_type,
+                "status": status
+            })
+        
+        return {"message": "Action executed", "output": output}
+        
+    except Exception as e:
+        logger.error(f"Action execution error: {str(e)}")
+        error_output = f"✗ Execution error: {str(e)}"
+        
         await db.actions.update_one(
             {"id": exec_data.action_id},
             {"$set": {
-                "status": "executed",
-                "execution_output": output,
+                "status": "failed",
+                "execution_output": error_output,
                 "executed_at": datetime.now(timezone.utc).isoformat()
             }}
         )
-        await log_audit(current_user["user_id"], "action_executed", {"action_id": exec_data.action_id})
-    
-    return {"message": "Action executed", "output": output}
+        
+        return {"message": "Action failed", "output": error_output}
 
 @api_router.delete("/actions/{action_id}")
 async def delete_action(action_id: str, current_user: dict = Depends(get_current_user)):

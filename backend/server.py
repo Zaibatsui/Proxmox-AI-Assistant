@@ -502,6 +502,33 @@ async def delete_proxmox_config(current_user: dict = Depends(get_current_user)):
     await log_audit(current_user["user_id"], "proxmox_config_deleted", {})
     return {"message": "Config deleted"}
 
+# ==================== THEME ROUTES ====================
+
+@api_router.get("/theme")
+async def get_theme(current_user: dict = Depends(get_current_user)):
+    theme_doc = await db.themes.find_one({"user_id": current_user["user_id"]})
+    if not theme_doc:
+        return {"theme_name": "cyan"}  # Default theme
+    return {"theme_name": theme_doc["theme_name"]}
+
+@api_router.post("/theme")
+async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get_current_user)):
+    # Delete existing theme
+    await db.themes.delete_many({"user_id": current_user["user_id"]})
+    
+    # Create new theme
+    theme = Theme(
+        user_id=current_user["user_id"],
+        theme_name=theme_data.theme_name
+    )
+    doc = theme.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    await db.themes.insert_one(doc)
+    
+    await log_audit(current_user["user_id"], "theme_updated", {"theme": theme_data.theme_name})
+    
+    return {"message": "Theme updated", "theme_name": theme_data.theme_name}
+
 # ==================== DEVICE SCANNING ROUTES (MOCK) ====================
 
 @api_router.post("/devices/scan", response_model=ScanResult)

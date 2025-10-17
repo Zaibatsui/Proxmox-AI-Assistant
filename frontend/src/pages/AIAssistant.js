@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 
 function AIAssistant({ onLogout }) {
+  const navigate = useNavigate();
   const [question, setQuestion] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);

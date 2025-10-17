@@ -494,65 +494,30 @@ async def delete_proxmox_config(current_user: dict = Depends(get_current_user)):
 
 @api_router.post("/devices/scan", response_model=ScanResult)
 async def scan_devices(current_user: dict = Depends(get_current_user)):
-    # Mock device scan - in production, this would use proxmoxer + SSH to run lspci
-    mock_devices = [
-        PCIDevice(
-            pci_address="0000:01:00.0",
-            device_name="NVIDIA GeForce GTX 980",
-            device_type="VGA",
-            vendor_id="10de",
-            device_id="13c0",
-            iommu_group="1",
-            current_driver="i915",
-            subsystem="pci"
-        ),
-        PCIDevice(
-            pci_address="0000:01:00.1",
-            device_name="NVIDIA Audio Device",
-            device_type="Audio",
-            vendor_id="10de",
-            device_id="0fbb",
-            iommu_group="1",
-            current_driver="snd_hda_intel",
-            subsystem="pci"
-        ),
-        PCIDevice(
-            pci_address="0000:02:00.0",
-            device_name="Intel USB 3.0 Controller",
-            device_type="USB",
-            vendor_id="8086",
-            device_id="15b5",
-            iommu_group="2",
-            current_driver="xhci_hcd",
-            subsystem="pci"
-        ),
-        PCIDevice(
-            pci_address="0000:03:00.0",
-            device_name="Samsung NVMe SSD 980 PRO",
-            device_type="NVMe",
-            vendor_id="144d",
-            device_id="a809",
-            iommu_group="3",
-            current_driver="nvme",
-            subsystem="pci"
+    try:
+        # Scan real devices from Proxmox
+        devices = await scan_proxmox_devices(current_user["user_id"])
+        
+        scan_result = ScanResult(
+            user_id=current_user["user_id"],
+            devices=devices
         )
-    ]
-    
-    scan_result = ScanResult(
-        user_id=current_user["user_id"],
-        devices=mock_devices
-    )
-    
-    # Save scan result
-    doc = scan_result.model_dump()
-    doc['scan_timestamp'] = doc['scan_timestamp'].isoformat()
-    for device in doc['devices']:
-        device['scanned_at'] = device['scanned_at'].isoformat()
-    await db.scan_results.insert_one(doc)
-    
-    await log_audit(current_user["user_id"], "device_scan", {"device_count": len(mock_devices)})
-    
-    return scan_result
+        
+        # Save scan result
+        doc = scan_result.model_dump()
+        doc['scan_timestamp'] = doc['scan_timestamp'].isoformat()
+        for device in doc['devices']:
+            device['scanned_at'] = device['scanned_at'].isoformat()
+        await db.scan_results.insert_one(doc)
+        
+        await log_audit(current_user["user_id"], "device_scan", {"device_count": len(devices)})
+        
+        return scan_result
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Scan error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Scan failed: {str(e)}")
 
 @api_router.get("/devices/latest", response_model=Optional[ScanResult])
 async def get_latest_scan(current_user: dict = Depends(get_current_user)):

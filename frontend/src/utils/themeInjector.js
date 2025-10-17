@@ -10,54 +10,60 @@ export function injectThemeStyles() {
   const style = document.createElement('style');
   style.id = 'dynamic-theme-styles';
   style.textContent = `
-    /* Primary buttons */
-    .btn-primary,
-    [class*="bg-cyan-6"] {
+    /* Primary Background Colors - Buttons */
+    .theme-btn-primary {
       background-color: var(--theme-primary) !important;
     }
     
-    .btn-primary:hover,
-    [class*="bg-cyan-7"]:hover,
-    [class*="hover:bg-cyan"] {
+    .theme-btn-primary:hover {
       background-color: var(--theme-primary-dark) !important;
     }
     
-    /* Icon backgrounds */
-    [class*="bg-cyan-500/10"] {
-      background-color: var(--theme-primary) !important;
-      opacity: 0.1 !important;
-    }
-    
-    [class*="bg-cyan-500/20"] {
-      background-color: var(--theme-primary) !important;
-      opacity: 0.2 !important;
-    }
-    
-    /* Text colors */
-    [class*="text-cyan-4"] {
-      color: var(--theme-primary) !important;
-    }
-    
-    /* Active nav items */
-    .bg-cyan-500\\/10 {
-      background-color: var(--theme-primary) !important;
-      opacity: 0.1 !important;
-    }
-    
-    .text-cyan-400 {
-      color: var(--theme-primary) !important;
-    }
-    
-    /* Specific button overrides */
+    /* Override cyan buttons */
     button.bg-cyan-600,
-    button[class*="bg-cyan-6"] {
+    .bg-cyan-600 {
       background-color: var(--theme-primary) !important;
     }
     
     button.bg-cyan-600:hover,
     button.hover\\:bg-cyan-700:hover,
-    button[class*="bg-cyan-6"]:hover {
+    .bg-cyan-700:hover {
       background-color: var(--theme-primary-dark) !important;
+    }
+    
+    /* Icon Colors */
+    .theme-icon,
+    .text-cyan-400 {
+      color: var(--theme-primary) !important;
+    }
+    
+    /* Icon Backgrounds - keep transparency separate */
+    .theme-icon-bg,
+    .bg-cyan-500\\/10 {
+      background-color: var(--theme-primary) !important;
+      opacity: 0.1 !important;
+    }
+    
+    .bg-cyan-500\\/20 {
+      background-color: var(--theme-primary) !important;
+      opacity: 0.2 !important;
+    }
+    
+    /* Text Colors */
+    .theme-text,
+    a.text-cyan-400,
+    span.text-cyan-400,
+    p.text-cyan-400 {
+      color: var(--theme-primary) !important;
+    }
+    
+    /* Active Navigation */
+    nav a[class*="bg-cyan-500/10"] {
+      background-color: rgba(var(--theme-primary-rgb), 0.1) !important;
+    }
+    
+    nav a[class*="text-cyan-400"] {
+      color: var(--theme-primary) !important;
     }
   `;
   

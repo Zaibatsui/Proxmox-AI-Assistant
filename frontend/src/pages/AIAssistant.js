@@ -137,17 +137,32 @@ function AIAssistant({ onLogout }) {
                             }`}
                           >
                             <div className="whitespace-pre-wrap break-words">{msg.content}</div>
-                            {msg.commands && msg.commands.length > 0 && (
+                            {msg.hasActions && (
                               <div className="mt-3 pt-3 border-t border-slate-700">
-                                <p className="text-xs font-semibold mb-2 text-slate-400">Suggested Commands:</p>
+                                <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                                  <CheckCircle className="w-4 h-4" />
+                                  <p className="text-sm font-semibold">Actions Created!</p>
+                                </div>
+                                <Button
+                                  onClick={() => navigate("/actions")}
+                                  size="sm"
+                                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                                >
+                                  View & Execute Actions <ArrowRight className="w-4 h-4 ml-1" />
+                                </Button>
+                              </div>
+                            )}
+                            {msg.commands && msg.commands.length > 0 && !msg.hasActions && (
+                              <div className="mt-3 pt-3 border-t border-slate-700">
+                                <p className="text-xs font-semibold mb-2 text-slate-400">Suggested Steps:</p>
                                 <div className="space-y-1">
                                   {msg.commands.map((cmd, cidx) => (
-                                    <code
+                                    <div
                                       key={cidx}
-                                      className="block text-xs bg-slate-950/50 p-2 rounded font-mono text-emerald-400"
+                                      className="text-xs bg-slate-950/50 p-2 rounded text-slate-300"
                                     >
-                                      {cmd}
-                                    </code>
+                                      • {cmd}
+                                    </div>
                                   ))}
                                 </div>
                               </div>

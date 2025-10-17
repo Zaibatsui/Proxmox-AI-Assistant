@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: proxmox-ai-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_DATABASE: proxmox_ai_admin
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - proxmox-ai-network
+
+  # FastAPI Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: proxmox-ai-backend
+    restart: unless-stopped
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - DB_NAME=proxmox_ai_admin
+      - CORS_ORIGINS=*
+      - JWT_SECRET=proxmox-ai-admin-secret-key-change-in-production
+      - EMERGENT_LLM_KEY=sk-emergent-0E9E159F19745F2B56
+    ports:
+      - "8001:8001"
+    depends_on:
+      - mongodb
+    volumes:
+      - ./backend:/app
+    networks:
+      - proxmox-ai-network
+    command: uvicorn server:app --host 0.0.0.0 --port 8001 --reload
+
+  # React Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: proxmox-ai-frontend
+    restart: unless-stopped
+    environment:
+      - REACT_APP_BACKEND_URL=http://localhost:8001
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - proxmox-ai-network
+    command: yarn start
+
+networks:
+  proxmox-ai-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+  mongodb_config:

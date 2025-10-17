@@ -4,6 +4,12 @@
   box-sizing: border-box;
 }
 
+:root {
+  --theme-primary: rgb(6, 182, 212);
+  --theme-primary-dark: rgb(8, 145, 178);
+  --theme-accent: rgb(34, 211, 238);
+}
+
 html, body, #root, .App {
   height: 100%;
   width: 100%;
@@ -20,6 +26,23 @@ body {
 
 code {
   font-family: 'Fira Code', 'Courier New', monospace;
+}
+
+/* Theme-aware styles */
+.theme-bg {
+  background-color: var(--theme-primary) !important;
+}
+
+.theme-bg-hover:hover {
+  background-color: var(--theme-primary-dark) !important;
+}
+
+.theme-text {
+  color: var(--theme-primary) !important;
+}
+
+.theme-border {
+  border-color: var(--theme-primary) !important;
 }
 
 /* Custom scrollbar */

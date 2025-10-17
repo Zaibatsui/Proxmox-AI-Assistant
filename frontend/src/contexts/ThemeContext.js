@@ -80,9 +80,11 @@ export function ThemeProvider({ children }) {
     const theme = themes[themeName] || themes.cyan;
     const root = document.documentElement;
     
-    root.style.setProperty("--theme-primary", theme.primaryLight);
-    root.style.setProperty("--theme-primary-dark", theme.primaryDark);
-    root.style.setProperty("--theme-accent", theme.accent);
+    // Set RGB values for colors
+    root.style.setProperty("--theme-primary-rgb", theme.primaryLight);
+    root.style.setProperty("--theme-primary", `rgb(${theme.primaryLight})`);
+    root.style.setProperty("--theme-primary-dark", `rgb(${theme.primaryDark})`);
+    root.style.setProperty("--theme-accent", `rgb(${theme.accent})`);
     
     // Inject dynamic theme styles
     injectThemeStyles();

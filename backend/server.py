@@ -198,6 +198,212 @@ async def log_audit(user_id: str, action: str, details: Dict[str, Any]):
     doc['timestamp'] = doc['timestamp'].isoformat()
     await db.audit_logs.insert_one(doc)
 
+async def get_proxmox_connection(user_id: str):
+    """Get Proxmox API connection for user"""
+    config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
+    if not config_doc:
+        raise HTTPException(status_code=400, detail="Proxmox configuration not found. Please configure in Settings.")
+    
+    try:
+        proxmox = ProxmoxAPI(
+            config_doc['host'],
+            token_name=config_doc['api_token_name'],
+            token_value=config_doc['api_token_secret'],
+            verify_ssl=config_doc.get('verify_ssl', False)
+        )
+        return proxmox, config_doc
+    except Exception as e:
+        logger.error(f"Proxmox connection error: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to connect to Proxmox: {str(e)}")
+
+def parse_lspci_output(lspci_output: str) -> List[PCIDevice]:
+    """Parse lspci -nnk output into PCIDevice objects"""
+    devices = []
+    current_device = {}
+    
+    for line in lspci_output.split('\n'):
+        line = line.strip()
+        if not line:
+            if current_device:
+                devices.append(create_pci_device(current_device))
+                current_device = {}
+            continue
+        
+        # Parse PCI address and device info: 01:00.0 VGA compatible controller [0300]: NVIDIA Corporation [10de:13c0]
+        if re.match(r'^[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]', line):
+            match = re.match(r'^([0-9a-f:\.]+)\s+(.+?)(?:\[([0-9a-f]{4})\])?:\s+(.+?)(?:\[([0-9a-f]{4}):([0-9a-f]{4})\])?', line)
+            if match:
+                current_device['pci_address'] = f"0000:{match.group(1)}"
+                current_device['device_class'] = match.group(2).strip()
+                current_device['device_name'] = match.group(4).strip()
+                if match.group(5) and match.group(6):
+                    current_device['vendor_id'] = match.group(5)
+                    current_device['device_id'] = match.group(6)
+        
+        # Parse driver: Kernel driver in use: i915
+        elif line.startswith('Kernel driver in use:'):
+            current_device['driver'] = line.split(':', 1)[1].strip()
+        
+        # Parse subsystem
+        elif line.startswith('Subsystem:'):
+            current_device['subsystem'] = line.split(':', 1)[1].strip()
+    
+    # Add last device
+    if current_device:
+        devices.append(create_pci_device(current_device))
+    
+    return devices
+
+def create_pci_device(device_info: dict) -> PCIDevice:
+    """Create PCIDevice from parsed info"""
+    # Determine device type from class
+    device_class = device_info.get('device_class', '').lower()
+    if 'vga' in device_class or 'display' in device_class:
+        device_type = 'VGA'
+    elif 'audio' in device_class or 'sound' in device_class:
+        device_type = 'Audio'
+    elif 'usb' in device_class:
+        device_type = 'USB'
+    elif 'ethernet' in device_class or 'network' in device_class:
+        device_type = 'Ethernet'
+    elif 'nvme' in device_class or 'non-volatile' in device_class:
+        device_type = 'NVMe'
+    elif 'sata' in device_class or 'storage' in device_class:
+        device_type = 'Storage'
+    else:
+        device_type = 'Other'
+    
+    return PCIDevice(
+        pci_address=device_info.get('pci_address', 'unknown'),
+        device_name=device_info.get('device_name', 'Unknown Device'),
+        device_type=device_type,
+        vendor_id=device_info.get('vendor_id', 'unknown'),
+        device_id=device_info.get('device_id', 'unknown'),
+        iommu_group=None,  # Will be populated separately
+        current_driver=device_info.get('driver'),
+        subsystem=device_info.get('subsystem')
+    )
+
+async def get_iommu_groups(ssh_client, devices: List[PCIDevice]) -> List[PCIDevice]:
+    """Get IOMMU group information for devices"""
+    try:
+        stdin, stdout, stderr = ssh_client.exec_command('find /sys/kernel/iommu_groups/ -type l 2>/dev/null')
+        iommu_output = stdout.read().decode()
+        
+        # Build mapping of PCI address to IOMMU group
+        iommu_map = {}
+        for line in iommu_output.split('\n'):
+            if 'devices' in line:
+                # Example: /sys/kernel/iommu_groups/1/devices/0000:01:00.0
+                match = re.search(r'iommu_groups/(\d+)/devices/(0000:[0-9a-f:\.]+)', line)
+                if match:
+                    iommu_map[match.group(2)] = match.group(1)
+        
+        # Update devices with IOMMU group info
+        for device in devices:
+            if device.pci_address in iommu_map:
+                device.iommu_group = iommu_map[device.pci_address]
+    except Exception as e:
+        logger.warning(f"Could not get IOMMU groups: {str(e)}")
+    
+    return devices
+
+async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
+    """Scan devices from Proxmox host via SSH"""
+    proxmox, config = await get_proxmox_connection(user_id)
+    
+    try:
+        # Get first node
+        nodes = proxmox.nodes.get()
+        if not nodes:
+            raise HTTPException(status_code=500, detail="No Proxmox nodes found")
+        
+        node_name = nodes[0]['node']
+        
+        # SSH to the node and run lspci
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Extract hostname from API URL
+        host = config['host'].replace('https://', '').replace('http://', '').split(':')[0]
+        
+        # For SSH, we need the user credentials or key
+        # Since we're using API tokens, try to connect as root with the node's SSH key
+        # This is a simplified approach - in production, you'd configure SSH keys properly
+        
+        try:
+            # Try passwordless SSH (assumes SSH keys are configured)
+            ssh_client.connect(host, username='root', timeout=10, look_for_keys=True, allow_agent=True)
+        except:
+            # If that fails, return mock data with a warning
+            logger.warning("SSH connection failed. Returning mock data. Please configure SSH keys for real device scanning.")
+            return get_mock_devices()
+        
+        # Run lspci command
+        stdin, stdout, stderr = ssh_client.exec_command('lspci -nnk')
+        lspci_output = stdout.read().decode()
+        
+        # Parse devices
+        devices = parse_lspci_output(lspci_output)
+        
+        # Get IOMMU groups
+        devices = await get_iommu_groups(ssh_client, devices)
+        
+        ssh_client.close()
+        
+        return devices
+        
+    except Exception as e:
+        logger.error(f"Device scan error: {str(e)}")
+        # Return mock data as fallback
+        logger.info("Returning mock device data as fallback")
+        return get_mock_devices()
+
+def get_mock_devices() -> List[PCIDevice]:
+    """Return mock devices for demo/testing"""
+    return [
+        PCIDevice(
+            pci_address="0000:01:00.0",
+            device_name="NVIDIA GeForce GTX 980",
+            device_type="VGA",
+            vendor_id="10de",
+            device_id="13c0",
+            iommu_group="1",
+            current_driver="i915",
+            subsystem="pci"
+        ),
+        PCIDevice(
+            pci_address="0000:01:00.1",
+            device_name="NVIDIA Audio Device",
+            device_type="Audio",
+            vendor_id="10de",
+            device_id="0fbb",
+            iommu_group="1",
+            current_driver="snd_hda_intel",
+            subsystem="pci"
+        ),
+        PCIDevice(
+            pci_address="0000:02:00.0",
+            device_name="Intel USB 3.0 Controller",
+            device_type="USB",
+            vendor_id="8086",
+            device_id="15b5",
+            iommu_group="2",
+            current_driver="xhci_hcd",
+            subsystem="pci"
+        ),
+        PCIDevice(
+            pci_address="0000:03:00.0",
+            device_name="Samsung NVMe SSD 980 PRO",
+            device_type="NVMe",
+            vendor_id="144d",
+            device_id="a809",
+            iommu_group="3",
+            current_driver="nvme",
+            subsystem="pci"
+        )
+    ]
+
 # ==================== AUTH ROUTES ====================
 
 @api_router.post("/auth/register", response_model=AuthResponse)

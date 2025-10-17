@@ -38,11 +38,9 @@ function Login({ onLogin }) {
       <Card className="w-full max-w-md relative z-10 border-slate-800 bg-slate-900/90 backdrop-blur-sm" data-testid="login-card">
         <CardHeader className="space-y-1">
           <div className="flex items-center gap-3 mb-2">
-            <ThemedIconBg>
-              <ThemedText>
-                <Server className="w-6 h-6" />
-              </ThemedText>
-            </ThemedIconBg>
+            <div className="p-2 rounded-lg theme-icon-bg">
+              <Server className="w-6 h-6 theme-icon" />
+            </div>
             <CardTitle className="text-2xl font-bold text-slate-100">Proxmox AI Admin</CardTitle>
           </div>
           <CardDescription className="text-slate-400">

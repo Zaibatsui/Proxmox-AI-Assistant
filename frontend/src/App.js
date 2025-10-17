@@ -59,93 +59,95 @@ function App() {
   }
 
   return (
-    <div className="App">
-      <Toaster position="top-right" />
-      <BrowserRouter>
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              !isAuthenticated ? (
-                <Login onLogin={handleLogin} />
-              ) : (
-                <Navigate to="/" replace />
-              )
-            }
-          />
-          <Route
-            path="/"
-            element={
-              isAuthenticated ? (
-                <Dashboard onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/devices"
-            element={
-              isAuthenticated ? (
-                <DeviceScanner onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/vms"
-            element={
-              isAuthenticated ? (
-                <VMManagement onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/assistant"
-            element={
-              isAuthenticated ? (
-                <AIAssistant onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/actions"
-            element={
-              isAuthenticated ? (
-                <ActionQueue onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/audit"
-            element={
-              isAuthenticated ? (
-                <AuditLog onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              isAuthenticated ? (
-                <Settings onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" replace />
-              )
-            }
-          />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <ThemeProvider>
+      <div className="App">
+        <Toaster position="top-right" />
+        <BrowserRouter>
+          <Routes>
+            <Route
+              path="/login"
+              element={
+                !isAuthenticated ? (
+                  <Login onLogin={handleLogin} />
+                ) : (
+                  <Navigate to="/" replace />
+                )
+              }
+            />
+            <Route
+              path="/"
+              element={
+                isAuthenticated ? (
+                  <Dashboard onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/devices"
+              element={
+                isAuthenticated ? (
+                  <DeviceScanner onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/vms"
+              element={
+                isAuthenticated ? (
+                  <VMManagement onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/assistant"
+              element={
+                isAuthenticated ? (
+                  <AIAssistant onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/actions"
+              element={
+                isAuthenticated ? (
+                  <ActionQueue onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/audit"
+              element={
+                isAuthenticated ? (
+                  <AuditLog onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                isAuthenticated ? (
+                  <Settings onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </ThemeProvider>
   );
 }
 

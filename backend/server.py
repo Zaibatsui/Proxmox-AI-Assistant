@@ -514,8 +514,18 @@ async def delete_proxmox_config(current_user: dict = Depends(get_current_user)):
 async def get_theme(current_user: dict = Depends(get_current_user)):
     theme_doc = await db.themes.find_one({"user_id": current_user["user_id"]})
     if not theme_doc:
-        return {"theme_name": "cyan"}  # Default theme
-    return {"theme_name": theme_doc["theme_name"]}
+        return {
+            "theme_name": "cyan",
+            "background": "dark",
+            "card_style": "glass",
+            "accent_color": None
+        }
+    return {
+        "theme_name": theme_doc["theme_name"],
+        "background": theme_doc.get("background", "dark"),
+        "card_style": theme_doc.get("card_style", "glass"),
+        "accent_color": theme_doc.get("accent_color")
+    }
 
 @api_router.post("/theme")
 async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get_current_user)):
@@ -525,15 +535,27 @@ async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get
     # Create new theme
     theme = Theme(
         user_id=current_user["user_id"],
-        theme_name=theme_data.theme_name
+        theme_name=theme_data.theme_name,
+        background=theme_data.background or "dark",
+        card_style=theme_data.card_style or "glass",
+        accent_color=theme_data.accent_color
     )
     doc = theme.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
     await db.themes.insert_one(doc)
     
-    await log_audit(current_user["user_id"], "theme_updated", {"theme": theme_data.theme_name})
+    await log_audit(current_user["user_id"], "theme_updated", {
+        "theme": theme_data.theme_name,
+        "background": theme_data.background,
+        "card_style": theme_data.card_style
+    })
     
-    return {"message": "Theme updated", "theme_name": theme_data.theme_name}
+    return {
+        "message": "Theme updated",
+        "theme_name": theme_data.theme_name,
+        "background": theme_data.background,
+        "card_style": theme_data.card_style
+    }
 
 # ==================== DEVICE SCANNING ROUTES (MOCK) ====================
 

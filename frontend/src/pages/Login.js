@@ -7,7 +7,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Server, Lock } from "lucide-react";
-import { ThemedButton, ThemedIconBg, ThemedText } from "../components/ThemedComponents";
 
 function Login({ onLogin }) {
   const [isLogin, setIsLogin] = useState(true);

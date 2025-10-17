@@ -15,6 +15,7 @@ import { useTheme } from "../contexts/ThemeContext";
 function Settings({ onLogout }) {
   const { currentTheme, background, cardStyle, updateTheme, themes } = useTheme();
   const [config, setConfig] = useState(null);
+  const [themeOpen, setThemeOpen] = useState(false);
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

@@ -266,7 +266,8 @@ async def get_proxmox_connection(user_id: str):
             port=port,
             token_name=config_doc['api_token_name'],
             token_value=config_doc['api_token_secret'],
-            verify_ssl=config_doc.get('verify_ssl', False)
+            verify_ssl=config_doc.get('verify_ssl', False),
+            timeout=15  # Increased timeout for public connections
         )
         return proxmox, config_doc
     except Exception as e:

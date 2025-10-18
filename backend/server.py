@@ -301,32 +301,72 @@ def parse_lspci_output(lspci_output: str) -> List[PCIDevice]:
     for line in lspci_output.split('\n'):
         line = line.strip()
         if not line:
-            if current_device:
+            if current_device and current_device.get('pci_address'):
                 devices.append(create_pci_device(current_device))
                 current_device = {}
             continue
         
-        # Parse PCI address and device info: 01:00.0 VGA compatible controller [0300]: NVIDIA Corporation [10de:13c0]
+        # Parse PCI address line - much simpler pattern
+        # Format: "00:00.0 Host bridge [0600]: Intel Corporation ..."
         if re.match(r'^[0-9a-f]{2}:[0-9a-f]{2}\.[0-9a-f]', line):
-            match = re.match(r'^([0-9a-f:\.]+)\s+(.+?)(?:\[([0-9a-f]{4})\])?:\s+(.+?)(?:\[([0-9a-f]{4}):([0-9a-f]{4})\])?', line)
-            if match:
-                current_device['pci_address'] = f"0000:{match.group(1)}"
-                current_device['device_class'] = match.group(2).strip()
-                current_device['device_name'] = match.group(4).strip()
-                if match.group(5) and match.group(6):
-                    current_device['vendor_id'] = match.group(5)
-                    current_device['device_id'] = match.group(6)
+            # Save previous device
+            if current_device and current_device.get('pci_address'):
+                devices.append(create_pci_device(current_device))
+            
+            # Start new device
+            current_device = {}
+            
+            # Extract PCI address (first part before space)
+            parts = line.split(None, 1)  # Split on first whitespace
+            if parts:
+                current_device['pci_address'] = f"0000:{parts[0]}"
+                
+                # Rest of the line contains device info
+                if len(parts) > 1:
+                    rest = parts[1]
+                    
+                    # Try to extract class code [xxxx]
+                    class_match = re.search(r'\[([0-9a-f]{4})\]', rest)
+                    if class_match:
+                        current_device['class_code'] = class_match.group(1)
+                        # Remove class code from rest
+                        rest = rest.replace(f'[{class_match.group(1)}]', '').strip()
+                    
+                    # Split device type and name by ':'
+                    if ':' in rest:
+                        device_class, device_name = rest.split(':', 1)
+                        current_device['device_class'] = device_class.strip()
+                        
+                        # Extract vendor/device IDs [xxxx:xxxx]
+                        id_match = re.search(r'\[([0-9a-f]{4}):([0-9a-f]{4})\]', device_name)
+                        if id_match:
+                            current_device['vendor_id'] = id_match.group(1)
+                            current_device['device_id'] = id_match.group(2)
+                            # Remove IDs from device name
+                            device_name = re.sub(r'\[([0-9a-f]{4}):([0-9a-f]{4})\]', '', device_name).strip()
+                        
+                        current_device['device_name'] = device_name.strip()
+                    else:
+                        current_device['device_name'] = rest
         
-        # Parse driver: Kernel driver in use: i915
+        # Parse DeviceName line
+        elif line.startswith('DeviceName:'):
+            current_device['device_alias'] = line.split(':', 1)[1].strip()
+        
+        # Parse Subsystem line
+        elif line.startswith('Subsystem:'):
+            current_device['subsystem'] = line.split(':', 1)[1].strip()
+        
+        # Parse kernel driver
         elif line.startswith('Kernel driver in use:'):
             current_device['driver'] = line.split(':', 1)[1].strip()
         
-        # Parse subsystem
-        elif line.startswith('Subsystem:'):
-            current_device['subsystem'] = line.split(':', 1)[1].strip()
+        # Parse kernel modules
+        elif line.startswith('Kernel modules:'):
+            current_device['kernel_modules'] = line.split(':', 1)[1].strip()
     
     # Add last device
-    if current_device:
+    if current_device and current_device.get('pci_address'):
         devices.append(create_pci_device(current_device))
     
     return devices

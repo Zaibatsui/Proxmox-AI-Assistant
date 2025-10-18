@@ -375,11 +375,18 @@ function Settings({ onLogout }) {
                     <Button 
                       onClick={testConnection} 
                       disabled={testingConnection}
-                      variant="outline"
-                      size="sm"
-                      className="w-full"
+                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
                     >
-                      {testingConnection ? "Testing..." : "Test Connection"}
+                      {testingConnection ? (
+                        <span className="flex items-center gap-2">
+                          <span className="animate-pulse">●</span> Testing...
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Test Connection
+                        </span>
+                      )}
                     </Button>
                     
                     <div className="space-y-2 text-sm pt-2 border-t border-slate-800">

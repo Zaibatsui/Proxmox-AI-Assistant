@@ -11,73 +11,24 @@ import { toast } from "sonner";
 
 function VMManagement({ onLogout }) {
   const [vms, setVms] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [runningOpen, setRunningOpen] = useState(true);
+  const [stoppedOpen, setStoppedOpen] = useState(false);
   const [nodeFilter, setNodeFilter] = useState("all");
-  const [lastFetch, setLastFetch] = useState(null);
-  
-  // Load saved state from localStorage
-  const [runningOpen, setRunningOpen] = useState(() => {
-    const saved = localStorage.getItem('vmRunningOpen');
-    return saved !== null ? JSON.parse(saved) : true;
-  });
-  
-  const [stoppedOpen, setStoppedOpen] = useState(() => {
-    const saved = localStorage.getItem('vmStoppedOpen');
-    return saved !== null ? JSON.parse(saved) : false;
-  });
-
-  // Save state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem('vmRunningOpen', JSON.stringify(runningOpen));
-  }, [runningOpen]);
 
   useEffect(() => {
-    localStorage.setItem('vmStoppedOpen', JSON.stringify(stoppedOpen));
-  }, [stoppedOpen]);
+    fetchVMs();
+  }, []);
 
-  useEffect(() => {
-    // Auto-load on mount
-    fetchVMs(true);
-
-    // Check for stale data every 30 seconds
-    const interval = setInterval(() => {
-      if (lastFetch) {
-        const now = new Date();
-        const lastFetchTime = new Date(lastFetch);
-        const minutesOld = (now - lastFetchTime) / 1000 / 60;
-        
-        // Auto-refresh if data is older than 5 minutes
-        if (minutesOld > 5) {
-          fetchVMs(false, true);
-        }
-      }
-    }, 30000); // Check every 30 seconds
-
-    return () => clearInterval(interval);
-  }, [lastFetch]);
-
-  const fetchVMs = async (showLoading = true, isAutoRefresh = false) => {
-    if (showLoading) setLoading(true);
-    else setRefreshing(true);
-    
+  const fetchVMs = async () => {
     try {
       const response = await axios.get(`${API}/vms`);
       setVms(response.data);
-      setLastFetch(new Date().toISOString());
-      if (isAutoRefresh) {
-        toast.success("VM list refreshed");
-      }
     } catch (error) {
       toast.error("Failed to load VMs");
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
-  };
-
-  const handleRefresh = () => {
-    fetchVMs(false);
   };
 
   const getStatusColor = (status) => {

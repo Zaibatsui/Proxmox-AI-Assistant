@@ -55,8 +55,8 @@ function Layout({ children, onLogout, currentPage }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="mb-3 p-3 rounded-lg theme-icon-bg">
-            <p className="text-xs text-slate-500">Logged in as</p>
+          <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
+            <p className="text-xs text-slate-400">Logged in as</p>
             <p className="text-sm font-semibold truncate theme-text">{username}</p>
           </div>
           <Button

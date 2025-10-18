@@ -271,7 +271,7 @@ function Settings({ onLogout }) {
               <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 theme-icon-bg rounded-lg">
+                    <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
                       <Palette className="w-5 h-5 theme-icon" />
                     </div>
                     <div className="text-left">

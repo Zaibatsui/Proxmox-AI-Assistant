@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Server, Power, HardDrive, ChevronDown, Filter, RefreshCw } from "lucide-react";
+import { Server, Power, HardDrive, ChevronDown, Filter } from "lucide-react";
 import { toast } from "sonner";
 
 function VMManagement({ onLogout }) {

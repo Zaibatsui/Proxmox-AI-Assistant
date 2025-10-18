@@ -240,8 +240,25 @@ async def get_proxmox_connection(user_id: str):
         raise HTTPException(status_code=400, detail="Proxmox configuration not found. Please configure in Settings.")
     
     try:
+        # Parse the host URL to extract hostname/IP and port
+        host = config_doc['host']
+        # Remove protocol if present
+        if '://' in host:
+            host = host.split('://', 1)[1]
+        # Remove trailing slash
+        host = host.rstrip('/')
+        # Extract port if present, default to 8006
+        if ':' in host:
+            hostname, port = host.rsplit(':', 1)
+            port = int(port)
+        else:
+            hostname = host
+            port = 8006
+        
+        logger.info(f"Connecting to Proxmox: {hostname}:{port}")
         proxmox = ProxmoxAPI(
-            config_doc['host'],
+            hostname,
+            port=port,
             token_name=config_doc['api_token_name'],
             token_value=config_doc['api_token_secret'],
             verify_ssl=config_doc.get('verify_ssl', False)

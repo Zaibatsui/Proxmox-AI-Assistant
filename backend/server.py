@@ -69,6 +69,8 @@ class ProxmoxConfig(BaseModel):
     api_token_name: str  # e.g., "root@pam!token-name"
     api_token_secret: str
     verify_ssl: bool = False
+    ssh_username: Optional[str] = "root"
+    ssh_password: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProxmoxConfigCreate(BaseModel):
@@ -76,12 +78,15 @@ class ProxmoxConfigCreate(BaseModel):
     api_token_name: str
     api_token_secret: str
     verify_ssl: bool = False
+    ssh_username: Optional[str] = "root"
+    ssh_password: Optional[str] = None
 
 class ProxmoxConfigResponse(BaseModel):
     id: str
     host: str
     api_token_name: str
     verify_ssl: bool
+    ssh_username: Optional[str] = "root"
     created_at: datetime
 
 # ==================== THEME MODELS ====================

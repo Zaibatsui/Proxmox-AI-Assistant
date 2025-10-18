@@ -49,11 +49,28 @@ function Settings({ onLogout }) {
           ssh_username: response.data.ssh_username || "root",
           ssh_password: "" // Don't show password
         });
+        // Test connection automatically after loading config
+        testConnection();
       }
     } catch (error) {
       // No config yet
     } finally {
       setLoading(false);
+    }
+  };
+
+  const testConnection = async () => {
+    setTestingConnection(true);
+    try {
+      const response = await axios.post(`${API}/proxmox/test-connection`);
+      setConnectionStatus(response.data);
+    } catch (error) {
+      setConnectionStatus({
+        api: { status: "failed", error: error.response?.data?.detail || "Configuration not found" },
+        ssh: { status: "failed", error: "Configuration not found" }
+      });
+    } finally {
+      setTestingConnection(false);
     }
   };
 

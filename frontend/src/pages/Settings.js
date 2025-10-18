@@ -396,42 +396,68 @@ function Settings({ onLogout }) {
 
             {/* SSH Configuration Card - Collapsible */}
             <Collapsible open={sshConfigOpen} onOpenChange={setSshConfigOpen}>
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-500/10 rounded-lg">
-                      <Server className="w-5 h-5 text-cyan-400" />
+              <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm ${
+                sshTestStatus 
+                  ? sshTestStatus.status === "success"
+                    ? "border-l-4 border-l-emerald-500"
+                    : "border-l-4 border-l-orange-500"
+                  : ""
+              }`}>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          sshTestStatus?.status === "success" 
+                            ? "bg-emerald-500/10" 
+                            : sshTestStatus?.status === "failed"
+                            ? "bg-orange-500/10"
+                            : "bg-cyan-500/10"
+                        }`}>
+                          <Server className={`w-5 h-5 ${
+                            sshTestStatus?.status === "success"
+                              ? "text-emerald-400"
+                              : sshTestStatus?.status === "failed"
+                              ? "text-orange-400"
+                              : "text-cyan-400"
+                          }`} />
+                        </div>
+                        <div className="text-left">
+                          <CardTitle className="text-slate-100">SSH Configuration</CardTitle>
+                          <CardDescription className="text-slate-400">
+                            {sshTestStatus?.status === "success" && "✅ SSH Connected"}
+                            {sshTestStatus?.status === "failed" && "⚠️ SSH Failed (Optional)"}
+                            {!sshTestStatus && "Required for device scanning (lspci commands)"}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {/* SSH Status Badge */}
+                        {sshTestStatus && (
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                            sshTestStatus.status === "success" 
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-orange-500/10 text-orange-400"
+                          }`}>
+                            {sshTestStatus.status === "success" ? (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Connected</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-lg">!</span>
+                                <span>Failed</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${sshConfigOpen ? "rotate-180" : ""}`} />
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-slate-100">SSH Configuration</CardTitle>
-                      <CardDescription className="text-slate-400">
-                        Required for device scanning (lspci commands)
-                      </CardDescription>
-                    </div>
-                  </div>
-                  {/* SSH Status Badge */}
-                  {sshTestStatus && (
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                      sshTestStatus.status === "success" 
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-orange-500/10 text-orange-400"
-                    }`}>
-                      {sshTestStatus.status === "success" ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-lg">!</span>
-                          <span>Failed</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="ssh_username" className="text-slate-200">SSH Username</Label>

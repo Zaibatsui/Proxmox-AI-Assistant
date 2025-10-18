@@ -241,7 +241,7 @@ MONGO_URL=mongodb://localhost:27017
 DB_NAME=proxmox_ai_admin
 CORS_ORIGINS=*
 JWT_SECRET=your-secret-key-here
-EMERGENT_LLM_KEY=sk-emergent-xxxxxx
+OPENAI_API_KEY=your-openai-key-here-or-set-per-user
 ```
 
 ### Frontend (.env)

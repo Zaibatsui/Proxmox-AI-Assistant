@@ -169,8 +169,8 @@ function DeviceScanner({ onLogout }) {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className={`p-2 rounded-lg ${colorClass.replace('border-l-4 border-l-', 'bg-')}/10`}>
-                    <IconComponent className={`w-5 h-5 ${colorClass.replace('border-l-4 border-l-', 'text-')}`} />
+                  <div className="p-2 bg-cyan-500/10 rounded-lg">
+                    <IconComponent className="w-5 h-5 text-cyan-400" />
                   </div>
                   <div className="text-left">
                     <CardTitle className="text-slate-100">{title}</CardTitle>

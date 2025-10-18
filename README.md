@@ -61,12 +61,12 @@ An AI-powered Proxmox assistant that intelligently manages hardware devices, IOM
         │        └───────────────┐
         │                        │
 ┌───────┴─────────┐  ┌───────┴─────────┐
-│  MongoDB         │  │  Claude AI       │
-│  (Port 27017)    │  │  (Emergent LLM)  │
-│  - Users         │  │  - Reasoning     │
-│  - Devices       │  │  - Commands      │
-│  - Actions       │  │  - Suggestions   │
-│  - Audit Logs    │  └──────────────────┘
+│  MongoDB         │  │  OpenAI          │
+│  (Port 27017)    │  │  - Reasoning     │
+│  - Users         │  │  - Commands      │
+│  - Devices       │  │  - Suggestions   │
+│  - Actions       │  └──────────────────┘
+│  - Audit Logs    │
 └──────────────────┘
 ```
 

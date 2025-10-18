@@ -20,6 +20,10 @@ function Settings({ onLogout }) {
   const [openaiKey, setOpenaiKey] = useState("");
   const [connectionStatus, setConnectionStatus] = useState(null);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [apiTestStatus, setApiTestStatus] = useState(null);
+  const [sshTestStatus, setSshTestStatus] = useState(null);
+  const [testingApi, setTestingApi] = useState(false);
+  const [testingSsh, setTestingSsh] = useState(false);
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
 import asyncio
-from anthropic import AsyncAnthropic
+from openai import AsyncOpenAI
 from proxmoxer import ProxmoxAPI
 import paramiko
 import re

@@ -402,7 +402,7 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
                     host, 
                     username=ssh_username, 
                     password=ssh_password,
-                    timeout=10,
+                    timeout=15,  # Increased timeout for public connections
                     look_for_keys=False,
                     allow_agent=False
                 )
@@ -412,7 +412,7 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
                 ssh_client.connect(
                     host, 
                     username=ssh_username, 
-                    timeout=10, 
+                    timeout=15,  # Increased timeout for public connections
                     look_for_keys=True, 
                     allow_agent=True
                 )

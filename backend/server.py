@@ -674,10 +674,10 @@ async def get_vms(current_user: dict = Depends(get_current_user)):
 @api_router.post("/ai/query", response_model=AIResponse)
 async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user)):
     try:
-        # Initialize Claude chat
-        api_key = os.environ.get('EMERGENT_LLM_KEY')
+        # Initialize Anthropic client
+        api_key = os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
         if not api_key:
-            raise HTTPException(status_code=500, detail="AI service not configured")
+            raise HTTPException(status_code=500, detail="AI service not configured. Please set ANTHROPIC_API_KEY in backend/.env")
         
         # Build context for the AI
         context_str = ""
@@ -733,16 +733,21 @@ Safety rules:
 4. Include rollback steps
 """
         
-        chat = LlmChat(
-            api_key=api_key,
-            session_id=f"user-{current_user['user_id']}-{str(uuid.uuid4())[:8]}",
-            system_message=system_message
-        ).with_model("anthropic", "claude-3-7-sonnet-20250219")
+        # Create Anthropic client
+        client = AsyncAnthropic(api_key=api_key)
         
-        user_message = UserMessage(text=f"{query.question}{context_str}")
+        # Send message to Claude
+        message = await client.messages.create(
+            model="claude-3-5-sonnet-20241022",
+            max_tokens=2048,
+            system=system_message,
+            messages=[
+                {"role": "user", "content": f"{query.question}{context_str}"}
+            ]
+        )
         
-        # Get AI response
-        response_text = await chat.send_message(user_message)
+        # Extract text from response
+        response_text = message.content[0].text
         
         # Extract suggested actions (new JSON format)
         suggested_commands = []

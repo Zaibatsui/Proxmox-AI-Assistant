@@ -102,6 +102,9 @@ function Login({ onLogin }) {
               {isLogin ? "Need an account? Register" : "Already have an account? Sign in"}
             </button>
           </div>
+          <div className="mt-4 pt-4 border-t border-slate-800 text-center">
+            <p className="text-xs text-slate-500">Version 1.0</p>
+          </div>
         </CardContent>
       </Card>
     </div>

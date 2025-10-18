@@ -218,9 +218,9 @@ import paramiko
 ## Technology Stack
 
 - **Frontend**: React 19, Tailwind CSS, Shadcn UI, Axios
-- **Backend**: FastAPI, Motor (async MongoDB), PyJWT, bcrypt
-- **AI**: Claude 3.7 Sonnet via Emergent Integrations
-- **Database**: MongoDB 7.0
+- **Backend**: FastAPI, Motor (async MongoDB), PyJWT, bcrypt, Proxmoxer, Paramiko
+- **AI**: OpenAI API (user-provided API keys)
+- **Database**: MongoDB 4.4
 - **Deployment**: Docker Compose
 
 ## Security Considerations

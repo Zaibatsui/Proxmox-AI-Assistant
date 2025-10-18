@@ -321,11 +321,68 @@ function Settings({ onLogout }) {
               <CardContent className="space-y-4">
                 {config ? (
                   <>
-                    <div className="flex items-center gap-2 text-emerald-400">
-                      <CheckCircle className="w-5 h-5" />
-                      <span className="font-semibold">Connected</span>
-                    </div>
-                    <div className="space-y-2 text-sm">
+                    {testingConnection ? (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <div className="animate-pulse">●</div>
+                        <span>Testing connection...</span>
+                      </div>
+                    ) : connectionStatus ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          {connectionStatus.api.status === "success" ? (
+                            <CheckCircle className="w-5 h-5 text-emerald-400" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-red-400 flex items-center justify-center">
+                              <span className="text-red-400 text-xs">✕</span>
+                            </div>
+                          )}
+                          <span className={`font-semibold ${connectionStatus.api.status === "success" ? "text-emerald-400" : "text-red-400"}`}>
+                            API: {connectionStatus.api.status === "success" ? "Connected" : "Failed"}
+                          </span>
+                        </div>
+                        {connectionStatus.api.error && (
+                          <p className="text-xs text-red-400 ml-7">{connectionStatus.api.error}</p>
+                        )}
+                        {connectionStatus.api.status === "success" && (
+                          <p className="text-xs text-slate-500 ml-7">{connectionStatus.api.nodes} node(s) found</p>
+                        )}
+                        
+                        <div className="flex items-center gap-2">
+                          {connectionStatus.ssh.status === "success" ? (
+                            <CheckCircle className="w-5 h-5 text-emerald-400" />
+                          ) : (
+                            <div className="w-5 h-5 rounded-full border-2 border-orange-400 flex items-center justify-center">
+                              <span className="text-orange-400 text-xs">!</span>
+                            </div>
+                          )}
+                          <span className={`font-semibold ${connectionStatus.ssh.status === "success" ? "text-emerald-400" : "text-orange-400"}`}>
+                            SSH: {connectionStatus.ssh.status === "success" ? "Connected" : "Failed"}
+                          </span>
+                        </div>
+                        {connectionStatus.ssh.error && (
+                          <p className="text-xs text-orange-400 ml-7">{connectionStatus.ssh.error}</p>
+                        )}
+                        {connectionStatus.ssh.status === "failed" && (
+                          <p className="text-xs text-slate-500 ml-7">SSH required for device scanning</p>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <span className="text-sm">Click "Test Connection" to verify</span>
+                      </div>
+                    )}
+                    
+                    <Button 
+                      onClick={testConnection} 
+                      disabled={testingConnection}
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                    >
+                      {testingConnection ? "Testing..." : "Test Connection"}
+                    </Button>
+                    
+                    <div className="space-y-2 text-sm pt-2 border-t border-slate-800">
                       <div>
                         <span className="text-slate-500">Host:</span>
                         <p className="text-slate-300 break-all">{config.host}</p>

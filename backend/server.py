@@ -579,6 +579,88 @@ async def delete_proxmox_config(current_user: dict = Depends(get_current_user)):
     await log_audit(current_user["user_id"], "proxmox_config_deleted", {})
     return {"message": "Config deleted"}
 
+
+@api_router.post("/proxmox/test-connection")
+async def test_proxmox_connection(current_user: dict = Depends(get_current_user)):
+    """Test Proxmox API and SSH connections"""
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        # Test API connection
+        api_status = "failed"
+        api_error = None
+        try:
+            nodes = proxmox.nodes.get()
+            if nodes and len(nodes) > 0:
+                api_status = "success"
+                node_name = nodes[0]['node']
+            else:
+                api_error = "No nodes found"
+        except Exception as e:
+            api_error = str(e)
+            logger.error(f"API connection test failed: {str(e)}")
+        
+        # Test SSH connection
+        ssh_status = "failed"
+        ssh_error = None
+        try:
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            # Extract hostname
+            host = config['host']
+            if '://' in host:
+                host = host.split('://', 1)[1]
+            host = host.split(':')[0].rstrip('/')
+            
+            ssh_username = config.get('ssh_username', 'root')
+            ssh_password = config.get('ssh_password')
+            
+            if ssh_password:
+                ssh_client.connect(
+                    host,
+                    username=ssh_username,
+                    password=ssh_password,
+                    timeout=5,
+                    look_for_keys=False,
+                    allow_agent=False
+                )
+            else:
+                ssh_client.connect(
+                    host,
+                    username=ssh_username,
+                    timeout=5,
+                    look_for_keys=True,
+                    allow_agent=True
+                )
+            
+            # Test a simple command
+            stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
+            result = stdout.read().decode().strip()
+            if result == "test":
+                ssh_status = "success"
+            ssh_client.close()
+        except Exception as e:
+            ssh_error = str(e)
+            logger.error(f"SSH connection test failed: {str(e)}")
+        
+        return {
+            "api": {
+                "status": api_status,
+                "error": api_error,
+                "nodes": len(nodes) if api_status == "success" else 0
+            },
+            "ssh": {
+                "status": ssh_status,
+                "error": ssh_error
+            }
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Connection test error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # ==================== THEME ROUTES ====================
 
 @api_router.get("/theme")

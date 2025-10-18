@@ -574,6 +574,46 @@ async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get
         "card_style": theme_data.card_style
     }
 
+# ==================== API KEYS ROUTES ====================
+
+@api_router.get("/api-keys", response_model=APIKeysResponse)
+async def get_api_keys(current_user: dict = Depends(get_current_user)):
+    keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
+    
+    if not keys_doc or not keys_doc.get('openai_api_key'):
+        return APIKeysResponse(has_openai_key=False, openai_key_preview=None)
+    
+    # Return preview (last 4 chars)
+    key = keys_doc['openai_api_key']
+    preview = f"...{key[-4:]}" if len(key) > 4 else "****"
+    
+    return APIKeysResponse(has_openai_key=True, openai_key_preview=preview)
+
+@api_router.post("/api-keys")
+async def update_api_keys(keys_data: APIKeysUpdate, current_user: dict = Depends(get_current_user)):
+    # Delete existing keys
+    await db.user_api_keys.delete_many({"user_id": current_user["user_id"]})
+    
+    # Create new keys record
+    user_keys = UserAPIKeys(
+        user_id=current_user["user_id"],
+        openai_api_key=keys_data.openai_api_key
+    )
+    doc = user_keys.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.user_api_keys.insert_one(doc)
+    
+    await log_audit(current_user["user_id"], "api_keys_updated", {"has_openai": bool(keys_data.openai_api_key)})
+    
+    return {"message": "API keys updated successfully"}
+
+@api_router.delete("/api-keys")
+async def delete_api_keys(current_user: dict = Depends(get_current_user)):
+    await db.user_api_keys.delete_many({"user_id": current_user["user_id"]})
+    await log_audit(current_user["user_id"], "api_keys_deleted", {})
+    return {"message": "API keys deleted"}
+
 # ==================== DEVICE SCANNING ROUTES (MOCK) ====================
 
 @api_router.post("/devices/scan", response_model=ScanResult)

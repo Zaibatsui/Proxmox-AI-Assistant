@@ -225,6 +225,40 @@ function Settings({ onLogout }) {
                   />
                 </div>
 
+                {/* SSH Credentials Section */}
+                <div className="space-y-4 pt-4 border-t border-slate-800">
+                  <div className="flex items-center gap-2">
+                    <Server className="w-4 h-4 text-cyan-400" />
+                    <h3 className="text-sm font-semibold text-slate-200">SSH Credentials (for Device Scanning)</h3>
+                  </div>
+                  <p className="text-xs text-slate-400">Required to scan hardware devices from Proxmox host</p>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="ssh_username" className="text-slate-200">SSH Username</Label>
+                    <Input
+                      id="ssh_username"
+                      type="text"
+                      placeholder="root"
+                      value={formData.ssh_username}
+                      onChange={(e) => setFormData({ ...formData, ssh_username: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="ssh_password" className="text-slate-200">SSH Password</Label>
+                    <Input
+                      id="ssh_password"
+                      type="password"
+                      placeholder="Enter SSH password"
+                      value={formData.ssh_password}
+                      onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                    />
+                    <p className="text-xs text-slate-500">Optional: Leave empty if using SSH keys</p>
+                  </div>
+                </div>
+
                 <div className="flex gap-3 pt-4">
                   <Button
                     onClick={handleSave}

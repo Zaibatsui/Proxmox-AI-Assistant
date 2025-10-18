@@ -622,7 +622,7 @@ async def test_proxmox_connection(current_user: dict = Depends(get_current_user)
                     host,
                     username=ssh_username,
                     password=ssh_password,
-                    timeout=5,
+                    timeout=15,  # Increased timeout for public connections
                     look_for_keys=False,
                     allow_agent=False
                 )
@@ -630,7 +630,7 @@ async def test_proxmox_connection(current_user: dict = Depends(get_current_user)
                 ssh_client.connect(
                     host,
                     username=ssh_username,
-                    timeout=5,
+                    timeout=15,  # Increased timeout for public connections
                     look_for_keys=True,
                     allow_agent=True
                 )

@@ -5,7 +5,7 @@ An AI-powered Proxmox assistant that intelligently manages hardware devices, IOM
 ## Features
 
 ### 🤖 AI-Powered Assistant
-- **Claude Sonnet 4 Integration**: Get intelligent suggestions for hardware passthrough configurations
+- **OpenAI Integration**: Get intelligent suggestions for hardware passthrough configurations
 - **Natural Language Queries**: Ask questions about IOMMU groups, driver bindings, and best practices
 - **Command Generation**: AI automatically generates safe commands with explanations
 - **Conversation History**: Keep track of all your AI interactions

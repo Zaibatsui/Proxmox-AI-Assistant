@@ -15,6 +15,7 @@ function VMManagement({ onLogout }) {
   const [runningOpen, setRunningOpen] = useState(true);
   const [stoppedOpen, setStoppedOpen] = useState(false);
   const [nodeFilter, setNodeFilter] = useState("all");
+  const [actionLoading, setActionLoading] = useState({});
 
   useEffect(() => {
     fetchVMs();

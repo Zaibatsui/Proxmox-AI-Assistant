@@ -922,6 +922,91 @@ async def get_vms(current_user: dict = Depends(get_current_user)):
         # Return empty list or mock data as fallback
         return []
 
+@api_router.post("/vms/{vmid}/start")
+async def start_vm(vmid: str, node: str, vm_type: str, current_user: dict = Depends(get_current_user)):
+    """Start a VM or container"""
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        if vm_type == "qemu":
+            proxmox.nodes(node).qemu(vmid).status.start.post()
+        elif vm_type == "lxc":
+            proxmox.nodes(node).lxc(vmid).status.start.post()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown VM type: {vm_type}")
+        
+        await log_audit(current_user["user_id"], "vm_start", {"vmid": vmid, "node": node, "type": vm_type})
+        return {"status": "success", "message": f"Started {vm_type} {vmid}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error starting VM: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/vms/{vmid}/stop")
+async def stop_vm(vmid: str, node: str, vm_type: str, current_user: dict = Depends(get_current_user)):
+    """Stop a VM or container gracefully"""
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        if vm_type == "qemu":
+            proxmox.nodes(node).qemu(vmid).status.shutdown.post()
+        elif vm_type == "lxc":
+            proxmox.nodes(node).lxc(vmid).status.shutdown.post()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown VM type: {vm_type}")
+        
+        await log_audit(current_user["user_id"], "vm_stop", {"vmid": vmid, "node": node, "type": vm_type})
+        return {"status": "success", "message": f"Stopping {vm_type} {vmid}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error stopping VM: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/vms/{vmid}/force-stop")
+async def force_stop_vm(vmid: str, node: str, vm_type: str, current_user: dict = Depends(get_current_user)):
+    """Force stop (hard stop) a VM or container"""
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        if vm_type == "qemu":
+            proxmox.nodes(node).qemu(vmid).status.stop.post()
+        elif vm_type == "lxc":
+            proxmox.nodes(node).lxc(vmid).status.stop.post()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown VM type: {vm_type}")
+        
+        await log_audit(current_user["user_id"], "vm_force_stop", {"vmid": vmid, "node": node, "type": vm_type})
+        return {"status": "success", "message": f"Force stopped {vm_type} {vmid}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error force stopping VM: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/vms/{vmid}/restart")
+async def restart_vm(vmid: str, node: str, vm_type: str, current_user: dict = Depends(get_current_user)):
+    """Restart a VM or container"""
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        
+        if vm_type == "qemu":
+            proxmox.nodes(node).qemu(vmid).status.reboot.post()
+        elif vm_type == "lxc":
+            proxmox.nodes(node).lxc(vmid).status.reboot.post()
+        else:
+            raise HTTPException(status_code=400, detail=f"Unknown VM type: {vm_type}")
+        
+        await log_audit(current_user["user_id"], "vm_restart", {"vmid": vmid, "node": node, "type": vm_type})
+        return {"status": "success", "message": f"Restarting {vm_type} {vmid}"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error restarting VM: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 # ==================== AI ASSISTANT ROUTES ====================
 
 @api_router.post("/ai/query", response_model=AIResponse)

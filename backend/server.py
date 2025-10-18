@@ -13,7 +13,7 @@ from datetime import datetime, timezone, timedelta
 import jwt
 import bcrypt
 import asyncio
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+from anthropic import AsyncAnthropic
 from proxmoxer import ProxmoxAPI
 import paramiko
 import re

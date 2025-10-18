@@ -29,6 +29,7 @@ function Settings({ onLogout }) {
 
   useEffect(() => {
     fetchConfig();
+    fetchAPIKeys();
   }, []);
 
   const fetchConfig = async () => {

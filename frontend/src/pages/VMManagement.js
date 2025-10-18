@@ -79,6 +79,8 @@ function VMManagement({ onLogout }) {
 
   const renderVMCard = (vm, idx) => {
     const Icon = getTypeIcon(vm.type);
+    const isRunning = vm.status === "running";
+    
     return (
       <Card
         key={idx}
@@ -115,6 +117,90 @@ function VMManagement({ onLogout }) {
             <Badge variant="outline" className="bg-slate-800 text-slate-300 border-slate-700">
               {vm.type.toUpperCase()}
             </Badge>
+          </div>
+          
+          {/* Control Buttons */}
+          <div className="flex gap-2 pt-2 border-t border-slate-800">
+            {isRunning ? (
+              <>
+                <Button
+                  onClick={() => handleVMAction(vm, "stop")}
+                  disabled={actionLoading[`${vm.vmid}-stop`]}
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
+                >
+                  {actionLoading[`${vm.vmid}-stop`] ? (
+                    <span className="flex items-center gap-1">
+                      <RotateCw className="w-3 h-3 animate-spin" />
+                      Stopping...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Square className="w-3 h-3" />
+                      Stop
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleVMAction(vm, "force-stop")}
+                  disabled={actionLoading[`${vm.vmid}-force-stop`]}
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 bg-red-900/20 hover:bg-red-900/30 text-red-400 border-red-900/30"
+                >
+                  {actionLoading[`${vm.vmid}-force-stop`] ? (
+                    <span className="flex items-center gap-1">
+                      <RotateCw className="w-3 h-3 animate-spin" />
+                      Stopping...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <AlertOctagon className="w-3 h-3" />
+                      Force
+                    </span>
+                  )}
+                </Button>
+                <Button
+                  onClick={() => handleVMAction(vm, "restart")}
+                  disabled={actionLoading[`${vm.vmid}-restart`]}
+                  size="sm"
+                  variant="outline"
+                  className="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
+                >
+                  {actionLoading[`${vm.vmid}-restart`] ? (
+                    <span className="flex items-center gap-1">
+                      <RotateCw className="w-3 h-3 animate-spin" />
+                      Restarting...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <RotateCw className="w-3 h-3" />
+                      Restart
+                    </span>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button
+                onClick={() => handleVMAction(vm, "start")}
+                disabled={actionLoading[`${vm.vmid}-start`]}
+                size="sm"
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                {actionLoading[`${vm.vmid}-start`] ? (
+                  <span className="flex items-center gap-2">
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                    Starting...
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Play className="w-4 h-4" />
+                    Start
+                  </span>
+                )}
+              </Button>
+            )}
           </div>
           
           {vm.hostpci_devices.length > 0 ? (

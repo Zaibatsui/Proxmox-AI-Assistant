@@ -215,20 +215,44 @@ function Settings({ onLogout }) {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* LEFT COLUMN - Configuration Forms */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Proxmox API Configuration */}
+            
+            {/* Proxmox API Configuration Card */}
             <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
               <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-cyan-500/10 rounded-lg">
-                    <Server className="w-5 h-5 text-cyan-400" />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-500/10 rounded-lg">
+                      <Server className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-slate-100">Proxmox API Configuration</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Connect to your Proxmox server via API token
+                      </CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-slate-100">Proxmox API Configuration</CardTitle>
-                    <CardDescription className="text-slate-400">
-                      Connect to your Proxmox server via API token
-                    </CardDescription>
-                  </div>
+                  {/* API Status Badge */}
+                  {apiTestStatus && (
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                      apiTestStatus.status === "success" 
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-red-500/10 text-red-400"
+                    }`}>
+                      {apiTestStatus.status === "success" ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">✕</span>
+                          <span>Failed</span>
+                        </>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -238,7 +262,7 @@ function Settings({ onLogout }) {
                     id="host"
                     data-testid="host-input"
                     type="text"
-                    placeholder="https://192.168.1.100:8006"
+                    placeholder="https://proxmox.zaibatsui.co.uk"
                     value={formData.host}
                     onChange={(e) => setFormData({ ...formData, host: e.target.value })}
                     className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
@@ -287,45 +311,25 @@ function Settings({ onLogout }) {
                   />
                 </div>
 
-                {/* SSH Credentials Section */}
-                <div className="space-y-4 pt-4 border-t border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Server className="w-4 h-4 text-cyan-400" />
-                    <h3 className="text-sm font-semibold text-slate-200">SSH Credentials (for Device Scanning)</h3>
+                {/* API Error Display */}
+                {apiTestStatus && apiTestStatus.error && (
+                  <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <p className="text-sm font-semibold text-red-400 mb-1">Connection Error:</p>
+                    <p className="text-xs text-red-300">{apiTestStatus.error}</p>
+                    {apiTestStatus.error.includes("Unauthorized") && (
+                      <div className="mt-3 p-3 bg-orange-500/10 border border-orange-500/20 rounded">
+                        <p className="text-xs font-semibold text-orange-400 mb-1">⚠️ Common Fix:</p>
+                        <p className="text-xs text-orange-300">Enable "Privilege Separation" checkbox in Proxmox when creating/editing your API token</p>
+                      </div>
+                    )}
                   </div>
-                  <p className="text-xs text-slate-400">Required to scan hardware devices from Proxmox host</p>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="ssh_username" className="text-slate-200">SSH Username</Label>
-                    <Input
-                      id="ssh_username"
-                      type="text"
-                      placeholder="root"
-                      value={formData.ssh_username}
-                      onChange={(e) => setFormData({ ...formData, ssh_username: e.target.value })}
-                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="ssh_password" className="text-slate-200">SSH Password</Label>
-                    <Input
-                      id="ssh_password"
-                      type="password"
-                      placeholder="Enter SSH password"
-                      value={formData.ssh_password}
-                      onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value })}
-                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                    />
-                    <p className="text-xs text-slate-500">Optional: Leave empty if using SSH keys</p>
-                  </div>
-                </div>
+                )}
 
                 <div className="flex gap-3 pt-4">
                   <Button
                     onClick={handleSave}
                     disabled={saving}
-                    className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
                     data-testid="save-button"
                   >
                     {saving ? (
@@ -335,21 +339,151 @@ function Settings({ onLogout }) {
                     ) : (
                       <span className="flex items-center gap-2">
                         <Save className="w-4 h-4" />
-                        Save Configuration
+                        Save API Config
                       </span>
                     )}
                   </Button>
-                  {config && (
-                    <Button
-                      onClick={handleDelete}
-                      variant="destructive"
-                      data-testid="delete-button"
-                    >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Delete
-                    </Button>
+                  <Button
+                    onClick={testApiConnection}
+                    disabled={testingApi || !config}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    {testingApi ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-pulse">●</span> Testing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Test API
+                      </span>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* SSH Configuration Card */}
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-cyan-500/10 rounded-lg">
+                      <Server className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-slate-100">SSH Configuration</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Required for device scanning (lspci commands)
+                      </CardDescription>
+                    </div>
+                  </div>
+                  {/* SSH Status Badge */}
+                  {sshTestStatus && (
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                      sshTestStatus.status === "success" 
+                        ? "bg-emerald-500/10 text-emerald-400"
+                        : "bg-orange-500/10 text-orange-400"
+                    }`}>
+                      {sshTestStatus.status === "success" ? (
+                        <>
+                          <CheckCircle className="w-4 h-4" />
+                          <span>Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-lg">!</span>
+                          <span>Failed</span>
+                        </>
+                      )}
+                    </div>
                   )}
                 </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="ssh_username" className="text-slate-200">SSH Username</Label>
+                  <Input
+                    id="ssh_username"
+                    type="text"
+                    placeholder="root"
+                    value={formData.ssh_username}
+                    onChange={(e) => setFormData({ ...formData, ssh_username: e.target.value })}
+                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">SSH username for accessing Proxmox host</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ssh_password" className="text-slate-200">SSH Password</Label>
+                  <Input
+                    id="ssh_password"
+                    type="password"
+                    placeholder="Enter SSH password"
+                    value={formData.ssh_password}
+                    onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value })}
+                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">Optional: Leave empty if using SSH keys</p>
+                </div>
+
+                {/* SSH Error Display */}
+                {sshTestStatus && sshTestStatus.error && (
+                  <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
+                    <p className="text-sm font-semibold text-orange-400 mb-1">SSH Connection Error:</p>
+                    <p className="text-xs text-orange-300">{sshTestStatus.error}</p>
+                    <p className="text-xs text-slate-400 mt-2">Note: SSH is only required for device scanning. VM management works via API only.</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3 pt-4">
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    {saving ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-pulse">●</span> Saving...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Save className="w-4 h-4" />
+                        Save SSH Config
+                      </span>
+                    )}
+                  </Button>
+                  <Button
+                    onClick={testSshConnection}
+                    disabled={testingSsh || !config}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    {testingSsh ? (
+                      <span className="flex items-center gap-2">
+                        <span className="animate-pulse">●</span> Testing...
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <CheckCircle className="w-4 h-4" />
+                        Test SSH
+                      </span>
+                    )}
+                  </Button>
+                </div>
+
+                {config && (
+                  <Button
+                    onClick={handleDelete}
+                    variant="destructive"
+                    className="w-full"
+                    data-testid="delete-button"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Delete All Configuration
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
               </CardContent>
             </Card>
           </div>

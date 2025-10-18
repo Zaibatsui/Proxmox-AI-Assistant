@@ -65,16 +65,53 @@ function Settings({ onLogout }) {
 
   const testConnection = async () => {
     setTestingConnection(true);
+    setTestingApi(true);
+    setTestingSsh(true);
     try {
       const response = await axios.post(`${API}/proxmox/test-connection`);
       setConnectionStatus(response.data);
+      setApiTestStatus(response.data.api);
+      setSshTestStatus(response.data.ssh);
     } catch (error) {
-      setConnectionStatus({
+      const errorData = {
         api: { status: "failed", error: error.response?.data?.detail || "Configuration not found" },
         ssh: { status: "failed", error: "Configuration not found" }
-      });
+      };
+      setConnectionStatus(errorData);
+      setApiTestStatus(errorData.api);
+      setSshTestStatus(errorData.ssh);
     } finally {
       setTestingConnection(false);
+      setTestingApi(false);
+      setTestingSsh(false);
+    }
+  };
+
+  const testApiConnection = async () => {
+    setTestingApi(true);
+    try {
+      const response = await axios.post(`${API}/proxmox/test-connection`);
+      setApiTestStatus(response.data.api);
+      toast.success(response.data.api.status === "success" ? "API Connected!" : "API Connection Failed");
+    } catch (error) {
+      setApiTestStatus({ status: "failed", error: error.response?.data?.detail || "Connection failed" });
+      toast.error("API Connection Failed");
+    } finally {
+      setTestingApi(false);
+    }
+  };
+
+  const testSshConnection = async () => {
+    setTestingSsh(true);
+    try {
+      const response = await axios.post(`${API}/proxmox/test-connection`);
+      setSshTestStatus(response.data.ssh);
+      toast.success(response.data.ssh.status === "success" ? "SSH Connected!" : "SSH Connection Failed");
+    } catch (error) {
+      setSshTestStatus({ status: "failed", error: error.response?.data?.detail || "Connection failed" });
+      toast.error("SSH Connection Failed");
+    } finally {
+      setTestingSsh(false);
     }
   };
 

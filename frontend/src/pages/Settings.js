@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Server, Save, Trash2, CheckCircle, Palette, Check, ChevronDown } from "lucide-react";
+import { Server, Save, Trash2, CheckCircle, Palette, Check, ChevronDown, Key } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "../contexts/ThemeContext";
 
@@ -16,6 +16,8 @@ function Settings({ onLogout }) {
   const { currentTheme, background, cardStyle, updateTheme, themes } = useTheme();
   const [config, setConfig] = useState(null);
   const [themeOpen, setThemeOpen] = useState(false);
+  const [apiKeys, setApiKeys] = useState(null);
+  const [openaiKey, setOpenaiKey] = useState("");
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

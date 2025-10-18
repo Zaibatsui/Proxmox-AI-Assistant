@@ -18,6 +18,8 @@ function Settings({ onLogout }) {
   const [themeOpen, setThemeOpen] = useState(false);
   const [apiKeys, setApiKeys] = useState(null);
   const [openaiKey, setOpenaiKey] = useState("");
+  const [connectionStatus, setConnectionStatus] = useState(null);
+  const [testingConnection, setTestingConnection] = useState(false);
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

@@ -32,6 +32,27 @@ function VMManagement({ onLogout }) {
     }
   };
 
+  const handleVMAction = async (vm, action) => {
+    const key = `${vm.vmid}-${action}`;
+    setActionLoading(prev => ({ ...prev, [key]: true }));
+    
+    try {
+      const endpoint = action === "force-stop" ? "force-stop" : action;
+      await axios.post(`${API}/vms/${vm.vmid}/${endpoint}`, null, {
+        params: { node: vm.node, vm_type: vm.type }
+      });
+      
+      toast.success(`${action === "force-stop" ? "Force stop" : action.charAt(0).toUpperCase() + action.slice(1)} command sent to ${vm.name}`);
+      
+      // Refresh VM list after a short delay
+      setTimeout(() => fetchVMs(), 2000);
+    } catch (error) {
+      toast.error(`Failed to ${action} ${vm.name}: ${error.response?.data?.detail || error.message}`);
+    } finally {
+      setActionLoading(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
   const getStatusColor = (status) => {
     return status === "running"
       ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"

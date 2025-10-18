@@ -126,51 +126,24 @@ function VMManagement({ onLogout }) {
           <div>
             <h1 className="text-4xl font-bold text-slate-100 mb-2">VM & Container Management</h1>
             <p className="text-slate-400">View and manage virtual machines and LXC containers</p>
-            {lastFetch && (
-              <p className="text-xs text-slate-500 mt-1">
-                Last updated: {new Date(lastFetch).toLocaleString()}
-              </p>
-            )}
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Refresh Button */}
-            <Button
-              onClick={handleRefresh}
-              disabled={refreshing || loading}
-              variant="outline"
-              className="bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
-            >
-              {refreshing ? (
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  Refreshing...
-                </span>
-              ) : (
-                <span className="flex items-center gap-2">
-                  <RefreshCw className="w-4 h-4" />
-                  Refresh
-                </span>
-              )}
-            </Button>
-
-            {/* Node Filter */}
-            {nodes.length > 1 && (
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-400" />
-                <select
-                  value={nodeFilter}
-                  onChange={(e) => setNodeFilter(e.target.value)}
-                  className="bg-slate-800 border-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm"
-                >
-                  <option value="all">All Nodes</option>
-                  {nodes.map(node => (
-                    <option key={node} value={node}>{node}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
+          {/* Node Filter */}
+          {nodes.length > 1 && (
+            <div className="flex items-center gap-2">
+              <Filter className="w-4 h-4 text-slate-400" />
+              <select
+                value={nodeFilter}
+                onChange={(e) => setNodeFilter(e.target.value)}
+                className="bg-slate-800 border-slate-700 text-slate-100 rounded-lg px-3 py-2 text-sm"
+              >
+                <option value="all">All Nodes</option>
+                {nodes.map(node => (
+                  <option key={node} value={node}>{node}</option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         {loading ? (

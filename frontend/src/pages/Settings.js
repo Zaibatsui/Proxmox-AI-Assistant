@@ -125,7 +125,9 @@ function Settings({ onLogout }) {
         host: "",
         api_token_name: "",
         api_token_secret: "",
-        verify_ssl: false
+        verify_ssl: false,
+        ssh_username: "root",
+        ssh_password: ""
       });
     } catch (error) {
       toast.error("Failed to delete configuration");

@@ -306,6 +306,77 @@ function Settings({ onLogout }) {
           </div>
         </div>
 
+        {/* AI Configuration */}
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+          <CardHeader>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
+                <Key className="w-5 h-5 theme-icon" />
+              </div>
+              <div>
+                <CardTitle className="text-slate-100">AI Configuration</CardTitle>
+                <CardDescription className="text-slate-400">
+                  Configure your OpenAI API key for AI Assistant feature
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {apiKeys && apiKeys.has_openai_key ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+                  <div className="flex items-center gap-2 text-emerald-400 mb-2">
+                    <CheckCircle className="w-5 h-5" />
+                    <span className="font-semibold">API Key Configured</span>
+                  </div>
+                  <p className="text-sm text-slate-300">
+                    Key: {apiKeys.openai_key_preview}
+                  </p>
+                </div>
+                <Button
+                  onClick={handleDeleteAPIKeys}
+                  variant="destructive"
+                  size="sm"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete API Key
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                  <p className="text-sm text-amber-400">
+                    No API key configured. Add your OpenAI API key to use the AI Assistant feature.
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="openai_key" className="text-slate-200">
+                    OpenAI API Key
+                  </Label>
+                  <Input
+                    id="openai_key"
+                    type="password"
+                    placeholder="sk-proj-..."
+                    value={openaiKey}
+                    onChange={(e) => setOpenaiKey(e.target.value)}
+                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Get your API key from: <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="theme-text hover:underline">platform.openai.com/api-keys</a>
+                  </p>
+                </div>
+                <Button
+                  onClick={handleSaveAPIKeys}
+                  className="theme-btn-primary text-white"
+                >
+                  <Save className="w-4 h-4 mr-2" />
+                  Save API Key
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* App Theme Settings - Collapsible */}
         <Collapsible open={themeOpen} onOpenChange={setThemeOpen}>
           <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">

@@ -488,46 +488,7 @@ function Settings({ onLogout }) {
 
           {/* RIGHT COLUMN - Additional Settings */}
           <div className="lg:col-span-1">
-                      onClick={testConnection} 
-                      disabled={testingConnection}
-                      className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
-                    >
-                      {testingConnection ? (
-                        <span className="flex items-center gap-2">
-                          <span className="animate-pulse">●</span> Testing...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <CheckCircle className="w-4 h-4" />
-                          Test Connection
-                        </span>
-                      )}
-                    </Button>
-                    
-                    <div className="space-y-2 text-sm pt-2 border-t border-slate-800">
-                      <div>
-                        <span className="text-slate-500">Host:</span>
-                        <p className="text-slate-300 break-all">{config.host}</p>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">Token:</span>
-                        <p className="text-slate-300 break-all">{config.api_token_name}</p>
-                      </div>
-                      <div>
-                        <span className="text-slate-500">SSL Verify:</span>
-                        <p className="text-slate-300">{config.verify_ssl ? "Enabled" : "Disabled"}</p>
-                      </div>
-                    </div>
-                  </>
-                ) : (
-                  <div className="text-slate-500 text-sm">
-                    No configuration saved yet. Fill in the form and click Save.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm mt-6">
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="text-slate-100 text-sm">How to Create API Token</CardTitle>
               </CardHeader>
@@ -538,7 +499,7 @@ function Settings({ onLogout }) {
                   <li>Click "Add" to create a new token</li>
                   <li>Select user (e.g., root@pam)</li>
                   <li>Enter a Token ID</li>
-                  <li>Uncheck "Privilege Separation" for full access</li>
+                  <li className="font-semibold text-orange-400">✓ CHECK "Privilege Separation" (REQUIRED!)</li>
                   <li>Copy the secret immediately (shown only once)</li>
                 </ol>
               </CardContent>

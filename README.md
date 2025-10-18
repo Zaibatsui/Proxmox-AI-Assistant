@@ -177,9 +177,9 @@ Open your browser to: `http://localhost:3000`
 - **Frontend**: Complete React dashboard with all pages
 - **Backend**: Full FastAPI server with all routes
 - **Authentication**: JWT-based user system
-- **AI Integration**: Claude Sonnet 4 via Emergent LLM
+- **AI Integration**: OpenAI with per-user API key management
 - **Database**: MongoDB for all data persistence
-- **Mock Data**: Device scanning and VM listing (uses mock data)
+- **Real Proxmox Integration**: Live hardware scanning and VM management via SSH
 
 ### 🔧 Production Integration Needed
 

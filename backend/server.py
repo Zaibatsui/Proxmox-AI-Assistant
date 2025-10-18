@@ -731,10 +731,21 @@ async def get_vms(current_user: dict = Depends(get_current_user)):
 @api_router.post("/ai/query", response_model=AIResponse)
 async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user)):
     try:
-        # Initialize OpenAI client
-        api_key = os.environ.get('OPENAI_API_KEY')
+        # Get user's API key first, fallback to environment variable
+        keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
+        api_key = None
+        
+        if keys_doc and keys_doc.get('openai_api_key'):
+            api_key = keys_doc['openai_api_key']
+        else:
+            # Fallback to environment variable (for admin/shared use)
+            api_key = os.environ.get('OPENAI_API_KEY')
+        
         if not api_key:
-            raise HTTPException(status_code=500, detail="AI service not configured. Please set OPENAI_API_KEY in backend/.env")
+            raise HTTPException(
+                status_code=400, 
+                detail="OpenAI API key not configured. Please add your API key in Settings → AI Configuration"
+            )
         
         # Build context for the AI
         context_str = ""

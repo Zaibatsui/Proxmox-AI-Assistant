@@ -220,43 +220,70 @@ function Settings({ onLogout }) {
           {/* LEFT COLUMN - Configuration Forms */}
           <div className="lg:col-span-2 space-y-6">
             
-            {/* Proxmox API Configuration Card */}
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-cyan-500/10 rounded-lg">
-                      <Server className="w-5 h-5 text-cyan-400" />
+            {/* Proxmox API Configuration Card - Collapsible */}
+            <Collapsible open={apiConfigOpen} onOpenChange={setApiConfigOpen}>
+              <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm ${
+                apiTestStatus 
+                  ? apiTestStatus.status === "success"
+                    ? "border-l-4 border-l-emerald-500"
+                    : "border-l-4 border-l-red-500"
+                  : ""
+              }`}>
+                <CollapsibleTrigger className="w-full">
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-lg ${
+                          apiTestStatus?.status === "success" 
+                            ? "bg-emerald-500/10" 
+                            : apiTestStatus?.status === "failed"
+                            ? "bg-red-500/10"
+                            : "bg-cyan-500/10"
+                        }`}>
+                          <Server className={`w-5 h-5 ${
+                            apiTestStatus?.status === "success"
+                              ? "text-emerald-400"
+                              : apiTestStatus?.status === "failed"
+                              ? "text-red-400"
+                              : "text-cyan-400"
+                          }`} />
+                        </div>
+                        <div className="text-left">
+                          <CardTitle className="text-slate-100">Proxmox API Configuration</CardTitle>
+                          <CardDescription className="text-slate-400">
+                            {apiTestStatus?.status === "success" && "✅ Connected to Proxmox"}
+                            {apiTestStatus?.status === "failed" && "❌ Connection Failed"}
+                            {!apiTestStatus && "Connect to your Proxmox server via API token"}
+                          </CardDescription>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {/* API Status Badge */}
+                        {apiTestStatus && (
+                          <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
+                            apiTestStatus.status === "success" 
+                              ? "bg-emerald-500/10 text-emerald-400"
+                              : "bg-red-500/10 text-red-400"
+                          }`}>
+                            {apiTestStatus.status === "success" ? (
+                              <>
+                                <CheckCircle className="w-4 h-4" />
+                                <span>Connected</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="text-lg">✕</span>
+                                <span>Failed</span>
+                              </>
+                            )}
+                          </div>
+                        )}
+                        <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${apiConfigOpen ? "rotate-180" : ""}`} />
+                      </div>
                     </div>
-                    <div>
-                      <CardTitle className="text-slate-100">Proxmox API Configuration</CardTitle>
-                      <CardDescription className="text-slate-400">
-                        Connect to your Proxmox server via API token
-                      </CardDescription>
-                    </div>
-                  </div>
-                  {/* API Status Badge */}
-                  {apiTestStatus && (
-                    <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
-                      apiTestStatus.status === "success" 
-                        ? "bg-emerald-500/10 text-emerald-400"
-                        : "bg-red-500/10 text-red-400"
-                    }`}>
-                      {apiTestStatus.status === "success" ? (
-                        <>
-                          <CheckCircle className="w-4 h-4" />
-                          <span>Connected</span>
-                        </>
-                      ) : (
-                        <>
-                          <span className="text-lg">✕</span>
-                          <span>Failed</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </CardHeader>
+                  </CardHeader>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="host" className="text-slate-200">Proxmox Host</Label>

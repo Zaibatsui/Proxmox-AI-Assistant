@@ -541,7 +541,9 @@ function Settings({ onLogout }) {
                   </Button>
                 )}
               </CardContent>
+                </CollapsibleContent>
             </Card>
+            </Collapsible>
           </div>
 
           {/* RIGHT COLUMN - Additional Settings */}

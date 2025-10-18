@@ -43,7 +43,9 @@ function Settings({ onLogout }) {
           host: response.data.host,
           api_token_name: response.data.api_token_name,
           api_token_secret: "", // Don't show secret
-          verify_ssl: response.data.verify_ssl
+          verify_ssl: response.data.verify_ssl,
+          ssh_username: response.data.ssh_username || "root",
+          ssh_password: "" // Don't show password
         });
       }
     } catch (error) {

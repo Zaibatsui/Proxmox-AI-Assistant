@@ -266,10 +266,24 @@ async def get_proxmox_connection(user_id: str):
             port = 443 if protocol == 'https' else 8006
         
         logger.info(f"Connecting to Proxmox: {hostname}:{port} (protocol: {protocol})")
+        
+        # Parse token name into user and token_id
+        # Format: user@realm!token-id
+        api_token_name = config_doc['api_token_name']
+        if '!' in api_token_name:
+            user, token_name = api_token_name.split('!', 1)
+        else:
+            # Fallback for old format
+            user = api_token_name
+            token_name = None
+        
+        logger.info(f"Connecting as user: {user}, token: {token_name}")
+        
         proxmox = ProxmoxAPI(
             hostname,
             port=port,
-            token_name=config_doc['api_token_name'],
+            user=user,
+            token_name=token_name,
             token_value=config_doc['api_token_secret'],
             verify_ssl=config_doc.get('verify_ssl', False),
             timeout=15  # Increased timeout for public connections

@@ -69,6 +69,45 @@ function Settings({ onLogout }) {
     }
   };
 
+  const fetchAPIKeys = async () => {
+    try {
+      const response = await axios.get(`${API}/api-keys`);
+      setApiKeys(response.data);
+    } catch (error) {
+      // Ignore error
+    }
+  };
+
+  const handleSaveAPIKeys = async () => {
+    if (!openaiKey.trim()) {
+      toast.error("Please enter an API key");
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/api-keys`, { openai_api_key: openaiKey });
+      toast.success("API key saved successfully");
+      setOpenaiKey("");
+      fetchAPIKeys();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to save API key");
+    }
+  };
+
+  const handleDeleteAPIKeys = async () => {
+    if (!window.confirm("Are you sure you want to delete your API keys?")) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/api-keys`);
+      toast.success("API keys deleted");
+      setApiKeys(null);
+    } catch (error) {
+      toast.error("Failed to delete API keys");
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete the Proxmox configuration?")) {
       return;

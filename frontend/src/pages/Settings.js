@@ -390,9 +390,12 @@ function Settings({ onLogout }) {
                   </Button>
                 </div>
               </CardContent>
+                </CollapsibleContent>
             </Card>
+            </Collapsible>
 
-            {/* SSH Configuration Card */}
+            {/* SSH Configuration Card - Collapsible */}
+            <Collapsible open={sshConfigOpen} onOpenChange={setSshConfigOpen}>
             <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
               <CardHeader>
                 <div className="flex items-center justify-between">

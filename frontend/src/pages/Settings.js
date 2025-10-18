@@ -84,7 +84,9 @@ function Settings({ onLogout }) {
     try {
       await axios.post(`${API}/proxmox/config`, formData);
       toast.success("Configuration saved successfully");
-      fetchConfig();
+      await fetchConfig();
+      // Test connection after saving
+      await testConnection();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to save configuration");
     } finally {

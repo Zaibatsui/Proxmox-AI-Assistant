@@ -24,6 +24,8 @@ function Settings({ onLogout }) {
   const [sshTestStatus, setSshTestStatus] = useState(null);
   const [testingApi, setTestingApi] = useState(false);
   const [testingSsh, setTestingSsh] = useState(false);
+  const [apiConfigOpen, setApiConfigOpen] = useState(true);
+  const [sshConfigOpen, setSshConfigOpen] = useState(false);
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

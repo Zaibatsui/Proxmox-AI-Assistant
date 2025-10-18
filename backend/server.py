@@ -247,20 +247,25 @@ async def get_proxmox_connection(user_id: str):
     try:
         # Parse the host URL to extract hostname/IP and port
         host = config_doc['host']
-        # Remove protocol if present
+        protocol = 'https'  # Default to HTTPS
+        
+        # Extract protocol if present
         if '://' in host:
-            host = host.split('://', 1)[1]
+            protocol, host = host.split('://', 1)
+        
         # Remove trailing slash
         host = host.rstrip('/')
-        # Extract port if present, default to 8006
+        
+        # Extract port if present
         if ':' in host:
             hostname, port = host.rsplit(':', 1)
             port = int(port)
         else:
+            # No port specified - use 443 for https, 8006 for other cases
             hostname = host
-            port = 8006
+            port = 443 if protocol == 'https' else 8006
         
-        logger.info(f"Connecting to Proxmox: {hostname}:{port}")
+        logger.info(f"Connecting to Proxmox: {hostname}:{port} (protocol: {protocol})")
         proxmox = ProxmoxAPI(
             hostname,
             port=port,

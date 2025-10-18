@@ -674,10 +674,10 @@ async def get_vms(current_user: dict = Depends(get_current_user)):
 @api_router.post("/ai/query", response_model=AIResponse)
 async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user)):
     try:
-        # Initialize Anthropic client
-        api_key = os.environ.get('ANTHROPIC_API_KEY') or os.environ.get('EMERGENT_LLM_KEY')
+        # Initialize OpenAI client
+        api_key = os.environ.get('OPENAI_API_KEY')
         if not api_key:
-            raise HTTPException(status_code=500, detail="AI service not configured. Please set ANTHROPIC_API_KEY in backend/.env")
+            raise HTTPException(status_code=500, detail="AI service not configured. Please set OPENAI_API_KEY in backend/.env")
         
         # Build context for the AI
         context_str = ""
@@ -733,21 +733,22 @@ Safety rules:
 4. Include rollback steps
 """
         
-        # Create Anthropic client
-        client = AsyncAnthropic(api_key=api_key)
+        # Create OpenAI client
+        client = AsyncOpenAI(api_key=api_key)
         
-        # Send message to Claude
-        message = await client.messages.create(
-            model="claude-3-5-sonnet-20241022",
-            max_tokens=2048,
-            system=system_message,
+        # Send message to GPT-4
+        completion = await client.chat.completions.create(
+            model="gpt-4o",  # or "gpt-4-turbo" or "gpt-3.5-turbo"
             messages=[
+                {"role": "system", "content": system_message},
                 {"role": "user", "content": f"{query.question}{context_str}"}
-            ]
+            ],
+            temperature=0.7,
+            max_tokens=2048
         )
         
         # Extract text from response
-        response_text = message.content[0].text
+        response_text = completion.choices[0].message.content
         
         # Extract suggested actions (new JSON format)
         suggested_commands = []

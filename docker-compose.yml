@@ -57,7 +57,7 @@ services:
       - /app/node_modules
     networks:
       - proxmox-ai-network
-    command: yarn start
+    command: npm start
 
 networks:
   proxmox-ai-network:

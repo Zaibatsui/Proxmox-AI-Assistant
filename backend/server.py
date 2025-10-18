@@ -381,27 +381,59 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
-        # Extract hostname from API URL
-        host = config['host'].replace('https://', '').replace('http://', '').split(':')[0]
+        # Extract hostname from config
+        host = config['host']
+        # Remove protocol if present
+        if '://' in host:
+            host = host.split('://', 1)[1]
+        # Remove port and trailing slash
+        host = host.split(':')[0].rstrip('/')
         
-        # For SSH, we need the user credentials or key
-        # Since we're using API tokens, try to connect as root with the node's SSH key
-        # This is a simplified approach - in production, you'd configure SSH keys properly
+        ssh_username = config.get('ssh_username', 'root')
+        ssh_password = config.get('ssh_password')
+        
+        logger.info(f"Attempting SSH connection to {host} as {ssh_username}")
         
         try:
-            # Try passwordless SSH (assumes SSH keys are configured)
-            ssh_client.connect(host, username='root', timeout=10, look_for_keys=True, allow_agent=True)
-        except:
-            # If that fails, return mock data with a warning
-            logger.warning("SSH connection failed. Returning mock data. Please configure SSH keys for real device scanning.")
+            # Try password auth first if password provided
+            if ssh_password:
+                ssh_client.connect(
+                    host, 
+                    username=ssh_username, 
+                    password=ssh_password,
+                    timeout=10,
+                    look_for_keys=False,
+                    allow_agent=False
+                )
+                logger.info("SSH connection successful with password")
+            else:
+                # Try key-based auth
+                ssh_client.connect(
+                    host, 
+                    username=ssh_username, 
+                    timeout=10, 
+                    look_for_keys=True, 
+                    allow_agent=True
+                )
+                logger.info("SSH connection successful with keys")
+        except Exception as ssh_err:
+            logger.error(f"SSH connection failed: {str(ssh_err)}")
+            logger.warning("Returning mock data. Please configure SSH credentials in Settings.")
             return get_mock_devices()
         
         # Run lspci command
         stdin, stdout, stderr = ssh_client.exec_command('lspci -nnk')
         lspci_output = stdout.read().decode()
+        stderr_output = stderr.read().decode()
+        
+        if stderr_output:
+            logger.warning(f"lspci stderr: {stderr_output}")
+        
+        logger.info(f"lspci output length: {len(lspci_output)} bytes")
         
         # Parse devices
         devices = parse_lspci_output(lspci_output)
+        logger.info(f"Parsed {len(devices)} devices")
         
         # Get IOMMU groups
         devices = await get_iommu_groups(ssh_client, devices)

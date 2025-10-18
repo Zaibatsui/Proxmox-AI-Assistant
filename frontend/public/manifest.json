@@ -1,0 +1,21 @@
+{
+  "short_name": "Proxmox AI",
+  "name": "Proxmox AI Admin",
+  "description": "AI-Powered Proxmox Administration Assistant",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "apple-touch-icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "180x180"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0891b2",
+  "background_color": "#0f172a"
+}

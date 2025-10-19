@@ -390,6 +390,20 @@ function Settings({ onLogout }) {
                     )}
                   </Button>
                 </div>
+
+                {/* How to Create API Token Guide */}
+                <div className="mt-6 pt-6 border-t border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-100 mb-3">How to Create API Token</h3>
+                  <ol className="text-xs text-slate-400 space-y-2 list-decimal list-inside">
+                    <li>Log into Proxmox web interface</li>
+                    <li>Go to Datacenter → Permissions → API Tokens</li>
+                    <li>Click "Add" to create a new token</li>
+                    <li>Select user (e.g., root@pam)</li>
+                    <li>Enter a Token ID</li>
+                    <li className="font-semibold text-orange-400">✓ CHECK "Privilege Separation" (REQUIRED!)</li>
+                    <li>Copy the secret immediately (shown only once)</li>
+                  </ol>
+                </div>
               </CardContent>
                 </CollapsibleContent>
             </Card>

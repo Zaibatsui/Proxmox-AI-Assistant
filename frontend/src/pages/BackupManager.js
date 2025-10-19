@@ -327,6 +327,7 @@ const BackupManager = ({ onLogout }) => {
           </div>
         </div>
       )}
+      </div>
     </Layout>
   );
 };

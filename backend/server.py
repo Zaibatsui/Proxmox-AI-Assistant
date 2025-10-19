@@ -1555,6 +1555,330 @@ async def execute_ssh_command(host: str, command: str) -> tuple[bool, str]:
     except Exception as e:
         return (False, f"SSH Error: {str(e)}")
 
+
+# ==================== FILE OPERATIONS HELPERS ====================
+
+BACKUP_BASE_PATH = "/root/.proxmox-ai-backups"
+MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+BACKUP_RETENTION_DAYS = 30
+
+async def get_ssh_client(user_id: str):
+    """Get SSH client configured with user's credentials"""
+    config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
+    if not config_doc:
+        raise HTTPException(status_code=400, detail="Proxmox configuration not found")
+    
+    # Parse host to get hostname/IP
+    host = config_doc['host']
+    if '://' in host:
+        _, host = host.split('://', 1)
+    host = host.rstrip('/')
+    if ':' in host:
+        hostname, _ = host.rsplit(':', 1)
+    else:
+        hostname = host
+    
+    ssh_username = config_doc.get('ssh_username', 'root')
+    ssh_password = config_doc.get('ssh_password')
+    
+    try:
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        if ssh_password:
+            ssh_client.connect(
+                hostname,
+                username=ssh_username,
+                password=ssh_password,
+                timeout=10,
+                allow_agent=False,
+                look_for_keys=False
+            )
+        else:
+            ssh_client.connect(
+                hostname,
+                username=ssh_username,
+                timeout=10,
+                look_for_keys=True,
+                allow_agent=True
+            )
+        
+        return ssh_client
+    except Exception as e:
+        logger.error(f"SSH connection failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}")
+
+async def ssh_exec_command(ssh_client, command: str) -> tuple[int, str, str]:
+    """Execute command and return exit code, stdout, stderr"""
+    stdin, stdout, stderr = ssh_client.exec_command(command)
+    exit_code = stdout.channel.recv_exit_status()
+    stdout_text = stdout.read().decode('utf-8', errors='ignore')
+    stderr_text = stderr.read().decode('utf-8', errors='ignore')
+    return exit_code, stdout_text, stderr_text
+
+async def ssh_file_exists(ssh_client, path: str) -> bool:
+    """Check if file exists"""
+    exit_code, _, _ = await ssh_exec_command(ssh_client, f"test -e '{path}' && echo 'exists'")
+    return exit_code == 0
+
+async def ssh_is_directory(ssh_client, path: str) -> bool:
+    """Check if path is a directory"""
+    exit_code, _, _ = await ssh_exec_command(ssh_client, f"test -d '{path}' && echo 'dir'")
+    return exit_code == 0
+
+async def ssh_list_directory(ssh_client, path: str) -> List[FileInfo]:
+    """List directory contents"""
+    # Use ls with long format to get details
+    exit_code, stdout, stderr = await ssh_exec_command(
+        ssh_client, 
+        f"ls -lAh --time-style='+%Y-%m-%d %H:%M:%S' '{path}' 2>&1"
+    )
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=400, detail=f"Failed to list directory: {stderr}")
+    
+    files = []
+    for line in stdout.strip().split('\n'):
+        if not line or line.startswith('total'):
+            continue
+        
+        parts = line.split(None, 8)
+        if len(parts) < 9:
+            continue
+        
+        permissions = parts[0]
+        size_str = parts[4]
+        modified = f"{parts[5]} {parts[6]}"
+        name = parts[8]
+        
+        # Skip . and ..
+        if name in ['.', '..']:
+            continue
+        
+        file_type = 'directory' if permissions.startswith('d') else 'file'
+        
+        # Convert size (handle K, M, G suffixes from -h flag)
+        size = None
+        if file_type == 'file':
+            try:
+                if 'K' in size_str:
+                    size = int(float(size_str.replace('K', '')) * 1024)
+                elif 'M' in size_str:
+                    size = int(float(size_str.replace('M', '')) * 1024 * 1024)
+                elif 'G' in size_str:
+                    size = int(float(size_str.replace('G', '')) * 1024 * 1024 * 1024)
+                else:
+                    size = int(size_str)
+            except:
+                size = 0
+        
+        file_path = f"{path.rstrip('/')}/{name}"
+        
+        files.append(FileInfo(
+            name=name,
+            path=file_path,
+            type=file_type,
+            size=size,
+            modified=modified,
+            permissions=permissions
+        ))
+    
+    return files
+
+async def ssh_read_file(ssh_client, path: str) -> FileContent:
+    """Read file content"""
+    # Check file size first
+    exit_code, stdout, _ = await ssh_exec_command(ssh_client, f"stat -c %s '{path}'")
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        file_size = int(stdout.strip())
+    except:
+        raise HTTPException(status_code=400, detail="Could not determine file size")
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File too large ({file_size} bytes). Maximum size is {MAX_FILE_SIZE} bytes (10MB)"
+        )
+    
+    # Get modification time
+    exit_code, modified, _ = await ssh_exec_command(
+        ssh_client, 
+        f"stat -c %y '{path}'"
+    )
+    modified_time = modified.strip() if exit_code == 0 else None
+    
+    # Read file content
+    exit_code, content, stderr = await ssh_exec_command(ssh_client, f"cat '{path}'")
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {stderr}")
+    
+    return FileContent(
+        path=path,
+        content=content,
+        size=file_size,
+        modified=modified_time
+    )
+
+async def ssh_write_file(ssh_client, path: str, content: str):
+    """Write content to file"""
+    # Escape single quotes in content for shell
+    escaped_content = content.replace("'", "'\\''")
+    
+    # Write to temp file first, then move (atomic operation)
+    temp_path = f"{path}.tmp.{uuid.uuid4().hex[:8]}"
+    
+    exit_code, _, stderr = await ssh_exec_command(
+        ssh_client,
+        f"cat > '{temp_path}' << 'EOFMARKER'\n{content}\nEOFMARKER\n"
+    )
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {stderr}")
+    
+    # Move temp file to target
+    exit_code, _, stderr = await ssh_exec_command(ssh_client, f"mv '{temp_path}' '{path}'")
+    
+    if exit_code != 0:
+        # Clean up temp file
+        await ssh_exec_command(ssh_client, f"rm -f '{temp_path}'")
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {stderr}")
+
+async def ssh_create_file(ssh_client, path: str, content: str = ""):
+    """Create a new file"""
+    # Check if file already exists
+    if await ssh_file_exists(ssh_client, path):
+        raise HTTPException(status_code=400, detail="File already exists")
+    
+    # Create parent directories if needed
+    parent_dir = '/'.join(path.rsplit('/', 1)[:-1])
+    if parent_dir:
+        await ssh_exec_command(ssh_client, f"mkdir -p '{parent_dir}'")
+    
+    await ssh_write_file(ssh_client, path, content)
+
+async def ssh_delete_file(ssh_client, path: str):
+    """Delete a file"""
+    exit_code, _, stderr = await ssh_exec_command(ssh_client, f"rm -f '{path}'")
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {stderr}")
+
+async def ssh_move_file(ssh_client, source_path: str, dest_path: str):
+    """Move/rename a file"""
+    # Check if source exists
+    if not await ssh_file_exists(ssh_client, source_path):
+        raise HTTPException(status_code=404, detail="Source file not found")
+    
+    # Check if destination already exists
+    if await ssh_file_exists(ssh_client, dest_path):
+        raise HTTPException(status_code=400, detail="Destination already exists")
+    
+    # Create parent directories if needed
+    parent_dir = '/'.join(dest_path.rsplit('/', 1)[:-1])
+    if parent_dir:
+        await ssh_exec_command(ssh_client, f"mkdir -p '{parent_dir}'")
+    
+    exit_code, _, stderr = await ssh_exec_command(ssh_client, f"mv '{source_path}' '{dest_path}'")
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"Failed to move file: {stderr}")
+
+async def create_backup(ssh_client, user_id: str, username: str, file_path: str, 
+                       change_type: str, description: Optional[str] = None) -> FileBackup:
+    """Create a backup of a file before modification"""
+    try:
+        # Read current file content
+        file_content = await ssh_read_file(ssh_client, file_path)
+        
+        # Ensure backup directory exists
+        timestamp = datetime.now(timezone.utc)
+        date_folder = timestamp.strftime('%Y-%m-%d')
+        backup_dir = f"{BACKUP_BASE_PATH}/{date_folder}"
+        
+        await ssh_exec_command(ssh_client, f"mkdir -p '{backup_dir}'")
+        
+        # Generate backup filename
+        filename = file_path.replace('/', '_').strip('_')
+        backup_filename = f"{timestamp.strftime('%H%M%S')}_{uuid.uuid4().hex[:8]}_{filename}"
+        backup_path = f"{backup_dir}/{backup_filename}"
+        
+        # Write backup
+        await ssh_write_file(ssh_client, backup_path, file_content.content)
+        
+        # Generate description
+        if not description:
+            description = f"{file_path.split('/')[-1]} - Before {change_type}"
+        
+        # Create backup metadata
+        backup = FileBackup(
+            user_id=user_id,
+            username=username,
+            file_path=file_path,
+            backup_path=backup_path,
+            description=description,
+            file_size=file_content.size,
+            change_type=change_type,
+            created_at=timestamp
+        )
+        
+        # Store in database
+        doc = backup.model_dump()
+        doc['created_at'] = doc['created_at'].isoformat()
+        await db.file_backups.insert_one(doc)
+        
+        logger.info(f"Created backup: {backup_path}")
+        return backup
+        
+    except HTTPException:
+        # File might not exist (which is ok for some operations)
+        raise
+    except Exception as e:
+        logger.error(f"Backup creation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Backup creation failed: {str(e)}")
+
+async def cleanup_old_backups():
+    """Clean up backups older than retention period"""
+    try:
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=BACKUP_RETENTION_DAYS)
+        
+        # Find old backups
+        old_backups = await db.file_backups.find({
+            "created_at": {"$lt": cutoff_date.isoformat()}
+        }).to_list(length=None)
+        
+        if not old_backups:
+            return
+        
+        # Get SSH client (use first user's config - this is system cleanup)
+        # In production, might want to handle this differently
+        first_config = await db.proxmox_configs.find_one()
+        if not first_config:
+            return
+        
+        ssh_client = await get_ssh_client(first_config['user_id'])
+        
+        for backup in old_backups:
+            try:
+                # Delete file
+                await ssh_delete_file(ssh_client, backup['backup_path'])
+                
+                # Remove from database
+                await db.file_backups.delete_one({"id": backup['id']})
+                
+                logger.info(f"Deleted old backup: {backup['backup_path']}")
+            except Exception as e:
+                logger.error(f"Failed to delete backup {backup['id']}: {str(e)}")
+        
+        ssh_client.close()
+        
+    except Exception as e:
+        logger.error(f"Backup cleanup failed: {str(e)}")
+
 async def execute_bind_driver_action(params: dict, proxmox_host: str, dry_run: bool = False) -> str:
     """Bind PCI device to driver"""
     pci_address = params.get('pci_address')

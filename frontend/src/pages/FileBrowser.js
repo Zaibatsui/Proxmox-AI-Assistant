@@ -31,6 +31,8 @@ const FileBrowser = ({ onLogout }) => {
   const [showVMCredentials, setShowVMCredentials] = useState(false);
   const [vmCredentials, setVmCredentials] = useState({ username: 'root', password: '' });
   const [sessionCredentials, setSessionCredentials] = useState({}); // Store VM credentials for session
+  const [testingConnection, setTestingConnection] = useState(false);
+  const [connectionTestResult, setConnectionTestResult] = useState(null); // 'success', 'error', or null
 
   // Get auth token
   const getAuthHeaders = () => {

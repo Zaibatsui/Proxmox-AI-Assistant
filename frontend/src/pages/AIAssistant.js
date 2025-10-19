@@ -139,7 +139,40 @@ function AIAssistant({ onLogout }) {
                                 : "bg-slate-800 text-slate-200"
                             }`}
                           >
-                            <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                            {msg.type === "user" ? (
+                              <div className="whitespace-pre-wrap break-words">{msg.content}</div>
+                            ) : (
+                              <div className="prose prose-invert prose-sm max-w-none">
+                                <ReactMarkdown
+                                  remarkPlugins={[remarkGfm]}
+                                  components={{
+                                    h1: ({node, ...props}) => <h1 className="text-xl font-bold text-cyan-400 mb-3 flex items-center gap-2" {...props}><Server className="w-5 h-5" />{props.children}</h1>,
+                                    h2: ({node, ...props}) => <h2 className="text-lg font-bold text-cyan-400 mb-2 mt-4 flex items-center gap-2" {...props}><Cpu className="w-4 h-4" />{props.children}</h2>,
+                                    h3: ({node, ...props}) => <h3 className="text-base font-semibold text-slate-100 mb-2 mt-3" {...props} />,
+                                    ul: ({node, ...props}) => <ul className="list-disc list-inside space-y-1 my-2 text-slate-300" {...props} />,
+                                    ol: ({node, ...props}) => <ol className="list-decimal list-inside space-y-1 my-2 text-slate-300" {...props} />,
+                                    li: ({node, ...props}) => <li className="text-slate-300 leading-relaxed" {...props} />,
+                                    p: ({node, ...props}) => <p className="text-slate-300 leading-relaxed mb-2" {...props} />,
+                                    code: ({node, inline, ...props}) => 
+                                      inline ? (
+                                        <code className="bg-slate-900/70 text-cyan-400 px-2 py-0.5 rounded text-sm font-mono" {...props} />
+                                      ) : (
+                                        <code className="block bg-slate-900/70 text-emerald-400 p-3 rounded text-sm font-mono overflow-x-auto" {...props} />
+                                      ),
+                                    pre: ({node, ...props}) => <pre className="bg-slate-900/70 p-3 rounded my-2 overflow-x-auto" {...props} />,
+                                    strong: ({node, ...props}) => <strong className="font-bold text-slate-100" {...props} />,
+                                    em: ({node, ...props}) => <em className="italic text-cyan-300" {...props} />,
+                                    a: ({node, ...props}) => <a className="text-cyan-400 hover:text-cyan-300 underline" {...props} />,
+                                    blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-cyan-500 pl-4 my-2 text-slate-400 italic" {...props} />,
+                                    table: ({node, ...props}) => <table className="w-full border-collapse border border-slate-700 my-3" {...props} />,
+                                    th: ({node, ...props}) => <th className="border border-slate-700 px-3 py-2 bg-slate-900 text-cyan-400 font-semibold text-left" {...props} />,
+                                    td: ({node, ...props}) => <td className="border border-slate-700 px-3 py-2 text-slate-300" {...props} />,
+                                  }}
+                                >
+                                  {msg.content}
+                                </ReactMarkdown>
+                              </div>
+                            )}
                             {msg.hasActions && (
                               <div className="mt-3 pt-3 border-t border-slate-700">
                                 <div className="flex items-center gap-2 text-emerald-400 mb-2">

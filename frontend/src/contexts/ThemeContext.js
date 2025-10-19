@@ -55,6 +55,15 @@ export function ThemeProvider({ children }) {
   const [background, setBackground] = useState("dark");
   const [cardStyle, setCardStyle] = useState("glass");
   const [accentColor, setAccentColor] = useState(null);
+  // Advanced appearance options
+  const [primaryColor, setPrimaryColor] = useState(null);
+  const [secondaryColor, setSecondaryColor] = useState(null);
+  const [sidebarBgColor, setSidebarBgColor] = useState(null);
+  const [headerBgColor, setHeaderBgColor] = useState(null);
+  const [layoutDensity, setLayoutDensity] = useState("comfortable");
+  const [borderRadius, setBorderRadius] = useState("rounded");
+  const [shadowIntensity, setShadowIntensity] = useState("medium");
+  const [sidebarWidth, setSidebarWidth] = useState(256);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

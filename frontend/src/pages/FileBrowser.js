@@ -38,6 +38,43 @@ const FileBrowser = ({ onLogout }) => {
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
+  // Fetch available locations (VMs and containers)
+  const fetchLocations = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/vms`, getAuthHeaders());
+      setAvailableLocations(response.data);
+    } catch (err) {
+      console.error('Failed to fetch locations:', err);
+    }
+  };
+
+  // Handle location change
+  const handleLocationChange = (newLocation) => {
+    if (newLocation.type === 'vm' && !sessionCredentials[newLocation.id]) {
+      // Need credentials for VM
+      setLocation(newLocation);
+      setShowVMCredentials(true);
+    } else {
+      setLocation(newLocation);
+      // Reset to root when changing location
+      if (newLocation.type === 'host') {
+        loadDirectory('/etc/pve');
+      } else {
+        loadDirectory('/root');
+      }
+    }
+  };
+
+  // Save VM credentials and proceed
+  const saveVMCredentials = () => {
+    setSessionCredentials({
+      ...sessionCredentials,
+      [location.id]: vmCredentials
+    });
+    setShowVMCredentials(false);
+    loadDirectory('/root');
+  };
+
   // Parse path into breadcrumbs
   useEffect(() => {
     const parts = currentPath.split('/').filter(p => p);

@@ -85,6 +85,14 @@ export function ThemeProvider({ children }) {
         setBackground(response.data.background || "dark");
         setCardStyle(response.data.card_style || "glass");
         setAccentColor(response.data.accent_color);
+        setPrimaryColor(response.data.primary_color);
+        setSecondaryColor(response.data.secondary_color);
+        setSidebarBgColor(response.data.sidebar_bg_color);
+        setHeaderBgColor(response.data.header_bg_color);
+        setLayoutDensity(response.data.layout_density || "comfortable");
+        setBorderRadius(response.data.border_radius || "rounded");
+        setShadowIntensity(response.data.shadow_intensity || "medium");
+        setSidebarWidth(response.data.sidebar_width || 256);
       }
     } catch (error) {
       console.error("Failed to fetch theme:", error);

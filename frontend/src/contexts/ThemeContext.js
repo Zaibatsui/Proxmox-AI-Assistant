@@ -71,8 +71,10 @@ export function ThemeProvider({ children }) {
   }, []);
 
   useEffect(() => {
-    applyTheme(currentTheme, background, cardStyle, accentColor);
-  }, [currentTheme, background, cardStyle, accentColor]);
+    applyTheme(currentTheme, background, cardStyle, accentColor, primaryColor, secondaryColor, 
+               sidebarBgColor, headerBgColor, layoutDensity, borderRadius, shadowIntensity, sidebarWidth);
+  }, [currentTheme, background, cardStyle, accentColor, primaryColor, secondaryColor, 
+      sidebarBgColor, headerBgColor, layoutDensity, borderRadius, shadowIntensity, sidebarWidth]);
 
   const fetchTheme = async () => {
     try {

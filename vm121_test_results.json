@@ -2,23 +2,23 @@
   {
     "test": "Authentication",
     "success": true,
-    "message": "Logged in successfully",
+    "message": "Logged in successfully (Proxmox config pre-configured with port 8006)",
     "details": {},
-    "timestamp": "2025-10-19T14:35:58.163992"
+    "timestamp": "2025-10-19T14:37:19.760399"
   },
   {
     "test": "Proxmox Configuration",
-    "success": false,
-    "message": "No Proxmox configuration found - this may be why VM 121 cannot be accessed",
+    "success": true,
+    "message": "Proxmox configured for host: https://proxmox.zaibatsui.co.uk:8006",
     "details": {},
-    "timestamp": "2025-10-19T14:35:58.209436"
+    "timestamp": "2025-10-19T14:37:19.801354"
   },
   {
     "test": "VM 121 Detection",
     "success": false,
-    "message": "Failed to get VMs list: 400 - {\"detail\":\"Proxmox configuration not found. Please configure in Settings.\"}",
+    "message": "VM/Container 121 not found in the system",
     "details": {},
-    "timestamp": "2025-10-19T14:35:58.252218"
+    "timestamp": "2025-10-19T14:37:20.109699"
   },
   {
     "test": "Backend Log Analysis",
@@ -36,6 +36,6 @@
         "2025-10-19 14:23:20,673 - paramiko.transport - INFO - Authentication (password) successful!"
       ]
     },
-    "timestamp": "2025-10-19T14:35:58.261782"
+    "timestamp": "2025-10-19T14:37:20.119287"
   }
 ]

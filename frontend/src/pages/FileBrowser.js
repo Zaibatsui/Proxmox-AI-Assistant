@@ -179,11 +179,13 @@ const FileBrowser = ({ onLogout }) => {
     setSuccess(null);
     
     try {
+      const locationPayload = getLocationPayload();
       await axios.post(
         `${BACKEND_URL}/api/files/backup`,
         {
           path: selectedFile.path,
-          description: `Manual backup - ${new Date().toLocaleString()}`
+          description: `Manual backup - ${new Date().toLocaleString()}`,
+          location: locationPayload
         },
         getAuthHeaders()
       );

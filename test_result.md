@@ -34,6 +34,18 @@ backend:
       - working: "NA"
         agent: "testing"
         comment: "PORT FIX SUCCESSFUL: Proxmox SSH connectivity restored with port 8006. File operations tested for both LXC (pct exec) and VM (SSH) methods. Both return appropriate 'not found' errors because VM/Container 121 does not exist on the server. File browser operations work correctly - they properly detect when a VM/Container doesn't exist."
+  
+  - task: "Advanced Theme API - Save/Load Appearance Settings"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Extended Theme and ThemeUpdate models with advanced appearance fields: primary_color, secondary_color, sidebar_bg_color, header_bg_color, layout_density, border_radius, shadow_intensity, sidebar_width. Updated GET /theme and POST /theme endpoints to handle all new fields. All changes persist to MongoDB correctly."
 
 frontend:
   - task: "File Browser UI Integration"

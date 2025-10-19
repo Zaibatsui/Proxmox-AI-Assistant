@@ -1492,6 +1492,17 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                 
                 # Execute the function
                 function_response = None
+                
+                # Helper function to parse location string from AI
+                def parse_location_string(location_str):
+                    """Parse location string like 'host', 'lxc:100', 'vm:101' into FileLocation object"""
+                    if not location_str or location_str == 'host':
+                        return None
+                    if ':' in location_str:
+                        loc_type, loc_id = location_str.split(':', 1)
+                        return FileLocation(type=loc_type, id=loc_id)
+                    return None
+                
                 if function_name == "get_proxmox_status":
                     function_response = env_data
                 elif function_name == "get_hardware_devices":
@@ -1502,22 +1513,26 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     function_response = vm_detail or {"error": f"VM {vmid} not found"}
                 elif function_name == "list_directory":
                     try:
-                        ssh_client = await get_ssh_client(current_user["user_id"])
-                        files = await ssh_list_directory(ssh_client, function_args.get("path", "/"))
+                        location = parse_location_string(function_args.get("location"))
+                        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                        files = await location_list_directory(ssh_client, function_args.get("path", "/"), location)
                         ssh_client.close()
                         function_response = {
                             "path": function_args.get("path"),
+                            "location": function_args.get("location", "host"),
                             "files": [f.model_dump() for f in files]
                         }
                     except Exception as e:
                         function_response = {"error": str(e)}
                 elif function_name == "read_file":
                     try:
-                        ssh_client = await get_ssh_client(current_user["user_id"])
-                        file_content = await ssh_read_file(ssh_client, function_args.get("path"))
+                        location = parse_location_string(function_args.get("location"))
+                        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                        file_content = await location_read_file(ssh_client, function_args.get("path"), location)
                         ssh_client.close()
                         function_response = {
                             "path": file_content.path,
+                            "location": function_args.get("location", "host"),
                             "content": file_content.content,
                             "size": file_content.size
                         }
@@ -1529,6 +1544,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     function_response = {
                         "type": "file_edit_proposal",
                         "path": function_args.get("path"),
+                        "location": function_args.get("location", "host"),
                         "new_content": function_args.get("new_content"),
                         "reason": function_args.get("reason"),
                         "requires_confirmation": True

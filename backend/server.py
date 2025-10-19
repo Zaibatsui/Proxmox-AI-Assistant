@@ -2028,6 +2028,226 @@ async def cleanup_old_backups():
     except Exception as e:
         logger.error(f"Backup cleanup failed: {str(e)}")
 
+
+# ==================== LOCATION-AWARE FILE OPERATIONS ====================
+
+async def get_location_ssh_client(user_id: str, location: Optional[FileLocation] = None):
+    """Get SSH client based on location (host, LXC, or VM)"""
+    if not location or location.type == "host":
+        # Default: Proxmox host SSH
+        return await get_ssh_client(user_id)
+    
+    elif location.type == "vm":
+        # Direct SSH to VM
+        if not location.ssh_username or not location.ssh_password:
+            raise HTTPException(status_code=400, detail="VM SSH credentials required")
+        
+        # Get VM IP from Proxmox
+        proxmox, config = await get_proxmox_connection(user_id)
+        
+        # Find VM to get its IP
+        vm_info = None
+        for node in proxmox.nodes.get():
+            node_name = node['node']
+            try:
+                qemu_vms = proxmox.nodes(node_name).qemu.get()
+                for vm in qemu_vms:
+                    if str(vm['vmid']) == location.id:
+                        vm_info = vm
+                        break
+            except:
+                pass
+            if vm_info:
+                break
+        
+        if not vm_info:
+            raise HTTPException(status_code=404, detail=f"VM {location.id} not found")
+        
+        # Try to get IP from agent
+        vm_ip = None
+        try:
+            agent_info = proxmox.nodes(node_name).qemu(location.id).agent('network-get-interfaces').get()
+            for iface in agent_info.get('result', []):
+                if iface.get('name') not in ['lo']:
+                    for ip_info in iface.get('ip-addresses', []):
+                        if ip_info.get('ip-address-type') == 'ipv4':
+                            vm_ip = ip_info.get('ip-address')
+                            break
+                if vm_ip:
+                    break
+        except:
+            pass
+        
+        if not vm_ip:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Could not determine IP for VM {location.id}. Ensure QEMU guest agent is installed and running."
+            )
+        
+        # Connect to VM via SSH
+        try:
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                vm_ip,
+                username=location.ssh_username,
+                password=location.ssh_password,
+                timeout=10,
+                allow_agent=False,
+                look_for_keys=False
+            )
+            return ssh_client
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to connect to VM via SSH: {str(e)}")
+    
+    elif location.type == "lxc":
+        # For LXC, we'll use pct exec via host SSH
+        return await get_ssh_client(user_id)
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
+
+async def exec_in_location(ssh_client, command: str, location: Optional[FileLocation] = None) -> tuple[int, str, str]:
+    """Execute command in the appropriate location (host, LXC, or VM)"""
+    if not location or location.type == "host":
+        # Direct execution on host
+        return await ssh_exec_command(ssh_client, command)
+    
+    elif location.type == "lxc":
+        # Execute in LXC container using pct exec
+        lxc_command = f"pct exec {location.id} -- {command}"
+        return await ssh_exec_command(ssh_client, lxc_command)
+    
+    elif location.type == "vm":
+        # Direct execution (ssh_client is already connected to VM)
+        return await ssh_exec_command(ssh_client, command)
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
+
+async def location_file_exists(ssh_client, path: str, location: Optional[FileLocation] = None) -> bool:
+    """Check if file exists in location"""
+    exit_code, _, _ = await exec_in_location(ssh_client, f"test -e '{path}' && echo 'exists'", location)
+    return exit_code == 0
+
+async def location_is_directory(ssh_client, path: str, location: Optional[FileLocation] = None) -> bool:
+    """Check if path is a directory in location"""
+    exit_code, _, _ = await exec_in_location(ssh_client, f"test -d '{path}' && echo 'dir'", location)
+    return exit_code == 0
+
+async def location_list_directory(ssh_client, path: str, location: Optional[FileLocation] = None) -> List[FileInfo]:
+    """List directory contents in location"""
+    exit_code, stdout, stderr = await exec_in_location(
+        ssh_client, 
+        f"ls -lAh --time-style='+%Y-%m-%d %H:%M:%S' '{path}' 2>&1",
+        location
+    )
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=400, detail=f"Failed to list directory: {stderr}")
+    
+    files = []
+    for line in stdout.strip().split('\n'):
+        if not line or line.startswith('total'):
+            continue
+        
+        parts = line.split(None, 8)
+        if len(parts) < 9:
+            continue
+        
+        permissions = parts[0]
+        size_str = parts[4]
+        modified = f"{parts[5]} {parts[6]}"
+        name = parts[8]
+        
+        if name in ['.', '..']:
+            continue
+        
+        file_type = 'directory' if permissions.startswith('d') else 'file'
+        
+        size = None
+        if file_type == 'file':
+            try:
+                if 'K' in size_str:
+                    size = int(float(size_str.replace('K', '')) * 1024)
+                elif 'M' in size_str:
+                    size = int(float(size_str.replace('M', '')) * 1024 * 1024)
+                elif 'G' in size_str:
+                    size = int(float(size_str.replace('G', '')) * 1024 * 1024 * 1024)
+                else:
+                    size = int(size_str)
+            except (ValueError, AttributeError):
+                size = 0
+        
+        file_path = f"{path.rstrip('/')}/{name}"
+        
+        files.append(FileInfo(
+            name=name,
+            path=file_path,
+            type=file_type,
+            size=size,
+            modified=modified,
+            permissions=permissions
+        ))
+    
+    return files
+
+async def location_read_file(ssh_client, path: str, location: Optional[FileLocation] = None) -> FileContent:
+    """Read file content from location"""
+    # Check file size
+    exit_code, stdout, _ = await exec_in_location(ssh_client, f"stat -c %s '{path}'", location)
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=404, detail="File not found")
+    
+    try:
+        file_size = int(stdout.strip())
+    except (ValueError, AttributeError):
+        raise HTTPException(status_code=400, detail="Could not determine file size")
+    
+    if file_size > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"File too large ({file_size} bytes). Maximum size is {MAX_FILE_SIZE} bytes (10MB)"
+        )
+    
+    # Get modification time
+    exit_code, modified, _ = await exec_in_location(ssh_client, f"stat -c %y '{path}'", location)
+    modified_time = modified.strip() if exit_code == 0 else None
+    
+    # Read file content
+    exit_code, content, stderr = await exec_in_location(ssh_client, f"cat '{path}'", location)
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=400, detail=f"Failed to read file: {stderr}")
+    
+    return FileContent(
+        path=path,
+        content=content,
+        size=file_size,
+        modified=modified_time
+    )
+
+async def location_write_file(ssh_client, path: str, content: str, location: Optional[FileLocation] = None):
+    """Write content to file in location"""
+    temp_path = f"{path}.tmp.{uuid.uuid4().hex[:8]}"
+    
+    exit_code, _, stderr = await exec_in_location(
+        ssh_client,
+        f"cat > '{temp_path}' << 'EOFMARKER'\n{content}\nEOFMARKER\n",
+        location
+    )
+    
+    if exit_code != 0:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {stderr}")
+    
+    # Move temp file to target
+    exit_code, _, stderr = await exec_in_location(ssh_client, f"mv '{temp_path}' '{path}'", location)
+    
+    if exit_code != 0:
+        await exec_in_location(ssh_client, f"rm -f '{temp_path}'", location)
+        raise HTTPException(status_code=500, detail=f"Failed to save file: {stderr}")
+
 async def execute_bind_driver_action(params: dict, proxmox_host: str, dry_run: bool = False) -> str:
     """Bind PCI device to driver"""
     pci_address = params.get('pci_address')

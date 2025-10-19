@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { ChevronRight, ChevronDown, File, Folder, Save, X, Upload, FolderPlus, FilePlus, Trash2, FolderOpen, Download } from 'lucide-react';
+import Layout from '../components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -12,7 +13,7 @@ const COMMON_PATHS = [
   { path: '/root', label: 'Root Home' }
 ];
 
-const FileBrowser = () => {
+const FileBrowser = ({ onLogout }) => {
   const [currentPath, setCurrentPath] = useState('/etc/pve');
   const [files, setFiles] = useState([]);
   const [selectedFile, setSelectedFile] = useState(null);

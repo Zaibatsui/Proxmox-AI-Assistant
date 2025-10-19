@@ -332,6 +332,22 @@ class BackendTester:
                 self.test_vm_ssh_file_access()
             else:
                 self.log_result("VM Type Test", False, f"Unknown VM type: {vm_type}")
+        else:
+            # VM 121 not found in list, but let's test both access methods anyway
+            # since the API might be failing but the VM could still exist
+            print(f"\n🔍 VM 121 not found in API list, but testing both access methods...")
+            print(f"🔍 Testing LXC container access (pct exec)...")
+            lxc_success = self.test_lxc_file_access()
+            
+            print(f"🔍 Testing QEMU VM SSH access...")
+            vm_success = self.test_vm_ssh_file_access()
+            
+            if lxc_success:
+                self.log_result("VM 121 Type Detection", True, "VM 121 is accessible as LXC container")
+            elif vm_success:
+                self.log_result("VM 121 Type Detection", True, "VM 121 is accessible as QEMU VM via SSH")
+            else:
+                self.log_result("VM 121 Type Detection", False, "VM 121 is not accessible via LXC or SSH methods")
         
         # Step 5: Check backend logs
         print(f"\n🔍 Checking backend logs for errors...")

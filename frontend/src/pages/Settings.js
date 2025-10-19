@@ -557,7 +557,6 @@ function Settings({ onLogout }) {
                 </CollapsibleContent>
             </Card>
             </Collapsible>
-          </div>
 
         {/* AI Configuration - Collapsible */}
         <Collapsible open={aiConfigOpen} onOpenChange={setAiConfigOpen}>

@@ -725,15 +725,19 @@ function Settings({ onLogout }) {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6 pt-0">
-                {/* Primary Color */}
+                {/* Theme Presets */}
                 <div>
-                  <Label className="text-slate-200 mb-3 block">Primary Color</Label>
+                  <Label className="text-slate-200 mb-3 block">Color Presets</Label>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
                     {Object.entries(themes).map(([key, theme]) => (
                       <button
                         key={key}
                         onClick={async () => {
-                          const success = await updateTheme(key, background, cardStyle, null);
+                          const success = await updateTheme(
+                            key, background, cardStyle, null,
+                            null, null, null, null,
+                            layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                          );
                           if (success) {
                             toast.success(`Theme changed to ${theme.name}`);
                           } else {
@@ -766,7 +770,153 @@ function Settings({ onLogout }) {
                   </div>
                 </div>
 
-                {/* Background Color */}
+                {/* Custom Colors */}
+                <div className="space-y-4 p-4 bg-slate-800/30 rounded-lg border border-slate-700">
+                  <h3 className="text-sm font-semibold text-slate-200">Custom Colors</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-slate-200 text-xs mb-2 block">Primary Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={customPrimary || "#3b82f6"}
+                          onChange={(e) => {
+                            setCustomPrimary(e.target.value);
+                            updateTheme(
+                              currentTheme, background, cardStyle, null,
+                              hexToRgb(e.target.value), secondaryColor, sidebarBgColor, headerBgColor,
+                              layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                            );
+                          }}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={customPrimary || "#3b82f6"}
+                          onChange={(e) => {
+                            setCustomPrimary(e.target.value);
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              updateTheme(
+                                currentTheme, background, cardStyle, null,
+                                hexToRgb(e.target.value), secondaryColor, sidebarBgColor, headerBgColor,
+                                layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                              );
+                            }
+                          }}
+                          className="flex-1 bg-slate-700 border-slate-600 text-slate-100"
+                          placeholder="#3b82f6"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <Label className="text-slate-200 text-xs mb-2 block">Secondary Color</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={customSecondary || "#6366f1"}
+                          onChange={(e) => {
+                            setCustomSecondary(e.target.value);
+                            updateTheme(
+                              currentTheme, background, cardStyle, null,
+                              primaryColor, hexToRgb(e.target.value), sidebarBgColor, headerBgColor,
+                              layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                            );
+                          }}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={customSecondary || "#6366f1"}
+                          onChange={(e) => {
+                            setCustomSecondary(e.target.value);
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              updateTheme(
+                                currentTheme, background, cardStyle, null,
+                                primaryColor, hexToRgb(e.target.value), sidebarBgColor, headerBgColor,
+                                layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                              );
+                            }
+                          }}
+                          className="flex-1 bg-slate-700 border-slate-600 text-slate-100"
+                          placeholder="#6366f1"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-slate-200 text-xs mb-2 block">Sidebar Background</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={customSidebarBg || "#0f172a"}
+                          onChange={(e) => {
+                            setCustomSidebarBg(e.target.value);
+                            updateTheme(
+                              currentTheme, background, cardStyle, null,
+                              primaryColor, secondaryColor, hexToRgb(e.target.value), headerBgColor,
+                              layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                            );
+                          }}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={customSidebarBg || "#0f172a"}
+                          onChange={(e) => {
+                            setCustomSidebarBg(e.target.value);
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              updateTheme(
+                                currentTheme, background, cardStyle, null,
+                                primaryColor, secondaryColor, hexToRgb(e.target.value), headerBgColor,
+                                layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                              );
+                            }
+                          }}
+                          className="flex-1 bg-slate-700 border-slate-600 text-slate-100"
+                          placeholder="#0f172a"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <Label className="text-slate-200 text-xs mb-2 block">Header Background</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          type="color"
+                          value={customHeaderBg || "#0f172a"}
+                          onChange={(e) => {
+                            setCustomHeaderBg(e.target.value);
+                            updateTheme(
+                              currentTheme, background, cardStyle, null,
+                              primaryColor, secondaryColor, sidebarBgColor, hexToRgb(e.target.value),
+                              layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                            );
+                          }}
+                          className="w-20 h-10 cursor-pointer"
+                        />
+                        <Input
+                          type="text"
+                          value={customHeaderBg || "#0f172a"}
+                          onChange={(e) => {
+                            setCustomHeaderBg(e.target.value);
+                            if (/^#[0-9A-F]{6}$/i.test(e.target.value)) {
+                              updateTheme(
+                                currentTheme, background, cardStyle, null,
+                                primaryColor, secondaryColor, sidebarBgColor, hexToRgb(e.target.value),
+                                layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                              );
+                            }
+                          }}
+                          className="flex-1 bg-slate-700 border-slate-600 text-slate-100"
+                          placeholder="#0f172a"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Background Style */}
                 <div>
                   <Label className="text-slate-200 mb-3 block">Background Style</Label>
                   <div className="grid grid-cols-3 gap-3">
@@ -778,7 +928,11 @@ function Settings({ onLogout }) {
                       <button
                         key={bg.key}
                         onClick={async () => {
-                          const success = await updateTheme(currentTheme, bg.key, cardStyle, null);
+                          const success = await updateTheme(
+                            currentTheme, bg.key, cardStyle, null,
+                            primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                            layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                          );
                           if (success) {
                             toast.success(`Background changed to ${bg.name}`);
                           }
@@ -821,7 +975,11 @@ function Settings({ onLogout }) {
                       <button
                         key={style.key}
                         onClick={async () => {
-                          const success = await updateTheme(currentTheme, background, style.key, null);
+                          const success = await updateTheme(
+                            currentTheme, background, style.key, null,
+                            primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                            layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+                          );
                           if (success) {
                             toast.success(`Card style changed to ${style.name}`);
                           }
@@ -853,6 +1011,171 @@ function Settings({ onLogout }) {
                         </div>
                       </button>
                     ))}
+                  </div>
+                </div>
+
+                {/* Layout Density */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Layout Density</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: "compact", name: "Compact", desc: "Tight spacing" },
+                      { key: "comfortable", name: "Comfortable", desc: "Balanced" },
+                      { key: "spacious", name: "Spacious", desc: "Loose spacing" }
+                    ].map((density) => (
+                      <button
+                        key={density.key}
+                        onClick={async () => {
+                          const success = await updateTheme(
+                            currentTheme, background, cardStyle, null,
+                            primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                            density.key, borderRadius, shadowIntensity, sidebarWidth
+                          );
+                          if (success) {
+                            toast.success(`Density changed to ${density.name}`);
+                          }
+                        }}
+                        className={`relative p-4 rounded-lg border-2 transition-all ${
+                          layoutDensity === density.key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div className="text-slate-200 text-lg">⊞</div>
+                          <span className="text-xs font-medium text-slate-200">
+                            {density.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {density.desc}
+                          </span>
+                          {layoutDensity === density.key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Border Radius */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Border Radius</Label>
+                  <div className="grid grid-cols-3 gap-3">
+                    {[
+                      { key: "sharp", name: "Sharp", desc: "No rounding" },
+                      { key: "rounded", name: "Rounded", desc: "Soft edges" },
+                      { key: "very-rounded", name: "Very Rounded", desc: "Smooth curves" }
+                    ].map((radius) => (
+                      <button
+                        key={radius.key}
+                        onClick={async () => {
+                          const success = await updateTheme(
+                            currentTheme, background, cardStyle, null,
+                            primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                            layoutDensity, radius.key, shadowIntensity, sidebarWidth
+                          );
+                          if (success) {
+                            toast.success(`Border radius changed to ${radius.name}`);
+                          }
+                        }}
+                        className={`relative p-4 rounded-lg border-2 transition-all ${
+                          borderRadius === radius.key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <div
+                            className="w-12 h-12 bg-slate-600"
+                            style={{
+                              borderRadius: radius.key === "sharp" ? "0" : radius.key === "rounded" ? "0.5rem" : "1rem"
+                            }}
+                          />
+                          <span className="text-xs font-medium text-slate-200">
+                            {radius.name}
+                          </span>
+                          <span className="text-[10px] text-slate-500">
+                            {radius.desc}
+                          </span>
+                          {borderRadius === radius.key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Shadow Intensity */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Shadow Intensity</Label>
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { key: "none", name: "None" },
+                      { key: "subtle", name: "Subtle" },
+                      { key: "medium", name: "Medium" },
+                      { key: "strong", name: "Strong" }
+                    ].map((shadow) => (
+                      <button
+                        key={shadow.key}
+                        onClick={async () => {
+                          const success = await updateTheme(
+                            currentTheme, background, cardStyle, null,
+                            primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                            layoutDensity, borderRadius, shadow.key, sidebarWidth
+                          );
+                          if (success) {
+                            toast.success(`Shadow changed to ${shadow.name}`);
+                          }
+                        }}
+                        className={`relative p-4 rounded-lg border-2 transition-all ${
+                          shadowIntensity === shadow.key
+                            ? "border-slate-400 bg-slate-800"
+                            : "border-slate-700 bg-slate-800/50 hover:border-slate-600"
+                        }`}
+                      >
+                        <div className="flex flex-col items-center gap-2">
+                          <span className="text-xs font-medium text-slate-200">
+                            {shadow.name}
+                          </span>
+                          {shadowIntensity === shadow.key && (
+                            <div className="absolute top-2 right-2">
+                              <Check className="w-4 h-4 text-emerald-400" />
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sidebar Width */}
+                <div>
+                  <Label className="text-slate-200 mb-3 block">Sidebar Width: {sidebarWidth}px</Label>
+                  <Input
+                    type="range"
+                    min="200"
+                    max="400"
+                    step="8"
+                    value={sidebarWidth}
+                    onChange={(e) => {
+                      const width = parseInt(e.target.value);
+                      updateTheme(
+                        currentTheme, background, cardStyle, null,
+                        primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+                        layoutDensity, borderRadius, shadowIntensity, width
+                      );
+                    }}
+                    className="w-full"
+                  />
+                  <div className="flex justify-between text-xs text-slate-500 mt-1">
+                    <span>Narrow (200px)</span>
+                    <span>Wide (400px)</span>
                   </div>
                 </div>
               </CardContent>

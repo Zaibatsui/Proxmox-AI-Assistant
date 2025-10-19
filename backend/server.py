@@ -900,6 +900,7 @@ async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get
         "theme_name": theme_data.theme_name,
         "background": theme_data.background,
         "card_style": theme_data.card_style,
+        "accent_color": theme_data.accent_color,
         "primary_color": theme_data.primary_color,
         "secondary_color": theme_data.secondary_color,
         "sidebar_bg_color": theme_data.sidebar_bg_color,

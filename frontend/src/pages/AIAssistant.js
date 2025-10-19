@@ -57,11 +57,20 @@ function AIAssistant({ onLogout }) {
     const userQuestion = question;
     setQuestion("");
 
+    // Add location context to the question if not on host
+    let contextualQuestion = userQuestion;
+    if (currentLocation.type !== 'host') {
+      const locationStr = currentLocation.type === 'lxc' 
+        ? `lxc:${currentLocation.id}` 
+        : `vm:${currentLocation.id}`;
+      contextualQuestion = `[Working on ${currentLocation.label} (location: ${locationStr})] ${userQuestion}`;
+    }
+
     // Add user message to conversations
     setConversations(prev => [...prev, { type: "user", content: userQuestion }]);
 
     try {
-      const response = await axios.post(`${API}/ai/query`, { question: userQuestion });
+      const response = await axios.post(`${API}/ai/query`, { question: contextualQuestion });
       
       // Check for file edit proposal in the response
       let fileEditProposal = null;

@@ -102,6 +102,15 @@ class Theme(BaseModel):
     background: str = "dark"  # dark, darker, midnight
     card_style: str = "glass"  # glass, solid, bordered
     accent_color: Optional[str] = None  # Optional custom accent
+    # Advanced appearance options
+    primary_color: Optional[str] = None  # RGB format: "59, 130, 246"
+    secondary_color: Optional[str] = None  # RGB format
+    sidebar_bg_color: Optional[str] = None  # RGB format
+    header_bg_color: Optional[str] = None  # RGB format
+    layout_density: str = "comfortable"  # compact, comfortable, spacious
+    border_radius: str = "rounded"  # sharp, rounded, very-rounded
+    shadow_intensity: str = "medium"  # none, subtle, medium, strong
+    sidebar_width: int = 256  # Width in pixels
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ThemeUpdate(BaseModel):
@@ -109,6 +118,15 @@ class ThemeUpdate(BaseModel):
     background: Optional[str] = "dark"
     card_style: Optional[str] = "glass"
     accent_color: Optional[str] = None
+    # Advanced appearance options
+    primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    sidebar_bg_color: Optional[str] = None
+    header_bg_color: Optional[str] = None
+    layout_density: Optional[str] = "comfortable"
+    border_radius: Optional[str] = "rounded"
+    shadow_intensity: Optional[str] = "medium"
+    sidebar_width: Optional[int] = 256
 
 # ==================== API KEYS MODELS ====================
 

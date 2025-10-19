@@ -396,7 +396,11 @@ class BackendTester:
             else:
                 self.log_result("VM 121 Type Detection", False, "VM 121 is not accessible via LXC or SSH methods")
         
-        # Step 5: Check backend logs
+        # Step 5: Check what VMs exist via SSH
+        print(f"\n🔍 Checking what VMs exist via direct SSH...")
+        vm_121_exists = self.check_vms_via_ssh()
+        
+        # Step 6: Check backend logs
         print(f"\n🔍 Checking backend logs for errors...")
         self.check_backend_logs()
         

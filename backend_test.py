@@ -68,6 +68,11 @@ class BackendTester:
                 vms = response.json()
                 vm_121 = None
                 
+                # First, show all available VMs for debugging
+                print(f"\n🔍 Available VMs/Containers ({len(vms)} total):")
+                for vm in vms:
+                    print(f"  - VMID: {vm.get('vmid')}, Name: {vm.get('name', 'Unknown')}, Type: {vm.get('type', 'unknown')}, Status: {vm.get('status', 'unknown')}")
+                
                 # Look for VM/Container 121
                 for vm in vms:
                     if str(vm.get('vmid')) == '121':
@@ -93,7 +98,7 @@ class BackendTester:
                     )
                     return vm_121
                 else:
-                    self.log_result("VM 121 Detection", False, "VM/Container 121 not found in the system")
+                    self.log_result("VM 121 Detection", False, f"VM/Container 121 not found. Available VMIDs: {[vm.get('vmid') for vm in vms]}")
                     return None
             else:
                 self.log_result("VM 121 Detection", False, f"Failed to get VMs list: {response.status_code} - {response.text}")

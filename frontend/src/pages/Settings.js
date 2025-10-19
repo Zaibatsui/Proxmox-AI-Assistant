@@ -13,7 +13,11 @@ import { toast } from "sonner";
 import { useTheme } from "../contexts/ThemeContext";
 
 function Settings({ onLogout }) {
-  const { currentTheme, background, cardStyle, updateTheme, themes } = useTheme();
+  const { 
+    currentTheme, background, cardStyle, updateTheme, themes,
+    primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
+    layoutDensity, borderRadius, shadowIntensity, sidebarWidth
+  } = useTheme();
   const [config, setConfig] = useState(null);
   const [themeOpen, setThemeOpen] = useState(false);
   const [apiKeys, setApiKeys] = useState(null);

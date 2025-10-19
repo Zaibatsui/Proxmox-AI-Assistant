@@ -60,24 +60,40 @@ function AIAssistant({ onLogout }) {
   const handleAsk = async () => {
     if (!question.trim()) return;
 
+    // Check if we need VM credentials
+    if (currentLocation.type === 'vm' && !sessionCredentials[currentLocation.id]) {
+      setShowVMCredentials(true);
+      return;
+    }
+
     setLoading(true);
     const userQuestion = question;
     setQuestion("");
 
     // Add location context to the question if not on host
     let contextualQuestion = userQuestion;
+    const requestPayload = { question: contextualQuestion };
+    
     if (currentLocation.type !== 'host') {
       const locationStr = currentLocation.type === 'lxc' 
         ? `lxc:${currentLocation.id}` 
         : `vm:${currentLocation.id}`;
       contextualQuestion = `[Working on ${currentLocation.label} (location: ${locationStr})] ${userQuestion}`;
+      requestPayload.question = contextualQuestion;
+      
+      // Add SSH credentials for VMs
+      if (currentLocation.type === 'vm' && sessionCredentials[currentLocation.id]) {
+        requestPayload.ssh_username = sessionCredentials[currentLocation.id].username;
+        requestPayload.ssh_password = sessionCredentials[currentLocation.id].password;
+        requestPayload.vm_id = currentLocation.id;
+      }
     }
 
     // Add user message to conversations
     setConversations(prev => [...prev, { type: "user", content: userQuestion }]);
 
     try {
-      const response = await axios.post(`${API}/ai/query`, { question: contextualQuestion });
+      const response = await axios.post(`${API}/ai/query`, requestPayload);
       
       // Check for file edit proposal in the response
       let fileEditProposal = null;

@@ -364,6 +364,74 @@ function AIAssistant({ onLogout }) {
             </Card>
           </div>
         </div>
+
+        {/* File Edit Confirmation Modal */}
+        {pendingFileEdit && (
+          <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+            <div className="bg-slate-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-700">
+              {/* Modal Header */}
+              <div className="px-6 py-4 border-b border-slate-700">
+                <h3 className="text-lg font-bold text-white">Confirm File Edit</h3>
+                <p className="text-sm text-slate-400 mt-1">{pendingFileEdit.path}</p>
+                <div className="mt-2 p-3 bg-cyan-500/10 border border-cyan-500/30 rounded">
+                  <p className="text-sm text-cyan-300">
+                    <strong>Reason:</strong> {pendingFileEdit.reason}
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-auto p-6">
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="text-sm font-semibold text-slate-300">
+                    Review and Edit Content:
+                  </label>
+                  <span className="text-xs text-slate-500">
+                    {editableContent.length} characters
+                  </span>
+                </div>
+                <textarea
+                  value={editableContent}
+                  onChange={(e) => setEditableContent(e.target.value)}
+                  className="w-full h-96 bg-slate-900 text-white font-mono text-sm p-4 rounded border border-slate-700 focus:border-cyan-500 focus:outline-none resize-none"
+                  spellCheck={false}
+                />
+                <p className="text-xs text-yellow-400 mt-2">
+                  ⚠️ A backup will be created automatically before applying changes
+                </p>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-6 py-4 border-t border-slate-700 flex items-center justify-end gap-3">
+                <Button
+                  onClick={cancelFileEdit}
+                  variant="outline"
+                  disabled={executing}
+                  className="bg-slate-700 hover:bg-slate-600 text-white border-slate-600"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={executeFileEdit}
+                  disabled={executing}
+                  className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                >
+                  {executing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Executing...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Confirm & Execute
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

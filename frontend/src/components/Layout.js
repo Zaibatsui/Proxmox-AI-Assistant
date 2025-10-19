@@ -50,12 +50,29 @@ function Layout({ children, onLogout, currentPage }) {
                 key={item.key}
                 to={item.path}
                 className={({ isActive }) =>
-                  `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  `flex items-center gap-3 transition-colors ${
                     isActive || currentPage === item.key
-                      ? "bg-cyan-500/10 text-cyan-400"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      ? "theme-text"
+                      : "text-slate-400 hover:text-slate-200"
                   }`
                 }
+                style={({ isActive }) => ({
+                  padding: `calc(0.75rem * var(--layout-density)) calc(1rem * var(--layout-density))`,
+                  borderRadius: 'var(--border-radius)',
+                  backgroundColor: (isActive || currentPage === item.key) 
+                    ? 'rgba(var(--theme-primary-rgb), 0.1)' 
+                    : 'transparent'
+                })}
+                onMouseEnter={(e) => {
+                  if (!e.currentTarget.classList.contains('theme-text')) {
+                    e.currentTarget.style.backgroundColor = 'var(--bg-card)';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!e.currentTarget.classList.contains('theme-text')) {
+                    e.currentTarget.style.backgroundColor = 'transparent';
+                  }
+                }}
                 data-testid={`nav-${item.key}`}
               >
                 <Icon className="w-5 h-5 flex-shrink-0" />

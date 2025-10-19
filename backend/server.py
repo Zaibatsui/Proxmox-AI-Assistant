@@ -2263,7 +2263,7 @@ async def delete_file(request: FileDeleteRequest, current_user: dict = Depends(g
                     current_user["username"],
                     request.path,
                     "delete",
-                    f"Backup before deletion"
+                    "Backup before deletion"
                 )
             except Exception as e:
                 logger.warning(f"Backup failed: {str(e)}")

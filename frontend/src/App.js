@@ -146,6 +146,26 @@ function App() {
                 )
               }
             />
+            <Route
+              path="/files"
+              element={
+                isAuthenticated ? (
+                  <FileBrowser onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
+            <Route
+              path="/backups"
+              element={
+                isAuthenticated ? (
+                  <BackupManager onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" replace />
+                )
+              }
+            />
           </Routes>
         </BrowserRouter>
       </div>

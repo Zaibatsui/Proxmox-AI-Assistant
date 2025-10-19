@@ -568,22 +568,29 @@ function Settings({ onLogout }) {
           </div>
         </div>
 
-        {/* AI Configuration */}
-        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
-                <Key className="w-5 h-5 theme-icon" />
-              </div>
-              <div>
-                <CardTitle className="text-slate-100">AI Configuration</CardTitle>
-                <CardDescription className="text-slate-400">
-                  Configure your OpenAI API key for AI Assistant feature
-                </CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* AI Configuration - Collapsible */}
+        <Collapsible open={aiConfigOpen} onOpenChange={setAiConfigOpen}>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
+                      <Key className="w-5 h-5 theme-icon" />
+                    </div>
+                    <div className="text-left">
+                      <CardTitle className="text-slate-100">AI Configuration</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Configure your OpenAI API key for AI Assistant feature
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${aiConfigOpen ? 'transform rotate-180' : ''}`} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-4">
             {apiKeys && apiKeys.has_openai_key ? (
               <div className="space-y-4">
                 <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">

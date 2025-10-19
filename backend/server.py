@@ -99,33 +99,33 @@ class Theme(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str
     theme_name: str  # cyan, purple, emerald, amber, blue, rose
-    background: str = "dark"  # dark, darker, midnight
-    card_style: str = "glass"  # glass, solid, bordered
+    background: Literal["dark", "darker", "midnight"] = "dark"
+    card_style: Literal["glass", "solid", "bordered"] = "glass"
     accent_color: Optional[str] = None  # Optional custom accent
     # Advanced appearance options
     primary_color: Optional[str] = None  # RGB format: "59, 130, 246"
     secondary_color: Optional[str] = None  # RGB format
     sidebar_bg_color: Optional[str] = None  # RGB format
     header_bg_color: Optional[str] = None  # RGB format
-    layout_density: str = "comfortable"  # compact, comfortable, spacious
-    border_radius: str = "rounded"  # sharp, rounded, very-rounded
-    shadow_intensity: str = "medium"  # none, subtle, medium, strong
+    layout_density: Literal["compact", "comfortable", "spacious"] = "comfortable"
+    border_radius: Literal["sharp", "rounded", "very-rounded"] = "rounded"
+    shadow_intensity: Literal["none", "subtle", "medium", "strong"] = "medium"
     sidebar_width: int = 256  # Width in pixels
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ThemeUpdate(BaseModel):
     theme_name: str
-    background: Optional[str] = "dark"
-    card_style: Optional[str] = "glass"
+    background: Optional[Literal["dark", "darker", "midnight"]] = "dark"
+    card_style: Optional[Literal["glass", "solid", "bordered"]] = "glass"
     accent_color: Optional[str] = None
     # Advanced appearance options
     primary_color: Optional[str] = None
     secondary_color: Optional[str] = None
     sidebar_bg_color: Optional[str] = None
     header_bg_color: Optional[str] = None
-    layout_density: Optional[str] = "comfortable"
-    border_radius: Optional[str] = "rounded"
-    shadow_intensity: Optional[str] = "medium"
+    layout_density: Optional[Literal["compact", "comfortable", "spacious"]] = "comfortable"
+    border_radius: Optional[Literal["sharp", "rounded", "very-rounded"]] = "rounded"
+    shadow_intensity: Optional[Literal["none", "subtle", "medium", "strong"]] = "medium"
     sidebar_width: Optional[int] = 256
 
 # ==================== API KEYS MODELS ====================

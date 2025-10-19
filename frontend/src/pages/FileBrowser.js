@@ -149,12 +149,14 @@ const FileBrowser = ({ onLogout }) => {
     setSuccess(null);
     
     try {
+      const locationPayload = getLocationPayload();
       await axios.post(
         `${BACKEND_URL}/api/files/write`,
         {
           path: selectedFile.path,
           content: fileContent,
-          create_backup: true
+          create_backup: true,
+          location: locationPayload
         },
         getAuthHeaders()
       );

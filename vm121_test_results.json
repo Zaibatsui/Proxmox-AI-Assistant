@@ -4,38 +4,50 @@
     "success": true,
     "message": "Logged in successfully (Proxmox config pre-configured with port 8006)",
     "details": {},
-    "timestamp": "2025-10-19T14:37:39.240634"
+    "timestamp": "2025-10-19T14:38:06.755471"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Proxmox configured for host: https://proxmox.zaibatsui.co.uk:8006",
     "details": {},
-    "timestamp": "2025-10-19T14:37:39.281784"
+    "timestamp": "2025-10-19T14:38:06.798981"
+  },
+  {
+    "test": "Proxmox API Test",
+    "success": false,
+    "message": "Proxmox API failed: HTTPSConnectionPool(host='proxmox.zaibatsui.co.uk', port=8006): Max retries exceeded with url: /api2/json/nodes (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1016)')))",
+    "details": {},
+    "timestamp": "2025-10-19T14:38:08.294456"
+  },
+  {
+    "test": "Proxmox SSH Test",
+    "success": true,
+    "message": "Proxmox SSH connection successful",
+    "details": {},
+    "timestamp": "2025-10-19T14:38:08.294483"
   },
   {
     "test": "VM 121 Detection",
     "success": false,
     "message": "VM/Container 121 not found. Available VMIDs: []",
     "details": {},
-    "timestamp": "2025-10-19T14:37:39.559944"
+    "timestamp": "2025-10-19T14:38:08.599114"
   },
   {
     "test": "Backend Log Analysis",
     "success": true,
-    "message": "Found 8 SSH-related log entries",
+    "message": "Found 6 SSH-related log entries",
     "details": {
       "errors": [
-        "2025-10-19 14:18:33,687 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:18:34,306 - paramiko.transport - INFO - Authentication (password) successful!",
-        "2025-10-19 14:18:35,330 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:18:35,927 - paramiko.transport - INFO - Authentication (password) successful!",
         "2025-10-19 14:23:10,492 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
         "2025-10-19 14:23:11,108 - paramiko.transport - INFO - Authentication (password) successful!",
         "2025-10-19 14:23:20,051 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:23:20,673 - paramiko.transport - INFO - Authentication (password) successful!"
+        "2025-10-19 14:23:20,673 - paramiko.transport - INFO - Authentication (password) successful!",
+        "2025-10-19 14:38:07,300 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:38:07,900 - paramiko.transport - INFO - Authentication (password) successful!"
       ]
     },
-    "timestamp": "2025-10-19T14:37:39.569312"
+    "timestamp": "2025-10-19T14:38:08.608827"
   }
 ]

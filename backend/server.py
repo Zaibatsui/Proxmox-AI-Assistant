@@ -1087,6 +1087,7 @@ async def get_proxmox_environment_data(user_id: str):
         
         if latest_scan:
             devices = latest_scan.get('devices', [])
+            logger.info(f"Found {len(devices)} devices in database for user {user_id}")
             for device in devices:
                 env_data["devices"].append({
                     "pci_address": device.get('pci_address'),
@@ -1097,7 +1098,10 @@ async def get_proxmox_environment_data(user_id: str):
                     "current_driver": device.get('current_driver'),
                     "iommu_group": device.get('iommu_group')
                 })
+        else:
+            logger.warning(f"No device scan found for user {user_id}")
         
+        logger.info(f"Environment data summary - Nodes: {len(env_data['nodes'])}, VMs: {len(env_data['vms_and_containers'])}, Devices: {len(env_data['devices'])}")
         return env_data
     except Exception as e:
         logger.error(f"Error getting environment data: {str(e)}")

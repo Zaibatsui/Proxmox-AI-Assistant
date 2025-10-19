@@ -1,27 +1,33 @@
 backend:
   - task: "VM/Container 121 SSH Connection Test"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Initial test setup - need to verify VM/Container 121 type and SSH connectivity"
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL: Proxmox server unreachable. Backend logs show 'No route to host' errors when connecting to proxmox.zaibatsui.co.uk. Network connectivity issue prevents VM/Container 121 access."
 
   - task: "File Browser Operations for VM/Container 121"
     implemented: true
-    working: "NA"
+    working: false
     file: "server.py"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "testing"
         comment: "Need to test file listing operations for both LXC and VM scenarios"
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL: Cannot test file operations because Proxmox server is unreachable. All VM/Container operations depend on Proxmox connectivity."
 
 frontend:
   - task: "File Browser UI Integration"

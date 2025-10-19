@@ -104,9 +104,10 @@ const FileBrowser = ({ onLogout }) => {
     setLoading(true);
     setError(null);
     try {
+      const locationPayload = getLocationPayload();
       const response = await axios.post(
         `${BACKEND_URL}/api/files/list`,
-        { path },
+        { path, location: locationPayload },
         getAuthHeaders()
       );
       setFiles(response.data);

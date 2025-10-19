@@ -2600,10 +2600,18 @@ async def create_file(request: FileCreateRequest, current_user: dict = Depends(g
     ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
-        await ssh_create_file(ssh_client, request.path, request.content)
+        # For location-aware operations, we need to handle file creation differently
+        # Check if parent directory exists
+        parent_dir = '/'.join(request.path.rsplit('/', 1)[:-1])
+        if parent_dir:
+            exit_code, _, _ = await exec_in_location(ssh_client, f"mkdir -p '{parent_dir}'", request.location)
+        
+        # Write the file
+        await location_write_file(ssh_client, request.path, request.content, request.location)
         
         await log_audit(current_user["user_id"], "file_create", {
             "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"},
             "size": len(request.content)
         })
         
@@ -2618,11 +2626,11 @@ async def create_file(request: FileCreateRequest, current_user: dict = Depends(g
 @api_router.post("/files/delete")
 async def delete_file(request: FileDeleteRequest, current_user: dict = Depends(get_current_user)):
     """Delete a file"""
-    ssh_client = await get_ssh_client(current_user["user_id"])
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
         # Check if file exists
-        if not await ssh_file_exists(ssh_client, request.path):
+        if not await location_file_exists(ssh_client, request.path, request.location):
             raise HTTPException(status_code=404, detail="File not found")
         
         # Create backup if requested
@@ -2641,10 +2649,13 @@ async def delete_file(request: FileDeleteRequest, current_user: dict = Depends(g
                 logger.warning(f"Backup failed: {str(e)}")
         
         # Delete file
-        await ssh_delete_file(ssh_client, request.path)
+        exit_code, _, stderr = await exec_in_location(ssh_client, f"rm -f '{request.path}'", request.location)
+        if exit_code != 0:
+            raise HTTPException(status_code=500, detail=f"Failed to delete file: {stderr}")
         
         await log_audit(current_user["user_id"], "file_delete", {
             "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"},
             "backup_created": backup is not None,
             "backup_id": backup.id if backup else None
         })

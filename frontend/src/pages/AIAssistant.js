@@ -22,9 +22,14 @@ function AIAssistant({ onLogout }) {
   const [pendingFileEdit, setPendingFileEdit] = useState(null);
   const [editableContent, setEditableContent] = useState("");
   const [executing, setExecuting] = useState(false);
+  
+  // Location awareness
+  const [currentLocation, setCurrentLocation] = useState({ type: 'host', label: 'Proxmox Host' });
+  const [availableLocations, setAvailableLocations] = useState([]);
 
   useEffect(() => {
     fetchHistory();
+    fetchLocations();
   }, []);
 
   const fetchHistory = async () => {

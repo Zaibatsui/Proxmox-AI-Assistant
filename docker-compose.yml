@@ -47,7 +47,7 @@ services:
     container_name: proxmox-ai-frontend
     restart: unless-stopped
     environment:
-      - REACT_APP_BACKEND_URL=http://localhost:8001
+      - REACT_APP_BACKEND_URL=http://192.168.1.56:8001
     ports:
       - "3000:3000"
     depends_on:

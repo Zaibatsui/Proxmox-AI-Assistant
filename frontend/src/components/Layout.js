@@ -18,10 +18,17 @@ function Layout({ children, onLogout, currentPage }) {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-950 flex">
+    <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Sidebar */}
-      <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col">
-        <div className="p-6 border-b border-slate-800">
+      <aside className="flex flex-col border-r" style={{ 
+        width: 'var(--sidebar-width)', 
+        backgroundColor: 'var(--sidebar-bg)',
+        borderColor: 'var(--bg-border)'
+      }}>
+        <div className="border-b" style={{ 
+          padding: 'calc(1.5rem * var(--layout-density))',
+          borderColor: 'var(--bg-border)'
+        }}>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-cyan-500/10 rounded-lg">
               <Server className="w-6 h-6 text-cyan-400" />

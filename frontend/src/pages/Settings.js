@@ -643,8 +643,10 @@ function Settings({ onLogout }) {
                 </Button>
               </div>
             )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
 
         {/* App Theme Settings - Collapsible */}
         <Collapsible open={themeOpen} onOpenChange={setThemeOpen}>

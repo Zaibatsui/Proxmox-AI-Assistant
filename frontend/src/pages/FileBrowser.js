@@ -249,6 +249,32 @@ const FileBrowser = ({ onLogout }) => {
             <p className="text-gray-400">Browse and edit files on your Proxmox server</p>
           </div>
 
+          {/* Location Selector */}
+          <div className="bg-gray-800 rounded-lg p-4 mb-4">
+            <h3 className="text-sm font-semibold text-gray-400 mb-2">LOCATION</h3>
+            <select
+              value={JSON.stringify(location)}
+              onChange={(e) => handleLocationChange(JSON.parse(e.target.value))}
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+            >
+              <option value={JSON.stringify({ type: 'host' })}>Proxmox Host</option>
+              <optgroup label="Containers">
+                {availableLocations.filter(l => l.type === 'lxc').map((loc) => (
+                  <option key={loc.vmid} value={JSON.stringify({ type: 'lxc', id: loc.vmid })}>
+                    Container: {loc.vmid} ({loc.name})
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Virtual Machines">
+                {availableLocations.filter(l => l.type === 'qemu').map((loc) => (
+                  <option key={loc.vmid} value={JSON.stringify({ type: 'vm', id: loc.vmid })}>
+                    VM: {loc.vmid} ({loc.name})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+
         {/* Common Paths */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">
           <h3 className="text-sm font-semibold text-gray-400 mb-2">QUICK ACCESS</h3>

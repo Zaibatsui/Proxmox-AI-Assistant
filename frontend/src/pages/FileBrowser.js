@@ -227,6 +227,7 @@ const FileBrowser = ({ onLogout }) => {
 
   // Initial load
   useEffect(() => {
+    fetchLocations();
     loadDirectory(currentPath);
   }, []);
 

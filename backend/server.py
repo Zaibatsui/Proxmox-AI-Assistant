@@ -1695,7 +1695,7 @@ async def ssh_read_file(ssh_client, path: str) -> FileContent:
     
     try:
         file_size = int(stdout.strip())
-    except:
+    except (ValueError, AttributeError):
         raise HTTPException(status_code=400, detail="Could not determine file size")
     
     if file_size > MAX_FILE_SIZE:

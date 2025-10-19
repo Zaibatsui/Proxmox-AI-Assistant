@@ -217,9 +217,7 @@ function Settings({ onLogout }) {
           <p className="text-slate-400">Configure Proxmox API connection and preferences</p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* LEFT COLUMN - Configuration Forms */}
-          <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6">
             
             {/* Proxmox API Configuration Card - Collapsible */}
             <Collapsible open={apiConfigOpen} onOpenChange={setApiConfigOpen}>

@@ -26,6 +26,11 @@ function AIAssistant({ onLogout }) {
   // Location awareness
   const [currentLocation, setCurrentLocation] = useState({ type: 'host', label: 'Proxmox Host' });
   const [availableLocations, setAvailableLocations] = useState([]);
+  
+  // VM Credentials management
+  const [showVMCredentials, setShowVMCredentials] = useState(false);
+  const [vmCredentials, setVmCredentials] = useState({ username: 'root', password: '' });
+  const [sessionCredentials, setSessionCredentials] = useState({}); // Store VM credentials for session
 
   useEffect(() => {
     fetchHistory();

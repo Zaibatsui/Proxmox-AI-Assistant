@@ -552,6 +552,73 @@ function AIAssistant({ onLogout }) {
             </div>
           </div>
         )}
+
+        {/* VM Credentials Modal */}
+        {showVMCredentials && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md border-slate-700 bg-slate-900">
+              <CardHeader>
+                <CardTitle className="text-white">VM SSH Credentials Required</CardTitle>
+                <p className="text-sm text-slate-400 mt-2">
+                  Enter SSH credentials to access VM {currentLocation.id} ({currentLocation.label})
+                </p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label htmlFor="vm-username" className="text-slate-200">Username</Label>
+                  <Input
+                    id="vm-username"
+                    value={vmCredentials.username}
+                    onChange={(e) => setVmCredentials({ ...vmCredentials, username: e.target.value })}
+                    placeholder="root"
+                    className="mt-1 bg-slate-800 border-slate-700 text-white"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="vm-password" className="text-slate-200">Password</Label>
+                  <Input
+                    id="vm-password"
+                    type="password"
+                    value={vmCredentials.password}
+                    onChange={(e) => setVmCredentials({ ...vmCredentials, password: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && vmCredentials.password) {
+                        saveVMCredentials();
+                      }
+                    }}
+                    placeholder="Enter VM password"
+                    className="mt-1 bg-slate-800 border-slate-700 text-white"
+                  />
+                </div>
+                
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    onClick={saveVMCredentials}
+                    disabled={!vmCredentials.password}
+                    className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
+                  >
+                    Save & Continue
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      setShowVMCredentials(false);
+                      setCurrentLocation({ type: 'host', label: 'Proxmox Host' });
+                      toast.info("Switched back to Proxmox Host");
+                    }}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+                
+                <p className="text-xs text-slate-500 mt-4">
+                  ⚠️ Credentials will be stored for this session only and are not saved permanently.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </Layout>
   );

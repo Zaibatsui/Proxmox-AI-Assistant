@@ -334,7 +334,7 @@ const FileBrowser = ({ onLogout }) => {
           </div>
         </div>
       </div>
-    </div>
+    </Layout>
   );
 };
 

@@ -831,7 +831,6 @@ function Settings({ onLogout }) {
         </Collapsible>
       </div>
       </div>
-      </div>
     </Layout>
   );
 }

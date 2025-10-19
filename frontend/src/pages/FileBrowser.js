@@ -92,7 +92,40 @@ const FileBrowser = ({ onLogout }) => {
       [location.id]: vmCredentials
     });
     setShowVMCredentials(false);
+    setConnectionTestResult(null);
     loadDirectory('/root');
+  };
+
+  // Test VM SSH connection
+  const testVMConnection = async () => {
+    setTestingConnection(true);
+    setConnectionTestResult(null);
+    setError(null);
+    
+    try {
+      const locationPayload = {
+        type: 'vm',
+        id: location.id,
+        ssh_username: vmCredentials.username,
+        ssh_password: vmCredentials.password
+      };
+      
+      // Try to list root directory as a test
+      const response = await axios.post(
+        `${BACKEND_URL}/api/files/list`,
+        { path: '/root', location: locationPayload },
+        getAuthHeaders()
+      );
+      
+      setConnectionTestResult('success');
+      setSuccess('SSH connection successful!');
+      setTimeout(() => setSuccess(null), 3000);
+    } catch (err) {
+      setConnectionTestResult('error');
+      setError(err.response?.data?.detail || 'SSH connection failed. Please check credentials.');
+    } finally {
+      setTestingConnection(false);
+    }
   };
 
   // Parse path into breadcrumbs

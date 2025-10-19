@@ -4,35 +4,35 @@
     "success": true,
     "message": "Logged in successfully (Proxmox config pre-configured with port 8006)",
     "details": {},
-    "timestamp": "2025-10-19T14:40:44.750747"
+    "timestamp": "2025-10-19T14:41:40.027493"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Proxmox configured for host: https://proxmox.zaibatsui.co.uk:8006",
     "details": {},
-    "timestamp": "2025-10-19T14:40:44.794437"
+    "timestamp": "2025-10-19T14:41:40.068819"
   },
   {
     "test": "Proxmox API Test",
     "success": false,
     "message": "Proxmox API failed: HTTPSConnectionPool(host='proxmox.zaibatsui.co.uk', port=8006): Max retries exceeded with url: /api2/json/nodes (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1016)')))",
     "details": {},
-    "timestamp": "2025-10-19T14:40:46.312160"
+    "timestamp": "2025-10-19T14:41:41.555601"
   },
   {
     "test": "Proxmox SSH Test",
     "success": true,
     "message": "Proxmox SSH connection successful",
     "details": {},
-    "timestamp": "2025-10-19T14:40:46.312194"
+    "timestamp": "2025-10-19T14:41:41.555627"
   },
   {
     "test": "VM 121 Detection",
     "success": false,
     "message": "VM/Container 121 not found. Available VMIDs: []",
     "details": {},
-    "timestamp": "2025-10-19T14:40:46.581900"
+    "timestamp": "2025-10-19T14:41:41.823502"
   },
   {
     "test": "LXC File Access Test",
@@ -41,7 +41,7 @@
     "details": {
       "error": "{\"detail\":\"Path not found\"}"
     },
-    "timestamp": "2025-10-19T14:40:48.258284"
+    "timestamp": "2025-10-19T14:41:43.416726"
   },
   {
     "test": "VM SSH File Access Test",
@@ -51,20 +51,20 @@
       "error": "Internal Server Error",
       "credentials_used": "root/10065609Xx!"
     },
-    "timestamp": "2025-10-19T14:40:48.521247"
+    "timestamp": "2025-10-19T14:41:43.678711"
   },
   {
     "test": "VM 121 Type Detection",
     "success": false,
     "message": "VM 121 is not accessible via LXC or SSH methods",
     "details": {},
-    "timestamp": "2025-10-19T14:40:48.522116"
+    "timestamp": "2025-10-19T14:41:43.679471"
   },
   {
     "test": "Backend Log Analysis",
     "success": true,
     "message": "No SSH-related errors found in recent logs",
     "details": {},
-    "timestamp": "2025-10-19T14:40:48.531188"
+    "timestamp": "2025-10-19T14:41:43.687809"
   }
 ]

@@ -64,6 +64,14 @@ function Settings({ onLogout }) {
     fetchConfig();
     fetchAPIKeys();
   }, []);
+  
+  useEffect(() => {
+    // Initialize custom colors from theme context
+    if (primaryColor) setCustomPrimary(rgbToHex(primaryColor));
+    if (secondaryColor) setCustomSecondary(rgbToHex(secondaryColor));
+    if (sidebarBgColor) setCustomSidebarBg(rgbToHex(sidebarBgColor));
+    if (headerBgColor) setCustomHeaderBg(rgbToHex(headerBgColor));
+  }, [primaryColor, secondaryColor, sidebarBgColor, headerBgColor]);
 
   const fetchConfig = async () => {
     try {

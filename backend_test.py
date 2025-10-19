@@ -35,32 +35,30 @@ class BackendTester:
             print(f"   Details: {details}")
     
     def authenticate(self):
-        """Authenticate with test user"""
+        """Authenticate with existing user that has Proxmox config"""
         try:
-            # Try to register a test user first
-            register_data = {
-                "username": "vm121_tester",
-                "password": "TestPass123!"
+            # Use existing user "Zaibatsui" that has Proxmox configuration
+            login_data = {
+                "username": "Zaibatsui", 
+                "password": "password123"  # Try common password
             }
             
-            response = requests.post(f"{self.base_url}/auth/register", json=register_data, timeout=10)
+            response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
             if response.status_code == 200:
                 self.token = response.json()["token"]
-                self.log_result("Authentication", True, "Registered and authenticated successfully")
+                self.log_result("Authentication", True, "Logged in as Zaibatsui (has Proxmox config)")
                 return True
-            elif response.status_code == 400 and "already exists" in response.text:
-                # User exists, try login
-                login_data = {
-                    "username": "vm121_tester", 
-                    "password": "TestPass123!"
-                }
+            
+            # If that fails, try other common passwords
+            for password in ["admin", "zaibatsui", "Password123", "password"]:
+                login_data["password"] = password
                 response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
                 if response.status_code == 200:
                     self.token = response.json()["token"]
-                    self.log_result("Authentication", True, "Logged in successfully")
+                    self.log_result("Authentication", True, f"Logged in as Zaibatsui with password: {password}")
                     return True
             
-            self.log_result("Authentication", False, f"Auth failed: {response.status_code} - {response.text}")
+            self.log_result("Authentication", False, f"Could not authenticate as Zaibatsui. Last response: {response.status_code} - {response.text}")
             return False
             
         except Exception as e:

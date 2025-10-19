@@ -1310,7 +1310,23 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
         
         # Check if AI wants to call functions
         if response_message.tool_calls:
-            # Execute function calls
+            # Add the assistant's message with tool calls ONCE
+            messages.append({
+                "role": "assistant",
+                "content": response_message.content,
+                "tool_calls": [
+                    {
+                        "id": tc.id,
+                        "type": tc.type,
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments
+                        }
+                    } for tc in response_message.tool_calls
+                ]
+            })
+            
+            # Execute function calls and add tool responses
             for tool_call in response_message.tool_calls:
                 function_name = tool_call.function.name
                 function_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
@@ -1326,8 +1342,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     vm_detail = next((vm for vm in env_data['vms_and_containers'] if str(vm['vmid']) == str(vmid)), None)
                     function_response = vm_detail or {"error": f"VM {vmid} not found"}
                 
-                # Add function response to messages
-                messages.append(response_message.model_dump())
+                # Add tool response
                 messages.append({
                     "role": "tool",
                     "tool_call_id": tool_call.id,

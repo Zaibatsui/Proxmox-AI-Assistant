@@ -832,7 +832,6 @@ function Settings({ onLogout }) {
       </div>
       </div>
       </div>
-      </div>
     </Layout>
   );
 }

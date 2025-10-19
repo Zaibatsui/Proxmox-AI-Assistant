@@ -1463,6 +1463,39 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     vmid = function_args.get("vmid")
                     vm_detail = next((vm for vm in env_data['vms_and_containers'] if str(vm['vmid']) == str(vmid)), None)
                     function_response = vm_detail or {"error": f"VM {vmid} not found"}
+                elif function_name == "list_directory":
+                    try:
+                        ssh_client = await get_ssh_client(current_user["user_id"])
+                        files = await ssh_list_directory(ssh_client, function_args.get("path", "/"))
+                        ssh_client.close()
+                        function_response = {
+                            "path": function_args.get("path"),
+                            "files": [f.model_dump() for f in files]
+                        }
+                    except Exception as e:
+                        function_response = {"error": str(e)}
+                elif function_name == "read_file":
+                    try:
+                        ssh_client = await get_ssh_client(current_user["user_id"])
+                        file_content = await ssh_read_file(ssh_client, function_args.get("path"))
+                        ssh_client.close()
+                        function_response = {
+                            "path": file_content.path,
+                            "content": file_content.content,
+                            "size": file_content.size
+                        }
+                    except Exception as e:
+                        function_response = {"error": str(e)}
+                elif function_name == "propose_file_edit":
+                    # This is a special case - we don't execute it, we return a proposal
+                    # The frontend will handle showing the diff and confirmation
+                    function_response = {
+                        "type": "file_edit_proposal",
+                        "path": function_args.get("path"),
+                        "new_content": function_args.get("new_content"),
+                        "reason": function_args.get("reason"),
+                        "requires_confirmation": True
+                    }
                 
                 # Add tool response
                 messages.append({

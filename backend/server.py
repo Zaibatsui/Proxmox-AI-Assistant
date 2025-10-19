@@ -1726,9 +1726,6 @@ async def ssh_read_file(ssh_client, path: str) -> FileContent:
 
 async def ssh_write_file(ssh_client, path: str, content: str):
     """Write content to file"""
-    # Escape single quotes in content for shell
-    escaped_content = content.replace("'", "'\\''")
-    
     # Write to temp file first, then move (atomic operation)
     temp_path = f"{path}.tmp.{uuid.uuid4().hex[:8]}"
     

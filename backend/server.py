@@ -355,15 +355,36 @@ async def get_proxmox_connection(user_id: str):
         
         logger.info(f"Connecting as user: {user}, token: {token_name}")
         
-        proxmox = ProxmoxAPI(
-            hostname,
-            port=port,
-            user=user,
-            token_name=token_name,
-            token_value=config_doc['api_token_secret'],
-            verify_ssl=config_doc.get('verify_ssl', False),
-            timeout=15  # Increased timeout for public connections
-        )
+        # Handle SSL verification issues with custom session
+        verify_ssl = config_doc.get('verify_ssl', False)
+        if not verify_ssl:
+            # Create custom session with SSL verification disabled
+            session = requests.Session()
+            session.verify = False
+            # Disable SSL warnings
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            proxmox = ProxmoxAPI(
+                hostname,
+                port=port,
+                user=user,
+                token_name=token_name,
+                token_value=config_doc['api_token_secret'],
+                verify_ssl=False,
+                timeout=15,  # Increased timeout for public connections
+                session=session
+            )
+        else:
+            proxmox = ProxmoxAPI(
+                hostname,
+                port=port,
+                user=user,
+                token_name=token_name,
+                token_value=config_doc['api_token_secret'],
+                verify_ssl=True,
+                timeout=15  # Increased timeout for public connections
+            )
         return proxmox, config_doc
     except Exception as e:
         logger.error(f"Proxmox connection error: {str(e)}")

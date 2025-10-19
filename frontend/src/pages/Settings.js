@@ -561,27 +561,6 @@ function Settings({ onLogout }) {
             </Collapsible>
           </div>
 
-          {/* RIGHT COLUMN - Additional Settings */}
-          <div className="lg:col-span-1">
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle className="text-slate-100 text-sm">How to Create API Token</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ol className="text-xs text-slate-400 space-y-2 list-decimal list-inside">
-                  <li>Log into Proxmox web interface</li>
-                  <li>Go to Datacenter → Permissions → API Tokens</li>
-                  <li>Click "Add" to create a new token</li>
-                  <li>Select user (e.g., root@pam)</li>
-                  <li>Enter a Token ID</li>
-                  <li className="font-semibold text-orange-400">✓ CHECK "Privilege Separation" (REQUIRED!)</li>
-                  <li>Copy the secret immediately (shown only once)</li>
-                </ol>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
         {/* AI Configuration - Collapsible */}
         <Collapsible open={aiConfigOpen} onOpenChange={setAiConfigOpen}>
           <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">

@@ -207,6 +207,69 @@ class AuditLog(BaseModel):
     details: Dict[str, Any]
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+# ==================== FILE OPERATIONS MODELS ====================
+
+class FileListRequest(BaseModel):
+    path: str = "/"
+
+class FileReadRequest(BaseModel):
+    path: str
+
+class FileWriteRequest(BaseModel):
+    path: str
+    content: str
+    create_backup: bool = True
+    backup_description: Optional[str] = None
+
+class FileCreateRequest(BaseModel):
+    path: str
+    content: str = ""
+
+class FileDeleteRequest(BaseModel):
+    path: str
+    create_backup: bool = True
+
+class FileMoveRequest(BaseModel):
+    source_path: str
+    dest_path: str
+
+class FileBackupRequest(BaseModel):
+    path: str
+    description: Optional[str] = None
+
+class FileInfo(BaseModel):
+    name: str
+    path: str
+    type: str  # file or directory
+    size: Optional[int] = None
+    modified: Optional[str] = None
+    permissions: Optional[str] = None
+
+class FileContent(BaseModel):
+    path: str
+    content: str
+    size: int
+    modified: Optional[str] = None
+
+class FileBackup(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    username: str
+    file_path: str
+    backup_path: str  # Path on Proxmox filesystem
+    description: str
+    file_size: int
+    change_type: str  # edit, delete, move, manual
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class BackupListResponse(BaseModel):
+    backups: List[FileBackup]
+    total: int
+
+class RestoreRequest(BaseModel):
+    backup_id: str
+
 # ==================== HELPER FUNCTIONS ====================
 
 def hash_password(password: str) -> str:

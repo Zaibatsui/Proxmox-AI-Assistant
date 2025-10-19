@@ -101,15 +101,23 @@ export function ThemeProvider({ children }) {
     }
   };
 
-  const applyTheme = (themeName, bg, cardStyle, accent) => {
+  const applyTheme = (themeName, bg, cardStyle, accent, primary, secondary, sidebarBg, headerBg, 
+                      density, radius, shadow, sidebarW) => {
     const theme = themes[themeName] || themes.cyan;
     const root = document.documentElement;
     
-    // Set color variables
-    root.style.setProperty("--theme-primary-rgb", theme.primaryLight);
-    root.style.setProperty("--theme-primary", `rgb(${theme.primaryLight})`);
+    // Set color variables (use custom colors if provided, otherwise use theme defaults)
+    root.style.setProperty("--theme-primary-rgb", primary || theme.primaryLight);
+    root.style.setProperty("--theme-primary", `rgb(${primary || theme.primaryLight})`);
     root.style.setProperty("--theme-primary-dark", `rgb(${theme.primaryDark})`);
     root.style.setProperty("--theme-accent", accent ? `rgb(${accent})` : `rgb(${theme.accent})`);
+    
+    // Custom colors
+    if (secondary) {
+      root.style.setProperty("--theme-secondary", `rgb(${secondary})`);
+    } else {
+      root.style.setProperty("--theme-secondary", `rgb(${theme.accent})`);
+    }
     
     // Background colors
     const backgrounds = {
@@ -123,6 +131,19 @@ export function ThemeProvider({ children }) {
     root.style.setProperty("--bg-card", bgColors.card);
     root.style.setProperty("--bg-border", bgColors.border);
     
+    // Sidebar and header backgrounds
+    if (sidebarBg) {
+      root.style.setProperty("--sidebar-bg", `rgb(${sidebarBg})`);
+    } else {
+      root.style.setProperty("--sidebar-bg", bgColors.card);
+    }
+    
+    if (headerBg) {
+      root.style.setProperty("--header-bg", `rgb(${headerBg})`);
+    } else {
+      root.style.setProperty("--header-bg", bgColors.card);
+    }
+    
     // Card styles
     const cardStyles = {
       glass: { opacity: "0.5", blur: "12px", border: "1px" },
@@ -134,6 +155,34 @@ export function ThemeProvider({ children }) {
     root.style.setProperty("--card-opacity", cardStyleConfig.opacity);
     root.style.setProperty("--card-blur", cardStyleConfig.blur);
     root.style.setProperty("--card-border", cardStyleConfig.border);
+    
+    // Layout density
+    const densityValues = {
+      compact: "0.75",
+      comfortable: "1",
+      spacious: "1.25"
+    };
+    root.style.setProperty("--layout-density", densityValues[density] || "1");
+    
+    // Border radius
+    const radiusValues = {
+      sharp: "0px",
+      rounded: "0.5rem",
+      "very-rounded": "1rem"
+    };
+    root.style.setProperty("--border-radius", radiusValues[radius] || "0.5rem");
+    
+    // Shadow intensity
+    const shadowValues = {
+      none: "0 0 0 rgba(0, 0, 0, 0)",
+      subtle: "0 1px 3px rgba(0, 0, 0, 0.12)",
+      medium: "0 4px 6px rgba(0, 0, 0, 0.1)",
+      strong: "0 10px 15px rgba(0, 0, 0, 0.3)"
+    };
+    root.style.setProperty("--shadow", shadowValues[shadow] || shadowValues.medium);
+    
+    // Sidebar width
+    root.style.setProperty("--sidebar-width", `${sidebarW || 256}px`);
     
     // Apply body background
     document.body.style.backgroundColor = bgColors.bg;

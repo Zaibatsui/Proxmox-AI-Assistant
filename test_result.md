@@ -59,3 +59,5 @@ test_plan:
 agent_communication:
   - agent: "testing"
     message: "Starting VM/Container 121 SSH connection testing based on user report of connection failures in File Browser"
+  - agent: "testing"
+    message: "CRITICAL ISSUE IDENTIFIED: Proxmox server (proxmox.zaibatsui.co.uk) is unreachable from this container. Backend logs show repeated 'No route to host' errors. This is a network connectivity issue, not an SSH credential problem. VM/Container 121 cannot be accessed until Proxmox connectivity is restored."

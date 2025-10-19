@@ -24,6 +24,13 @@ const FileBrowser = ({ onLogout }) => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [breadcrumbs, setBreadcrumbs] = useState([]);
+  
+  // Location state
+  const [location, setLocation] = useState({ type: 'host' });
+  const [availableLocations, setAvailableLocations] = useState([]);
+  const [showVMCredentials, setShowVMCredentials] = useState(false);
+  const [vmCredentials, setVmCredentials] = useState({ username: 'root', password: '' });
+  const [sessionCredentials, setSessionCredentials] = useState({}); // Store VM credentials for session
 
   // Get auth token
   const getAuthHeaders = () => {

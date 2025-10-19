@@ -733,9 +733,15 @@ function Settings({ onLogout }) {
                       <button
                         key={key}
                         onClick={async () => {
+                          // Reset custom colors to match theme preset
+                          setCustomPrimary(rgbToHex(theme.primaryLight));
+                          setCustomSecondary(rgbToHex(theme.accent));
+                          setCustomSidebarBg("");
+                          setCustomHeaderBg("");
+                          
                           const success = await updateTheme(
                             key, background, cardStyle, null,
-                            null, null, null, null,
+                            theme.primaryLight, theme.accent, null, null,
                             layoutDensity, borderRadius, shadowIntensity, sidebarWidth
                           );
                           if (success) {

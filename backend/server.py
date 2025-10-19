@@ -2575,10 +2575,11 @@ async def write_file(request: FileWriteRequest, current_user: dict = Depends(get
                 logger.warning(f"Backup failed: {str(e)}")
         
         # Write file
-        await ssh_write_file(ssh_client, request.path, request.content)
+        await location_write_file(ssh_client, request.path, request.content, request.location)
         
         await log_audit(current_user["user_id"], "file_write", {
             "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"},
             "size": len(request.content),
             "backup_created": backup is not None,
             "backup_id": backup.id if backup else None
@@ -2596,7 +2597,7 @@ async def write_file(request: FileWriteRequest, current_user: dict = Depends(get
 @api_router.post("/files/create")
 async def create_file(request: FileCreateRequest, current_user: dict = Depends(get_current_user)):
     """Create a new file"""
-    ssh_client = await get_ssh_client(current_user["user_id"])
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
         await ssh_create_file(ssh_client, request.path, request.content)

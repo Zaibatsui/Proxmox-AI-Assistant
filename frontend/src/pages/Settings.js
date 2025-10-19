@@ -830,6 +830,7 @@ function Settings({ onLogout }) {
           </Card>
         </Collapsible>
       </div>
+      </div>
     </div>
     </Layout>
   );

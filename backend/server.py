@@ -1233,19 +1233,66 @@ Be conversational, helpful, and always reference their actual environment!"""
         # Create OpenAI client
         client = AsyncOpenAI(api_key=api_key)
         
-        # Send message to GPT-4
+        # Build context str
+        context_str = ""
+        if query.context:
+            context_str = f"\n\nAdditional Context:\n{query.context}"
+        
+        # Initial message to GPT with tools
+        messages = [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": f"{query.question}{context_str}"}
+        ]
+        
+        # Send message with function calling enabled
         completion = await client.chat.completions.create(
-            model="gpt-4o",  # or "gpt-4-turbo" or "gpt-3.5-turbo"
-            messages=[
-                {"role": "system", "content": system_message},
-                {"role": "user", "content": f"{query.question}{context_str}"}
-            ],
+            model="gpt-4o",
+            messages=messages,
+            tools=ai_tools,
+            tool_choice="auto",
             temperature=0.7,
             max_tokens=2048
         )
         
-        # Extract text from response
-        response_text = completion.choices[0].message.content
+        response_message = completion.choices[0].message
+        
+        # Check if AI wants to call functions
+        if response_message.tool_calls:
+            # Execute function calls
+            for tool_call in response_message.tool_calls:
+                function_name = tool_call.function.name
+                function_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
+                
+                # Execute the function
+                function_response = None
+                if function_name == "get_proxmox_status":
+                    function_response = env_data
+                elif function_name == "get_hardware_devices":
+                    function_response = {"devices": env_data['devices']} if env_data else {"devices": []}
+                elif function_name == "get_vm_details":
+                    vmid = function_args.get("vmid")
+                    vm_detail = next((vm for vm in env_data['vms_and_containers'] if str(vm['vmid']) == str(vmid)), None)
+                    function_response = vm_detail or {"error": f"VM {vmid} not found"}
+                
+                # Add function response to messages
+                messages.append(response_message.model_dump())
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "name": function_name,
+                    "content": json.dumps(function_response)
+                })
+            
+            # Get final response from AI with function results
+            completion = await client.chat.completions.create(
+                model="gpt-4o",
+                messages=messages,
+                temperature=0.7,
+                max_tokens=2048
+            )
+            response_message = completion.choices[0].message
+        
+        response_text = response_message.content
         
         # Extract suggested actions (new JSON format)
         suggested_commands = []

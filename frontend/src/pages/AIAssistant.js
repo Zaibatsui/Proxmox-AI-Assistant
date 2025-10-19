@@ -257,8 +257,7 @@ function AIAssistant({ onLogout }) {
                 value={JSON.stringify(currentLocation)}
                 onChange={(e) => {
                   const loc = JSON.parse(e.target.value);
-                  setCurrentLocation(loc);
-                  toast.info(`Switched to: ${loc.label}`);
+                  handleLocationChange(loc);
                 }}
                 className="flex-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-cyan-500 focus:outline-none"
               >

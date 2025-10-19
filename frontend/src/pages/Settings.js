@@ -585,7 +585,28 @@ function Settings({ onLogout }) {
                       </CardDescription>
                     </div>
                   </div>
-                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${aiConfigOpen ? 'transform rotate-180' : ''}`} />
+                  <div className="flex items-center gap-3">
+                    {apiKeys && (
+                      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
+                        apiKeys.has_openai_key
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-slate-700 text-slate-400"
+                      }`}>
+                        {apiKeys.has_openai_key ? (
+                          <>
+                            <CheckCircle className="w-4 h-4" />
+                            <span>Configured</span>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-lg">✕</span>
+                            <span>Not Set</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${aiConfigOpen ? 'transform rotate-180' : ''}`} />
+                  </div>
                 </div>
               </CardHeader>
             </CollapsibleTrigger>

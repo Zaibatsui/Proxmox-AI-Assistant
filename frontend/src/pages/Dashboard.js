@@ -216,7 +216,7 @@ function Dashboard({ onLogout }) {
 
         {/* At-a-Glance Status Bar */}
         <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-          <CardContent className="p-4">
+          <CardContent>
             <div className="flex items-center justify-between flex-wrap gap-4">
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">

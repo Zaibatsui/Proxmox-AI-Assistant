@@ -361,7 +361,7 @@ function Dashboard({ onLogout }) {
               VMs, Containers, and Resource Status
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent noPaddingTop={true}>
             {loading ? (
               <div className="text-center py-8 text-slate-500">Loading...</div>
             ) : vms.length === 0 ? (

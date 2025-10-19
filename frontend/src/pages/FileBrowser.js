@@ -423,6 +423,63 @@ const FileBrowser = ({ onLogout }) => {
           </div>
         </div>
       </div>
+
+      {/* VM Credentials Modal */}
+      {showVMCredentials && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-800 rounded-lg max-w-md w-full border border-gray-700">
+            <div className="px-6 py-4 border-b border-gray-700">
+              <h3 className="text-lg font-bold text-white">VM SSH Credentials</h3>
+              <p className="text-sm text-gray-400 mt-1">
+                Enter credentials to access VM {location.id}
+              </p>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Username</label>
+                <input
+                  type="text"
+                  value={vmCredentials.username}
+                  onChange={(e) => setVmCredentials({ ...vmCredentials, username: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                  placeholder="root"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Password</label>
+                <input
+                  type="password"
+                  value={vmCredentials.password}
+                  onChange={(e) => setVmCredentials({ ...vmCredentials, password: e.target.value })}
+                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+                  placeholder="Enter VM password"
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                ⚠️ Credentials will be stored for this session only
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-gray-700 flex items-center justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowVMCredentials(false);
+                  setLocation({ type: 'host' });
+                }}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveVMCredentials}
+                disabled={!vmCredentials.password}
+                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
+              >
+                Connect
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </Layout>
   );

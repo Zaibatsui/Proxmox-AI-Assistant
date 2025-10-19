@@ -43,11 +43,17 @@ const FileBrowser = ({ onLogout }) => {
     if (location.type === 'vm' && sessionCredentials[location.id]) {
       return {
         type: 'vm',
-        vm_id: location.id,
-        credentials: sessionCredentials[location.id]
+        id: location.id,
+        ssh_username: sessionCredentials[location.id].username,
+        ssh_password: sessionCredentials[location.id].password
+      };
+    } else if (location.type === 'lxc') {
+      return {
+        type: 'lxc',
+        id: location.id
       };
     }
-    return { type: 'host' };
+    return null; // null means host
   };
 
   // Fetch available locations (VMs and containers)

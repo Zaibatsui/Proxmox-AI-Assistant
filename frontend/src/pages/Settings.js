@@ -41,6 +41,24 @@ function Settings({ onLogout }) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  
+  // Advanced appearance state
+  const [customPrimary, setCustomPrimary] = useState("");
+  const [customSecondary, setCustomSecondary] = useState("");
+  const [customSidebarBg, setCustomSidebarBg] = useState("");
+  const [customHeaderBg, setCustomHeaderBg] = useState("");
+  
+  // Helper functions for RGB/Hex conversion
+  const rgbToHex = (rgb) => {
+    if (!rgb) return "#000000";
+    const [r, g, b] = rgb.split(',').map(s => parseInt(s.trim()));
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
+  };
+  
+  const hexToRgb = (hex) => {
+    const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? `${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(result[3], 16)}` : null;
+  };
 
   useEffect(() => {
     fetchConfig();

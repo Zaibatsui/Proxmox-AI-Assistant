@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Archive, RotateCcw, Trash2, Eye, Search, Filter } from 'lucide-react';
+import Layout from '../components/Layout';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
-const BackupManager = () => {
+const BackupManager = ({ onLogout }) => {
   const [backups, setBackups] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

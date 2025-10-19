@@ -195,6 +195,54 @@ function AIAssistant({ onLogout }) {
           <p className="text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
         </div>
 
+        {/* Location Selector */}
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm mb-4">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-4">
+              <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                <Server className="w-4 h-4" />
+                Working on:
+              </label>
+              <select
+                value={JSON.stringify(currentLocation)}
+                onChange={(e) => {
+                  const loc = JSON.parse(e.target.value);
+                  setCurrentLocation(loc);
+                  toast.info(`Switched to: ${loc.label}`);
+                }}
+                className="flex-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-cyan-500 focus:outline-none"
+              >
+                <option value={JSON.stringify({ type: 'host', label: 'Proxmox Host' })}>
+                  Proxmox Host
+                </option>
+                <optgroup label="Containers">
+                  {availableLocations.filter(l => l.type === 'lxc').map((loc) => (
+                    <option 
+                      key={loc.vmid} 
+                      value={JSON.stringify({ type: 'lxc', id: loc.vmid, label: `Container ${loc.vmid} (${loc.name})` })}
+                    >
+                      Container: {loc.vmid} ({loc.name})
+                    </option>
+                  ))}
+                </optgroup>
+                <optgroup label="Virtual Machines">
+                  {availableLocations.filter(l => l.type === 'qemu').map((loc) => (
+                    <option 
+                      key={loc.vmid} 
+                      value={JSON.stringify({ type: 'vm', id: loc.vmid, label: `VM ${loc.vmid} (${loc.name})` })}
+                    >
+                      VM: {loc.vmid} ({loc.name})
+                    </option>
+                  ))}
+                </optgroup>
+              </select>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">
+              💡 AI will know you're working on {currentLocation.label} and use the correct location for file operations
+            </p>
+          </CardContent>
+        </Card>
+
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 min-h-0">
           {/* Chat Area */}
           <div className="lg:col-span-3 flex flex-col min-h-0">

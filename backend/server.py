@@ -209,25 +209,36 @@ class AuditLog(BaseModel):
 
 # ==================== FILE OPERATIONS MODELS ====================
 
+class FileLocation(BaseModel):
+    type: str  # "host", "lxc", "vm"
+    id: Optional[str] = None  # Container/VM ID
+    ssh_username: Optional[str] = None  # For VM SSH
+    ssh_password: Optional[str] = None  # For VM SSH
+
 class FileListRequest(BaseModel):
     path: str = "/"
+    location: Optional[FileLocation] = None
 
 class FileReadRequest(BaseModel):
     path: str
+    location: Optional[FileLocation] = None
 
 class FileWriteRequest(BaseModel):
     path: str
     content: str
     create_backup: bool = True
     backup_description: Optional[str] = None
+    location: Optional[FileLocation] = None
 
 class FileCreateRequest(BaseModel):
     path: str
     content: str = ""
+    location: Optional[FileLocation] = None
 
 class FileDeleteRequest(BaseModel):
     path: str
     create_backup: bool = True
+    location: Optional[FileLocation] = None
 
 class FileMoveRequest(BaseModel):
     source_path: str

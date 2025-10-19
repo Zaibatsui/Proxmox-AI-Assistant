@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LogOut, Server, Cpu, Box, MessageSquare, Activity, FileText, Settings } from "lucide-react";
+import { LogOut, Server, Cpu, Box, MessageSquare, Activity, FileText, Settings, FolderOpen, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 function Layout({ children, onLogout, currentPage }) {
@@ -10,6 +10,8 @@ function Layout({ children, onLogout, currentPage }) {
     { name: "Devices", path: "/devices", icon: Cpu, key: "devices" },
     { name: "VMs & CTs", path: "/vms", icon: Box, key: "vms" },
     { name: "AI Assistant", path: "/assistant", icon: MessageSquare, key: "assistant" },
+    { name: "File Browser", path: "/files", icon: FolderOpen, key: "files" },
+    { name: "Backups", path: "/backups", icon: Archive, key: "backups" },
     { name: "Actions", path: "/actions", icon: Activity, key: "actions" },
     { name: "Audit Log", path: "/audit", icon: FileText, key: "audit" },
     { name: "Settings", path: "/settings", icon: Settings, key: "settings" }

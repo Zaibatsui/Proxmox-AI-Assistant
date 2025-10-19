@@ -254,7 +254,7 @@ class BackendTester:
             self.log_result("Backend Log Analysis", False, f"Log analysis error: {str(e)}")
     
     def test_proxmox_connection(self):
-        """Test if Proxmox connection is configured"""
+        """Test if Proxmox connection is configured and working"""
         try:
             response = requests.get(f"{self.base_url}/proxmox/config", headers=self.get_headers(), timeout=10)
             
@@ -266,6 +266,27 @@ class BackendTester:
                         True, 
                         f"Proxmox configured for host: {config.get('host', 'unknown')}"
                     )
+                    
+                    # Test the actual connection
+                    test_response = requests.post(f"{self.base_url}/proxmox/test-connection", headers=self.get_headers(), timeout=30)
+                    if test_response.status_code == 200:
+                        test_result = test_response.json()
+                        api_status = test_result.get('api', {}).get('status', 'unknown')
+                        ssh_status = test_result.get('ssh', {}).get('status', 'unknown')
+                        
+                        if api_status == 'success':
+                            self.log_result("Proxmox API Test", True, f"Proxmox API connection successful")
+                        else:
+                            api_error = test_result.get('api', {}).get('error', 'Unknown error')
+                            self.log_result("Proxmox API Test", False, f"Proxmox API failed: {api_error}")
+                        
+                        if ssh_status == 'success':
+                            self.log_result("Proxmox SSH Test", True, f"Proxmox SSH connection successful")
+                        else:
+                            ssh_error = test_result.get('ssh', {}).get('error', 'Unknown error')
+                            self.log_result("Proxmox SSH Test", False, f"Proxmox SSH failed: {ssh_error}")
+                    else:
+                        self.log_result("Proxmox Connection Test", False, f"Connection test failed: {test_response.status_code} - {test_response.text}")
                 else:
                     self.log_result(
                         "Proxmox Configuration", 

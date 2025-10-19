@@ -837,13 +837,29 @@ async def get_theme(current_user: dict = Depends(get_current_user)):
             "theme_name": "cyan",
             "background": "dark",
             "card_style": "glass",
-            "accent_color": None
+            "accent_color": None,
+            "primary_color": None,
+            "secondary_color": None,
+            "sidebar_bg_color": None,
+            "header_bg_color": None,
+            "layout_density": "comfortable",
+            "border_radius": "rounded",
+            "shadow_intensity": "medium",
+            "sidebar_width": 256
         }
     return {
         "theme_name": theme_doc["theme_name"],
         "background": theme_doc.get("background", "dark"),
         "card_style": theme_doc.get("card_style", "glass"),
-        "accent_color": theme_doc.get("accent_color")
+        "accent_color": theme_doc.get("accent_color"),
+        "primary_color": theme_doc.get("primary_color"),
+        "secondary_color": theme_doc.get("secondary_color"),
+        "sidebar_bg_color": theme_doc.get("sidebar_bg_color"),
+        "header_bg_color": theme_doc.get("header_bg_color"),
+        "layout_density": theme_doc.get("layout_density", "comfortable"),
+        "border_radius": theme_doc.get("border_radius", "rounded"),
+        "shadow_intensity": theme_doc.get("shadow_intensity", "medium"),
+        "sidebar_width": theme_doc.get("sidebar_width", 256)
     }
 
 @api_router.post("/theme")

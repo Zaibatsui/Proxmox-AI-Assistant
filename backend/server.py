@@ -873,7 +873,15 @@ async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get
         theme_name=theme_data.theme_name,
         background=theme_data.background or "dark",
         card_style=theme_data.card_style or "glass",
-        accent_color=theme_data.accent_color
+        accent_color=theme_data.accent_color,
+        primary_color=theme_data.primary_color,
+        secondary_color=theme_data.secondary_color,
+        sidebar_bg_color=theme_data.sidebar_bg_color,
+        header_bg_color=theme_data.header_bg_color,
+        layout_density=theme_data.layout_density or "comfortable",
+        border_radius=theme_data.border_radius or "rounded",
+        shadow_intensity=theme_data.shadow_intensity or "medium",
+        sidebar_width=theme_data.sidebar_width or 256
     )
     doc = theme.model_dump()
     doc['created_at'] = doc['created_at'].isoformat()
@@ -882,14 +890,24 @@ async def update_theme(theme_data: ThemeUpdate, current_user: dict = Depends(get
     await log_audit(current_user["user_id"], "theme_updated", {
         "theme": theme_data.theme_name,
         "background": theme_data.background,
-        "card_style": theme_data.card_style
+        "card_style": theme_data.card_style,
+        "layout_density": theme_data.layout_density,
+        "border_radius": theme_data.border_radius
     })
     
     return {
         "message": "Theme updated",
         "theme_name": theme_data.theme_name,
         "background": theme_data.background,
-        "card_style": theme_data.card_style
+        "card_style": theme_data.card_style,
+        "primary_color": theme_data.primary_color,
+        "secondary_color": theme_data.secondary_color,
+        "sidebar_bg_color": theme_data.sidebar_bg_color,
+        "header_bg_color": theme_data.header_bg_color,
+        "layout_density": theme_data.layout_density,
+        "border_radius": theme_data.border_radius,
+        "shadow_intensity": theme_data.shadow_intensity,
+        "sidebar_width": theme_data.sidebar_width
     }
 
 # ==================== API KEYS ROUTES ====================

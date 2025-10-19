@@ -51,10 +51,15 @@ const CardContent = React.forwardRef(({ className, style, ...props }, ref) => (
 ))
 CardContent.displayName = "CardContent"
 
-const CardFooter = React.forwardRef(({ className, ...props }, ref) => (
+const CardFooter = React.forwardRef(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
+    className={cn("flex items-center pt-0", className)}
+    style={{ 
+      padding: 'calc(1.5rem * var(--layout-density))',
+      paddingTop: 0,
+      ...style 
+    }}
     {...props} />
 ))
 CardFooter.displayName = "CardFooter"

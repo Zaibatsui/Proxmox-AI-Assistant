@@ -1592,6 +1592,55 @@ async def get_ai_history(current_user: dict = Depends(get_current_user), limit: 
     
     return conversations
 
+class AIFileEditExecute(BaseModel):
+    path: str
+    content: str
+
+@api_router.post("/ai/execute-file-edit")
+async def execute_file_edit(request: AIFileEditExecute, current_user: dict = Depends(get_current_user)):
+    """Execute a confirmed file edit from AI assistant"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if file exists
+        file_exists = await ssh_file_exists(ssh_client, request.path)
+        
+        # Create backup before editing
+        backup = None
+        if file_exists:
+            try:
+                backup = await create_backup(
+                    ssh_client,
+                    current_user["user_id"],
+                    current_user["username"],
+                    request.path,
+                    "edit",
+                    "AI-assisted edit"
+                )
+            except Exception as e:
+                logger.warning(f"Backup failed: {str(e)}")
+        
+        # Write file
+        if file_exists:
+            await ssh_write_file(ssh_client, request.path, request.content)
+        else:
+            await ssh_create_file(ssh_client, request.path, request.content)
+        
+        await log_audit(current_user["user_id"], "ai_file_edit", {
+            "path": request.path,
+            "size": len(request.content),
+            "backup_id": backup.id if backup else None
+        })
+        
+        return {
+            "success": True,
+            "message": "File updated successfully",
+            "backup_id": backup.id if backup else None
+        }
+        
+    finally:
+        ssh_client.close()
+
 # ==================== ACTION ROUTES ====================
 
 @api_router.post("/actions", response_model=Action)

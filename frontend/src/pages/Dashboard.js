@@ -306,7 +306,7 @@ function Dashboard({ onLogout }) {
               <CardTitle className="text-slate-100">Recent Activity</CardTitle>
               <CardDescription className="text-slate-400">Latest actions and events</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent noPaddingTop={true}>
               {loading ? (
                 <div className="space-y-3">
                   {[1, 2, 3].map(i => (

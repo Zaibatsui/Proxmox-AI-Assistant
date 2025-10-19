@@ -270,12 +270,18 @@ class BackendTester:
             )
             
             if response.status_code == 200:
-                files = response.json()
+                files_data = response.json()
                 vm_configs = []
                 
-                for file_info in files.get('files', []):
-                    if file_info.get('name', '').endswith('.conf'):
+                # Handle both list and dict responses
+                files_list = files_data if isinstance(files_data, list) else files_data.get('files', [])
+                
+                for file_info in files_list:
+                    if isinstance(file_info, dict) and file_info.get('name', '').endswith('.conf'):
                         vm_id = file_info.get('name', '').replace('.conf', '')
+                        vm_configs.append(vm_id)
+                    elif isinstance(file_info, str) and file_info.endswith('.conf'):
+                        vm_id = file_info.replace('.conf', '')
                         vm_configs.append(vm_id)
                 
                 self.log_result(

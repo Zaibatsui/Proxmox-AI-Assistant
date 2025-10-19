@@ -1080,7 +1080,7 @@ async def get_proxmox_environment_data(user_id: str):
                     logger.error(f"Error getting VMs from {node_name}: {str(e)}")
         
         # Get latest device scan
-        latest_scan = await db.device_scans.find_one(
+        latest_scan = await db.scan_results.find_one(
             {"user_id": user_id},
             sort=[("scan_timestamp", -1)]
         )

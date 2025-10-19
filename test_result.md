@@ -67,3 +67,5 @@ agent_communication:
     message: "Starting VM/Container 121 SSH connection testing based on user report of connection failures in File Browser"
   - agent: "testing"
     message: "CRITICAL ISSUE IDENTIFIED: Proxmox server (proxmox.zaibatsui.co.uk) is unreachable from this container. Backend logs show repeated 'No route to host' errors. This is a network connectivity issue, not an SSH credential problem. VM/Container 121 cannot be accessed until Proxmox connectivity is restored."
+  - agent: "testing"
+    message: "PORT FIX VERIFICATION COMPLETE: The port fix from 443 to 8006 has successfully resolved the Proxmox connectivity issue. SSH connection to Proxmox host is now working. However, VM/Container 121 does not exist on this Proxmox server (confirmed via direct SSH check - 0 VMs found). The file browser operations work correctly and return appropriate 'not found' errors. There is still an SSL certificate verification issue with Proxmox API calls, but SSH-based operations (which are used for file operations) work properly."

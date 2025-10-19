@@ -179,12 +179,12 @@ const FileBrowser = ({ onLogout }) => {
   return (
     <Layout onLogout={onLogout} currentPage="files">
       <div className="min-h-screen p-6 bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2">File Browser</h1>
-          <p className="text-gray-400">Browse and edit files on your Proxmox server</p>
-        </div>
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-white mb-2">File Browser</h1>
+            <p className="text-gray-400">Browse and edit files on your Proxmox server</p>
+          </div>
 
         {/* Common Paths */}
         <div className="bg-gray-800 rounded-lg p-4 mb-4">

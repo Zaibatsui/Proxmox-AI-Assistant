@@ -2106,7 +2106,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     
     # Count pending actions
     pending_actions = await db.actions.count_documents({
-        "user_id": current_user["user_id"]},
+        "user_id": current_user["user_id"],
         "status": "pending"
     })
     

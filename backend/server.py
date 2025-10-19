@@ -2531,13 +2531,14 @@ async def read_file(request: FileReadRequest, current_user: dict = Depends(get_c
             raise HTTPException(status_code=404, detail="File not found")
         
         # Check if it's a file (not directory)
-        if await ssh_is_directory(ssh_client, request.path):
+        if await location_is_directory(ssh_client, request.path, request.location):
             raise HTTPException(status_code=400, detail="Path is a directory")
         
-        content = await ssh_read_file(ssh_client, request.path)
+        content = await location_read_file(ssh_client, request.path, request.location)
         
         await log_audit(current_user["user_id"], "file_read", {
             "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"},
             "size": content.size
         })
         
@@ -2549,11 +2550,11 @@ async def read_file(request: FileReadRequest, current_user: dict = Depends(get_c
 @api_router.post("/files/write")
 async def write_file(request: FileWriteRequest, current_user: dict = Depends(get_current_user)):
     """Write/edit file content"""
-    ssh_client = await get_ssh_client(current_user["user_id"])
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
         # Check if file exists
-        file_exists = await ssh_file_exists(ssh_client, request.path)
+        file_exists = await location_file_exists(ssh_client, request.path, request.location)
         
         if not file_exists:
             raise HTTPException(status_code=404, detail="File not found. Use /files/create to create new files")

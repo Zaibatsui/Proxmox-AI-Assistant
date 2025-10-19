@@ -1,0 +1,43 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Registered and authenticated successfully",
+    "details": {},
+    "timestamp": "2025-10-19T14:28:14.892104"
+  },
+  {
+    "test": "Proxmox Configuration",
+    "success": false,
+    "message": "No Proxmox configuration found - this may be why VM 121 cannot be accessed",
+    "details": {},
+    "timestamp": "2025-10-19T14:28:14.934218"
+  },
+  {
+    "test": "VM 121 Detection",
+    "success": false,
+    "message": "Failed to get VMs list: 400 - {\"detail\":\"Proxmox configuration not found. Please configure in Settings.\"}",
+    "details": {},
+    "timestamp": "2025-10-19T14:28:14.975637"
+  },
+  {
+    "test": "Backend Log Analysis",
+    "success": true,
+    "message": "Found 14 SSH-related log entries",
+    "details": {
+      "errors": [
+        "2025-10-19 14:16:50,997 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:16:51,600 - paramiko.transport - INFO - Authentication (password) successful!",
+        "2025-10-19 14:16:52,885 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:16:53,515 - paramiko.transport - INFO - Authentication (password) successful!",
+        "2025-10-19 14:17:28,081 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:17:28,700 - paramiko.transport - INFO - Authentication (password) successful!",
+        "2025-10-19 14:18:33,687 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:18:34,306 - paramiko.transport - INFO - Authentication (password) successful!",
+        "2025-10-19 14:18:35,330 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
+        "2025-10-19 14:18:35,927 - paramiko.transport - INFO - Authentication (password) successful!"
+      ]
+    },
+    "timestamp": "2025-10-19T14:28:14.984857"
+  }
+]

@@ -250,8 +250,8 @@ function Dashboard({ onLogout }) {
                 className="border-slate-800 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all cursor-pointer group"
                 onClick={stat.action}
               >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between mb-4">
+                <CardContent>
+                  <div className="flex items-start justify-between" style={{ marginBottom: 'calc(1rem * var(--layout-density))' }}>
                     <div className={`p-3 rounded-lg bg-${stat.color}-500/10`}>
                       <Icon className={`w-5 h-5 text-${stat.color}-400`} />
                     </div>

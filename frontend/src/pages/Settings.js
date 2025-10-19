@@ -575,13 +575,22 @@ function Settings({ onLogout }) {
               <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
-                      <Key className="w-5 h-5 theme-icon" />
+                    <div className={`p-2 rounded-lg ${
+                      apiKeys?.has_openai_key
+                        ? "bg-emerald-500/10"
+                        : "bg-cyan-500/10"
+                    }`}>
+                      <Key className={`w-5 h-5 ${
+                        apiKeys?.has_openai_key
+                          ? "text-emerald-400"
+                          : "text-cyan-400"
+                      }`} />
                     </div>
                     <div className="text-left">
                       <CardTitle className="text-slate-100">AI Configuration</CardTitle>
                       <CardDescription className="text-slate-400">
-                        Configure your OpenAI API key for AI Assistant feature
+                        {apiKeys?.has_openai_key && "✅ OpenAI API Key Configured"}
+                        {!apiKeys?.has_openai_key && "Configure your OpenAI API key for AI Assistant feature"}
                       </CardDescription>
                     </div>
                   </div>

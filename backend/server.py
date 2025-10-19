@@ -2496,21 +2496,22 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 @api_router.post("/files/list", response_model=List[FileInfo])
 async def list_files(request: FileListRequest, current_user: dict = Depends(get_current_user)):
     """List files and directories at path"""
-    ssh_client = await get_ssh_client(current_user["user_id"])
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
         # Check if path exists
-        if not await ssh_file_exists(ssh_client, request.path):
+        if not await location_file_exists(ssh_client, request.path, request.location):
             raise HTTPException(status_code=404, detail="Path not found")
         
         # Check if it's a directory
-        if not await ssh_is_directory(ssh_client, request.path):
+        if not await location_is_directory(ssh_client, request.path, request.location):
             raise HTTPException(status_code=400, detail="Path is not a directory")
         
-        files = await ssh_list_directory(ssh_client, request.path)
+        files = await location_list_directory(ssh_client, request.path, request.location)
         
         await log_audit(current_user["user_id"], "file_list", {
             "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"},
             "file_count": len(files)
         })
         
@@ -2522,11 +2523,11 @@ async def list_files(request: FileListRequest, current_user: dict = Depends(get_
 @api_router.post("/files/read", response_model=FileContent)
 async def read_file(request: FileReadRequest, current_user: dict = Depends(get_current_user)):
     """Read file content"""
-    ssh_client = await get_ssh_client(current_user["user_id"])
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:
         # Check if file exists
-        if not await ssh_file_exists(ssh_client, request.path):
+        if not await location_file_exists(ssh_client, request.path, request.location):
             raise HTTPException(status_code=404, detail="File not found")
         
         # Check if it's a file (not directory)

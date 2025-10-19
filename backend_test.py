@@ -35,72 +35,25 @@ class BackendTester:
             print(f"   Details: {details}")
     
     def authenticate(self):
-        """Authenticate with test user and setup Proxmox config"""
+        """Authenticate with test user (Proxmox config already copied via database)"""
         try:
-            # Try to register a test user first
-            register_data = {
-                "username": "vm121_tester",
+            # User exists, try login
+            login_data = {
+                "username": "vm121_tester", 
                 "password": "TestPass123!"
             }
-            
-            response = requests.post(f"{self.base_url}/auth/register", json=register_data, timeout=10)
+            response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
             if response.status_code == 200:
                 self.token = response.json()["token"]
-                self.log_result("Authentication", True, "Registered and authenticated successfully")
-            elif response.status_code == 400 and "already exists" in response.text:
-                # User exists, try login
-                login_data = {
-                    "username": "vm121_tester", 
-                    "password": "TestPass123!"
-                }
-                response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
-                if response.status_code == 200:
-                    self.token = response.json()["token"]
-                    self.log_result("Authentication", True, "Logged in successfully")
-                else:
-                    self.log_result("Authentication", False, f"Login failed: {response.status_code} - {response.text}")
-                    return False
+                self.log_result("Authentication", True, "Logged in successfully (Proxmox config pre-configured with port 8006)")
+                return True
             else:
-                self.log_result("Authentication", False, f"Registration failed: {response.status_code} - {response.text}")
+                self.log_result("Authentication", False, f"Login failed: {response.status_code} - {response.text}")
                 return False
-            
-            # Now setup Proxmox configuration using the existing config from Zaibatsui user
-            return self.setup_proxmox_config()
             
         except Exception as e:
             self.log_result("Authentication", False, f"Auth error: {str(e)}")
             return False
-    
-    def setup_proxmox_config(self):
-        """Setup Proxmox configuration for the test user"""
-        try:
-            # Use the same config as the working Zaibatsui user but with port 8006
-            proxmox_config = {
-                "host": "https://proxmox.zaibatsui.co.uk:8006",
-                "api_token_name": "zaibatsui@pve!ProxmoxAI",
-                "api_token_secret": "your-api-token-secret-here",  # This will need to be the real token
-                "verify_ssl": False,
-                "ssh_username": "root",
-                "ssh_password": "your-ssh-password-here"  # This will need to be the real password
-            }
-            
-            response = requests.post(
-                f"{self.base_url}/proxmox/config", 
-                json=proxmox_config, 
-                headers=self.get_headers(), 
-                timeout=10
-            )
-            
-            if response.status_code == 200:
-                self.log_result("Proxmox Setup", True, "Proxmox configuration created successfully")
-                return True
-            else:
-                self.log_result("Proxmox Setup", False, f"Proxmox config failed: {response.status_code} - {response.text}")
-                return True  # Continue with tests even if config setup fails
-                
-        except Exception as e:
-            self.log_result("Proxmox Setup", False, f"Proxmox setup error: {str(e)}")
-            return True  # Continue with tests
     
     def get_headers(self):
         """Get headers with auth token"""

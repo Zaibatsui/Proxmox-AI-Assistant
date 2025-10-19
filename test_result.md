@@ -52,7 +52,9 @@ test_plan:
   current_focus:
     - "VM/Container 121 SSH Connection Test"
     - "File Browser Operations for VM/Container 121"
-  stuck_tasks: []
+  stuck_tasks:
+    - "VM/Container 121 SSH Connection Test"
+    - "File Browser Operations for VM/Container 121"
   test_all: false
   test_priority: "high_first"
 

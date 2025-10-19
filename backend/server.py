@@ -1301,7 +1301,6 @@ Be conversational, helpful, and always reference their actual environment!"""
         
         if "ACTIONS:" in response_text:
             try:
-                import json
                 # Find JSON block
                 actions_start = response_text.find("```json", response_text.find("ACTIONS:"))
                 if actions_start != -1:

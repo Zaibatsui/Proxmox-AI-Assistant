@@ -105,7 +105,9 @@ function Layout({ children, onLogout, currentPage }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
-        <div className="p-8 max-w-7xl mx-auto">{children}</div>
+        <div className="max-w-7xl mx-auto" style={{ 
+          padding: 'calc(2rem * var(--layout-density))'
+        }}>{children}</div>
       </main>
     </div>
   );

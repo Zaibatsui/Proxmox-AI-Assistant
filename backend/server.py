@@ -1177,30 +1177,77 @@ async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user
         # Build initial system message with Proxmox context
         env_data = await get_proxmox_environment_data(current_user["user_id"])
         
+        if not env_data:
+            raise HTTPException(status_code=500, detail="Failed to get environment data")
+        
+        # Build detailed device summary
+        device_summary = ""
+        if env_data['devices']:
+            gpu_count = len([d for d in env_data['devices'] if d['device_type'] in ['VGA', 'Display']])
+            storage_count = len([d for d in env_data['devices'] if d['device_type'] in ['NVMe', 'Storage', 'SATA']])
+            network_count = len([d for d in env_data['devices'] if d['device_type'] in ['Ethernet', 'Network']])
+            
+            device_summary = f"""
+**DETECTED HARDWARE:**
+- Total Devices: {len(env_data['devices'])}
+- GPUs: {gpu_count}
+- Storage: {storage_count}
+- Network: {network_count}
+- Other: {len(env_data['devices']) - gpu_count - storage_count - network_count}
+
+**Sample Devices:**
+{chr(10).join([f"- {d['device_name']} ({d['device_type']}) - {d['pci_address']}" for d in env_data['devices'][:5]])}
+{'...' if len(env_data['devices']) > 5 else ''}
+"""
+        else:
+            device_summary = "⚠️ No hardware scan data available. Ask user to run a device scan first."
+        
+        # Build VM summary
+        vm_summary = ""
+        if env_data['vms_and_containers']:
+            running = len([v for v in env_data['vms_and_containers'] if v['status'] == 'running'])
+            stopped = len(env_data['vms_and_containers']) - running
+            
+            vm_summary = f"""
+**VMs & CONTAINERS:**
+- Total: {len(env_data['vms_and_containers'])} ({running} running, {stopped} stopped)
+- Sample: {', '.join([f"{v['name']} ({v['status']})" for v in env_data['vms_and_containers'][:5]])}
+{'...' if len(env_data['vms_and_containers']) > 5 else ''}
+"""
+        
         system_message = f"""You are an AI assistant specifically designed for managing THIS Proxmox environment.
 
-**YOUR ENVIRONMENT:**
-Host: {env_data['host'] if env_data else 'Not configured'}
-Nodes: {len(env_data['nodes']) if env_data else 0} node(s)
-VMs/Containers: {len(env_data['vms_and_containers']) if env_data else 0} total
-Hardware Devices: {len(env_data['devices']) if env_data else 0} detected
+**YOUR CONNECTED ENVIRONMENT:**
+Host: {env_data['host']}
+Nodes: {len(env_data['nodes'])} node(s) - {', '.join([f"{n['name']} ({n['status']})" for n in env_data['nodes']])}
+
+{vm_summary}
+
+{device_summary}
 
 **YOUR ROLE:**
-You are connected to the user's ACTUAL Proxmox server. You can:
-1. Query real-time status of nodes, VMs, and containers
-2. Access hardware device information (GPUs, storage, network cards)
+You are connected to the user's ACTUAL Proxmox server and have access to real-time data. You can:
+1. Query current status of nodes, VMs, and containers
+2. Access complete hardware device inventory (GPUs, storage, network cards, USB, etc.)
 3. Provide specific guidance based on THEIR actual environment
-4. Create actionable commands for GPU passthrough, driver binding, etc.
+4. Create actionable commands for GPU passthrough, driver binding, VM management
 
 **AVAILABLE TOOLS:**
-- get_proxmox_status: Get current environment status
-- get_hardware_devices: Get all PCI devices with drivers and IOMMU groups
-- get_vm_details: Get specific VM/container information
+- get_proxmox_status: Get current environment status (all VMs, containers, nodes with live data)
+- get_hardware_devices: Get ALL {len(env_data['devices'])} PCI devices with drivers and IOMMU groups
+- get_vm_details: Get specific VM/container configuration and status
 
 **WHEN TO USE TOOLS:**
-- User asks about "my VMs" or "my environment" → Use get_proxmox_status
-- User asks about GPUs, hardware, devices → Use get_hardware_devices
-- User asks about a specific VM → Use get_vm_details
+- User asks "show me", "list", "what do I have" → Use appropriate tool
+- User asks about specific VM/device → Use get_vm_details or get_hardware_devices
+- User asks for current status → Use get_proxmox_status
+- ALWAYS use tools when user needs accurate data - don't guess!
+
+**IMPORTANT:**
+- The device list shows {len(env_data['devices'])} total devices - always use get_hardware_devices to see them all
+- VM data includes all {len(env_data['vms_and_containers'])} VMs/containers - use get_proxmox_status for complete list
+- Reference actual names and IDs from YOUR environment
+- Be specific: "Your Beszel VM (110)" not "Your VM"
 
 **YOUR RESPONSES:**
 - Be specific to THEIR environment (use actual VM names, device names)
@@ -1233,7 +1280,7 @@ Action types: bind_driver, unbind_driver, attach_to_vm, detach_from_vm, blacklis
 3. Suggest backups before risky operations
 4. Provide rollback steps
 
-Be conversational, helpful, and always reference their actual environment!"""
+Be conversational, helpful, and ALWAYS reference their actual environment!"""
         
         # Create OpenAI client
         client = AsyncOpenAI(api_key=api_key)

@@ -149,12 +149,12 @@ const BackupManager = ({ onLogout }) => {
   return (
     <Layout onLogout={onLogout} currentPage="backups">
       <div className="min-h-screen p-6 bg-gray-900">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <Archive className="w-8 h-8 text-cyan-400" />
-            Backup Manager
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+              <Archive className="w-8 h-8 text-cyan-400" />
+              Backup Manager
           </h1>
           <p className="text-gray-400">View and restore file backups</p>
         </div>

@@ -958,6 +958,12 @@ async def get_vms(current_user: dict = Depends(get_current_user)):
         
         for node in nodes:
             node_name = node['node']
+            node_status = node.get('status', 'unknown')
+            
+            # Skip offline nodes
+            if node_status != 'online':
+                logger.info(f"Skipping offline node: {node_name} (status: {node_status})")
+                continue
             
             # Get QEMU VMs
             try:

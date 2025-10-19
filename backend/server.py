@@ -1007,6 +1007,147 @@ async def restart_vm(vmid: str, node: str, vm_type: str, current_user: dict = De
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
+# ==================== AI TOOL FUNCTIONS ====================
+
+async def get_proxmox_environment_data(user_id: str):
+    """Get comprehensive Proxmox environment data for AI context"""
+    try:
+        proxmox, config = await get_proxmox_connection(user_id)
+        
+        env_data = {
+            "nodes": [],
+            "vms_and_containers": [],
+            "devices": [],
+            "host": config['host']
+        }
+        
+        # Get nodes info
+        nodes = proxmox.nodes.get()
+        for node in nodes:
+            node_name = node['node']
+            node_info = {
+                "name": node_name,
+                "status": node.get('status', 'unknown'),
+                "cpu_usage": node.get('cpu', 0),
+                "memory_used": node.get('mem', 0),
+                "memory_total": node.get('maxmem', 0)
+            }
+            env_data["nodes"].append(node_info)
+            
+            # Get VMs from this node
+            if node.get('status') == 'online':
+                try:
+                    # QEMU VMs
+                    qemu_vms = proxmox.nodes(node_name).qemu.get()
+                    for vm in qemu_vms:
+                        vm_info = {
+                            "vmid": vm['vmid'],
+                            "name": vm.get('name', f"VM{vm['vmid']}"),
+                            "type": "qemu",
+                            "status": vm.get('status', 'unknown'),
+                            "node": node_name,
+                            "cpu_usage": vm.get('cpu', 0),
+                            "memory": vm.get('mem', 0)
+                        }
+                        
+                        # Get VM config for passthrough devices
+                        try:
+                            vm_config = proxmox.nodes(node_name).qemu(vm['vmid']).config.get()
+                            hostpci = []
+                            for key, value in vm_config.items():
+                                if key.startswith('hostpci'):
+                                    hostpci.append(f"{key}: {value}")
+                            if hostpci:
+                                vm_info["pci_passthrough"] = hostpci
+                        except:
+                            pass
+                        
+                        env_data["vms_and_containers"].append(vm_info)
+                    
+                    # LXC containers
+                    lxc_containers = proxmox.nodes(node_name).lxc.get()
+                    for ct in lxc_containers:
+                        env_data["vms_and_containers"].append({
+                            "vmid": ct['vmid'],
+                            "name": ct.get('name', f"CT{ct['vmid']}"),
+                            "type": "lxc",
+                            "status": ct.get('status', 'unknown'),
+                            "node": node_name
+                        })
+                except Exception as e:
+                    logger.error(f"Error getting VMs from {node_name}: {str(e)}")
+        
+        # Get latest device scan
+        latest_scan = await db.device_scans.find_one(
+            {"user_id": user_id},
+            sort=[("scan_timestamp", -1)]
+        )
+        
+        if latest_scan:
+            devices = latest_scan.get('devices', [])
+            for device in devices:
+                env_data["devices"].append({
+                    "pci_address": device.get('pci_address'),
+                    "device_name": device.get('device_name'),
+                    "device_type": device.get('device_type'),
+                    "vendor_id": device.get('vendor_id'),
+                    "device_id": device.get('device_id'),
+                    "current_driver": device.get('current_driver'),
+                    "iommu_group": device.get('iommu_group')
+                })
+        
+        return env_data
+    except Exception as e:
+        logger.error(f"Error getting environment data: {str(e)}")
+        return None
+
+# AI Tools definition for function calling
+ai_tools = [
+    {
+        "type": "function",
+        "function": {
+            "name": "get_proxmox_status",
+            "description": "Get current status of your Proxmox environment including nodes, VMs, containers, and their current state",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_hardware_devices",
+            "description": "Get list of all hardware devices detected in the Proxmox host, including GPUs, storage, network cards, USB controllers, with their PCI addresses, drivers, and IOMMU groups",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "get_vm_details",
+            "description": "Get detailed information about a specific VM or container",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "vmid": {
+                        "type": "string",
+                        "description": "The VM ID to get details for"
+                    }
+                },
+                "required": ["vmid"]
+            }
+        }
+    }
+]
+
+
 # ==================== AI ASSISTANT ROUTES ====================
 
 @api_router.post("/ai/query", response_model=AIResponse)

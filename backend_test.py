@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Get backend URL from frontend env
-BACKEND_URL = "https://vm-ai-manager.preview.emergentagent.com/api"
+BACKEND_URL = "https://proxmox-ai.preview.emergentagent.com/api"
 
 class BackendTester:
     def __init__(self):

@@ -253,6 +253,53 @@ class BackendTester:
         except Exception as e:
             self.log_result("Backend Log Analysis", False, f"Log analysis error: {str(e)}")
     
+    def check_vms_via_ssh(self):
+        """Check what VMs exist on Proxmox via direct SSH"""
+        try:
+            # Test direct SSH connection to list VMs
+            ssh_test_data = {
+                "path": "/etc/pve/qemu-server",
+                "location": None  # Host location
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/files/list", 
+                json=ssh_test_data, 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                files = response.json()
+                vm_configs = []
+                
+                for file_info in files.get('files', []):
+                    if file_info.get('name', '').endswith('.conf'):
+                        vm_id = file_info.get('name', '').replace('.conf', '')
+                        vm_configs.append(vm_id)
+                
+                self.log_result(
+                    "Direct VM Check via SSH", 
+                    True, 
+                    f"Found {len(vm_configs)} VM config files via SSH",
+                    {"vm_ids": vm_configs}
+                )
+                
+                # Check if 121.conf exists
+                if "121" in vm_configs:
+                    self.log_result("VM 121 Config Check", True, "VM 121 config file exists on Proxmox host")
+                    return True
+                else:
+                    self.log_result("VM 121 Config Check", False, f"VM 121 config not found. Available VMs: {vm_configs}")
+                    return False
+            else:
+                self.log_result("Direct VM Check via SSH", False, f"SSH file listing failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_result("Direct VM Check via SSH", False, f"SSH VM check error: {str(e)}")
+            return False
+    
     def test_proxmox_connection(self):
         """Test if Proxmox connection is configured and working"""
         try:

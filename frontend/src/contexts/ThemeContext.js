@@ -196,18 +196,35 @@ export function ThemeProvider({ children }) {
     localStorage.setItem("cardStyle", cardStyle);
   };
 
-  const updateTheme = async (themeName, bg, cardStyle, accent) => {
+  const updateTheme = async (themeName, bg, cardStyle, accent, primary, secondary, sidebarBg, headerBg,
+                             density, radius, shadow, sidebarW) => {
     try {
       await axios.post(`${API}/theme`, {
         theme_name: themeName,
         background: bg,
         card_style: cardStyle,
-        accent_color: accent
+        accent_color: accent,
+        primary_color: primary,
+        secondary_color: secondary,
+        sidebar_bg_color: sidebarBg,
+        header_bg_color: headerBg,
+        layout_density: density,
+        border_radius: radius,
+        shadow_intensity: shadow,
+        sidebar_width: sidebarW
       });
       setCurrentTheme(themeName);
       setBackground(bg);
       setCardStyle(cardStyle);
       setAccentColor(accent);
+      setPrimaryColor(primary);
+      setSecondaryColor(secondary);
+      setSidebarBgColor(sidebarBg);
+      setHeaderBgColor(headerBg);
+      setLayoutDensity(density);
+      setBorderRadius(radius);
+      setShadowIntensity(shadow);
+      setSidebarWidth(sidebarW);
       return true;
     } catch (error) {
       console.error("Failed to update theme:", error);

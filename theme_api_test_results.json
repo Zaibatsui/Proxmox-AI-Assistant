@@ -1,0 +1,140 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Registered and logged in successfully",
+    "details": {},
+    "timestamp": "2025-10-19T16:20:34.203503"
+  },
+  {
+    "test": "GET Theme Defaults",
+    "success": true,
+    "message": "All default theme values correct",
+    "details": {
+      "theme_data": {
+        "theme_name": "cyan",
+        "background": "dark",
+        "card_style": "glass",
+        "accent_color": null,
+        "primary_color": null,
+        "secondary_color": null,
+        "sidebar_bg_color": null,
+        "header_bg_color": null,
+        "layout_density": "comfortable",
+        "border_radius": "rounded",
+        "shadow_intensity": "medium",
+        "sidebar_width": 256
+      }
+    },
+    "timestamp": "2025-10-19T16:20:34.252137"
+  },
+  {
+    "test": "POST Theme Full",
+    "success": false,
+    "message": "Response missing fields: ['accent_color']",
+    "details": {
+      "sent_data": {
+        "theme_name": "cyan",
+        "background": "dark",
+        "card_style": "glass",
+        "accent_color": null,
+        "primary_color": "59, 130, 246",
+        "secondary_color": "99, 102, 241",
+        "sidebar_bg_color": "15, 23, 42",
+        "header_bg_color": "15, 23, 42",
+        "layout_density": "comfortable",
+        "border_radius": "rounded",
+        "shadow_intensity": "medium",
+        "sidebar_width": 256
+      },
+      "response_data": {
+        "message": "Theme updated",
+        "theme_name": "cyan",
+        "background": "dark",
+        "card_style": "glass",
+        "primary_color": "59, 130, 246",
+        "secondary_color": "99, 102, 241",
+        "sidebar_bg_color": "15, 23, 42",
+        "header_bg_color": "15, 23, 42",
+        "layout_density": "comfortable",
+        "border_radius": "rounded",
+        "shadow_intensity": "medium",
+        "sidebar_width": 256
+      }
+    },
+    "timestamp": "2025-10-19T16:20:34.318363"
+  },
+  {
+    "test": "GET Theme After POST",
+    "success": true,
+    "message": "All saved theme values match expected values",
+    "details": {
+      "theme_data": {
+        "theme_name": "cyan",
+        "background": "dark",
+        "card_style": "glass",
+        "accent_color": null,
+        "primary_color": "59, 130, 246",
+        "secondary_color": "99, 102, 241",
+        "sidebar_bg_color": "15, 23, 42",
+        "header_bg_color": "15, 23, 42",
+        "layout_density": "comfortable",
+        "border_radius": "rounded",
+        "shadow_intensity": "medium",
+        "sidebar_width": 256
+      }
+    },
+    "timestamp": "2025-10-19T16:20:34.357460"
+  },
+  {
+    "test": "POST Theme Partial",
+    "success": true,
+    "message": "Successfully handled partial theme data with correct defaults",
+    "details": {
+      "response_data": {
+        "message": "Theme updated",
+        "theme_name": "purple",
+        "background": "darker",
+        "card_style": "glass",
+        "primary_color": "147, 51, 234",
+        "secondary_color": null,
+        "sidebar_bg_color": null,
+        "header_bg_color": null,
+        "layout_density": "compact",
+        "border_radius": "very-rounded",
+        "shadow_intensity": "medium",
+        "sidebar_width": 256
+      }
+    },
+    "timestamp": "2025-10-19T16:20:34.397337"
+  },
+  {
+    "test": "MongoDB Persistence",
+    "success": true,
+    "message": "Theme data persisted correctly in MongoDB",
+    "details": {
+      "verified_theme": {
+        "theme_name": "emerald",
+        "background": "midnight",
+        "card_style": "bordered",
+        "accent_color": null,
+        "primary_color": "16, 185, 129",
+        "secondary_color": "5, 150, 105",
+        "sidebar_bg_color": "6, 78, 59",
+        "header_bg_color": "6, 78, 59",
+        "layout_density": "spacious",
+        "border_radius": "sharp",
+        "shadow_intensity": "strong",
+        "sidebar_width": 320
+      }
+    },
+    "timestamp": "2025-10-19T16:20:35.477205"
+  },
+  {
+    "test": "Field Validation",
+    "success": false,
+    "message": "Invalid layout_density accepted: invalid_density",
+    "details": {},
+    "timestamp": "2025-10-19T16:20:35.521262"
+  }
+]

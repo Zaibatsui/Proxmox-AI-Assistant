@@ -45,6 +45,25 @@ code {
   border-color: var(--theme-primary) !important;
 }
 
+/* Apply global appearance settings */
+[class*="rounded"], 
+.rounded, .rounded-lg, .rounded-md, .rounded-sm,
+button:not(.no-theme),
+.card,
+[role="dialog"],
+input:not([type="range"]):not([type="color"]) {
+  border-radius: var(--border-radius) !important;
+}
+
+/* Apply shadows to cards and elevated elements */
+.card,
+[class*="shadow"],
+.shadow,
+[role="dialog"],
+.dropdown-menu {
+  box-shadow: var(--shadow) !important;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

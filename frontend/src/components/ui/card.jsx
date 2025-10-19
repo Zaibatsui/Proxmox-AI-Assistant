@@ -10,10 +10,14 @@ const Card = React.forwardRef(({ className, ...props }, ref) => (
 ))
 Card.displayName = "Card"
 
-const CardHeader = React.forwardRef(({ className, ...props }, ref) => (
+const CardHeader = React.forwardRef(({ className, style, ...props }, ref) => (
   <div
     ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
+    className={cn("flex flex-col space-y-1.5", className)}
+    style={{ 
+      padding: 'calc(1.5rem * var(--layout-density))', 
+      ...style 
+    }}
     {...props} />
 ))
 CardHeader.displayName = "CardHeader"

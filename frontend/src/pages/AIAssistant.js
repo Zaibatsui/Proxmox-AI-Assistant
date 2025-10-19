@@ -19,6 +19,9 @@ function AIAssistant({ onLogout }) {
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);
   const [history, setHistory] = useState([]);
+  const [pendingFileEdit, setPendingFileEdit] = useState(null);
+  const [editableContent, setEditableContent] = useState("");
+  const [executing, setExecuting] = useState(false);
 
   useEffect(() => {
     fetchHistory();

@@ -4,35 +4,35 @@
     "success": true,
     "message": "Logged in successfully (Proxmox config pre-configured with port 8006)",
     "details": {},
-    "timestamp": "2025-10-19T14:39:26.559597"
+    "timestamp": "2025-10-19T14:40:44.750747"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Proxmox configured for host: https://proxmox.zaibatsui.co.uk:8006",
     "details": {},
-    "timestamp": "2025-10-19T14:39:26.598906"
+    "timestamp": "2025-10-19T14:40:44.794437"
   },
   {
     "test": "Proxmox API Test",
     "success": false,
     "message": "Proxmox API failed: HTTPSConnectionPool(host='proxmox.zaibatsui.co.uk', port=8006): Max retries exceeded with url: /api2/json/nodes (Caused by SSLError(SSLCertVerificationError(1, '[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: unable to get local issuer certificate (_ssl.c:1016)')))",
     "details": {},
-    "timestamp": "2025-10-19T14:39:28.129820"
+    "timestamp": "2025-10-19T14:40:46.312160"
   },
   {
     "test": "Proxmox SSH Test",
     "success": true,
     "message": "Proxmox SSH connection successful",
     "details": {},
-    "timestamp": "2025-10-19T14:39:28.129847"
+    "timestamp": "2025-10-19T14:40:46.312194"
   },
   {
     "test": "VM 121 Detection",
     "success": false,
     "message": "VM/Container 121 not found. Available VMIDs: []",
     "details": {},
-    "timestamp": "2025-10-19T14:39:28.399395"
+    "timestamp": "2025-10-19T14:40:46.581900"
   },
   {
     "test": "LXC File Access Test",
@@ -41,7 +41,7 @@
     "details": {
       "error": "{\"detail\":\"Path not found\"}"
     },
-    "timestamp": "2025-10-19T14:39:29.996198"
+    "timestamp": "2025-10-19T14:40:48.258284"
   },
   {
     "test": "VM SSH File Access Test",
@@ -51,31 +51,20 @@
       "error": "Internal Server Error",
       "credentials_used": "root/10065609Xx!"
     },
-    "timestamp": "2025-10-19T14:39:30.300936"
+    "timestamp": "2025-10-19T14:40:48.521247"
   },
   {
     "test": "VM 121 Type Detection",
     "success": false,
     "message": "VM 121 is not accessible via LXC or SSH methods",
     "details": {},
-    "timestamp": "2025-10-19T14:39:30.301738"
+    "timestamp": "2025-10-19T14:40:48.522116"
   },
   {
     "test": "Backend Log Analysis",
     "success": true,
-    "message": "Found 8 SSH-related log entries",
-    "details": {
-      "errors": [
-        "2025-10-19 14:23:20,051 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:23:20,673 - paramiko.transport - INFO - Authentication (password) successful!",
-        "2025-10-19 14:38:07,300 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:38:07,900 - paramiko.transport - INFO - Authentication (password) successful!",
-        "2025-10-19 14:39:27,103 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:39:27,728 - paramiko.transport - INFO - Authentication (password) successful!",
-        "2025-10-19 14:39:28,645 - paramiko.transport - INFO - Connected (version 2.0, client OpenSSH_9.2p1)",
-        "2025-10-19 14:39:29,249 - paramiko.transport - INFO - Authentication (password) successful!"
-      ]
-    },
-    "timestamp": "2025-10-19T14:39:30.310202"
+    "message": "No SSH-related errors found in recent logs",
+    "details": {},
+    "timestamp": "2025-10-19T14:40:48.531188"
   }
 ]

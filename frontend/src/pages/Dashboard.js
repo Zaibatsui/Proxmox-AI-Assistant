@@ -280,7 +280,7 @@ function Dashboard({ onLogout }) {
               <CardTitle className="text-slate-100">Quick Access</CardTitle>
               <CardDescription className="text-slate-400">Jump to key features</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2" noPaddingTop={true}>
               {quickAccessButtons.map((btn, idx) => {
                 const Icon = btn.icon;
                 return (

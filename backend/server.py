@@ -1669,7 +1669,7 @@ async def ssh_list_directory(ssh_client, path: str) -> List[FileInfo]:
                     size = int(float(size_str.replace('G', '')) * 1024 * 1024 * 1024)
                 else:
                     size = int(size_str)
-            except:
+            except (ValueError, AttributeError):
                 size = 0
         
         file_path = f"{path.rstrip('/')}/{name}"

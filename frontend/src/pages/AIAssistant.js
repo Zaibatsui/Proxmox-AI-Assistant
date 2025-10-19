@@ -199,6 +199,33 @@ function AIAssistant({ onLogout }) {
     toast.info("File edit cancelled");
   };
 
+  const saveVMCredentials = () => {
+    if (!vmCredentials.password) {
+      toast.error("Password is required");
+      return;
+    }
+    setSessionCredentials({
+      ...sessionCredentials,
+      [currentLocation.id]: vmCredentials
+    });
+    setShowVMCredentials(false);
+    toast.success("Credentials saved for this session");
+    // After saving credentials, proceed with the question
+    if (question.trim()) {
+      handleAsk();
+    }
+  };
+
+  const handleLocationChange = (loc) => {
+    setCurrentLocation(loc);
+    toast.info(`Switched to: ${loc.label}`);
+    
+    // Check if we need credentials for this VM
+    if (loc.type === 'vm' && !sessionCredentials[loc.id]) {
+      setShowVMCredentials(true);
+    }
+  };
+
   const loadHistoryItem = (item) => {
     setConversations([
       { type: "user", content: item.question },

@@ -38,6 +38,18 @@ const FileBrowser = ({ onLogout }) => {
     return { headers: { Authorization: `Bearer ${token}` } };
   };
 
+  // Get location payload for API calls
+  const getLocationPayload = () => {
+    if (location.type === 'vm' && sessionCredentials[location.id]) {
+      return {
+        type: 'vm',
+        vm_id: location.id,
+        credentials: sessionCredentials[location.id]
+      };
+    }
+    return { type: 'host' };
+  };
+
   // Fetch available locations (VMs and containers)
   const fetchLocations = async () => {
     try {

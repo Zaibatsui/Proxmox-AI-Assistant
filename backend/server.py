@@ -1228,13 +1228,17 @@ ai_tools = [
         "type": "function",
         "function": {
             "name": "list_directory",
-            "description": "List files and directories at a specific path on the Proxmox server",
+            "description": "List files and directories at a specific path. Can list files on Proxmox host, inside LXC containers, or inside VMs (will prompt for credentials if needed).",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
-                        "description": "The directory path to list (e.g., /etc/pve, /etc/pve/qemu-server)"
+                        "description": "The directory path to list (e.g., /etc/pve, /root, /etc)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where to list files: 'host' for Proxmox host, 'lxc:CTID' for container (e.g., 'lxc:100'), 'vm:VMID' for VM (e.g., 'vm:101'). Default is 'host'."
                     }
                 },
                 "required": ["path"]
@@ -1245,13 +1249,17 @@ ai_tools = [
         "type": "function",
         "function": {
             "name": "read_file",
-            "description": "Read the contents of a file on the Proxmox server. Use this to view configuration files, VM configs, or any text file.",
+            "description": "Read the contents of a file. Can read files from Proxmox host, LXC containers, or VMs. Use this to view configuration files, docker-compose files, application configs, logs, etc.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
-                        "description": "The full path to the file to read (e.g., /etc/pve/qemu-server/100.conf)"
+                        "description": "The full path to the file to read (e.g., /etc/pve/qemu-server/100.conf, /root/docker-compose.yml)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where to read the file from: 'host' for Proxmox host, 'lxc:CTID' for container, 'vm:VMID' for VM. Default is 'host'."
                     }
                 },
                 "required": ["path"]
@@ -1262,13 +1270,17 @@ ai_tools = [
         "type": "function",
         "function": {
             "name": "propose_file_edit",
-            "description": "Propose an edit to a file. This will show the user what changes you want to make and ask for confirmation. ALWAYS use this instead of directly editing files.",
+            "description": "Propose an edit to a file. This will show the user what changes you want to make and ask for confirmation. Works on host, LXC containers, and VMs. ALWAYS use this instead of directly editing files.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "path": {
                         "type": "string",
                         "description": "The full path to the file to edit"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where the file is located: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
                     },
                     "new_content": {
                         "type": "string",

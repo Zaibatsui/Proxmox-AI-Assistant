@@ -1212,6 +1212,65 @@ ai_tools = [
                 "required": ["vmid"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_directory",
+            "description": "List files and directories at a specific path on the Proxmox server",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "The directory path to list (e.g., /etc/pve, /etc/pve/qemu-server)"
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "Read the contents of a file on the Proxmox server. Use this to view configuration files, VM configs, or any text file.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "The full path to the file to read (e.g., /etc/pve/qemu-server/100.conf)"
+                    }
+                },
+                "required": ["path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_file_edit",
+            "description": "Propose an edit to a file. This will show the user what changes you want to make and ask for confirmation. ALWAYS use this instead of directly editing files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string",
+                        "description": "The full path to the file to edit"
+                    },
+                    "new_content": {
+                        "type": "string",
+                        "description": "The complete new content for the file"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Brief explanation of what changes are being made and why"
+                    }
+                },
+                "required": ["path", "new_content", "reason"]
+            }
+        }
     }
 ]
 

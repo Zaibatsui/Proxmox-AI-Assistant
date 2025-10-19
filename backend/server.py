@@ -2106,7 +2106,7 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
     
     # Count pending actions
     pending_actions = await db.actions.count_documents({
-        "user_id": current_user["user_id"],
+        "user_id": current_user["user_id"]},
         "status": "pending"
     })
     
@@ -2121,6 +2121,345 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
         "ai_conversations": ai_conversations,
         "last_scan": latest_scan.get('scan_timestamp') if latest_scan else None
     }
+
+# ==================== FILE OPERATIONS ENDPOINTS ====================
+
+@api_router.post("/files/list", response_model=List[FileInfo])
+async def list_files(request: FileListRequest, current_user: dict = Depends(get_current_user)):
+    """List files and directories at path"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if path exists
+        if not await ssh_file_exists(ssh_client, request.path):
+            raise HTTPException(status_code=404, detail="Path not found")
+        
+        # Check if it's a directory
+        if not await ssh_is_directory(ssh_client, request.path):
+            raise HTTPException(status_code=400, detail="Path is not a directory")
+        
+        files = await ssh_list_directory(ssh_client, request.path)
+        
+        await log_audit(current_user["user_id"], "file_list", {
+            "path": request.path,
+            "file_count": len(files)
+        })
+        
+        return files
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/read", response_model=FileContent)
+async def read_file(request: FileReadRequest, current_user: dict = Depends(get_current_user)):
+    """Read file content"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if file exists
+        if not await ssh_file_exists(ssh_client, request.path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Check if it's a file (not directory)
+        if await ssh_is_directory(ssh_client, request.path):
+            raise HTTPException(status_code=400, detail="Path is a directory")
+        
+        content = await ssh_read_file(ssh_client, request.path)
+        
+        await log_audit(current_user["user_id"], "file_read", {
+            "path": request.path,
+            "size": content.size
+        })
+        
+        return content
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/write")
+async def write_file(request: FileWriteRequest, current_user: dict = Depends(get_current_user)):
+    """Write/edit file content"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if file exists
+        file_exists = await ssh_file_exists(ssh_client, request.path)
+        
+        if not file_exists:
+            raise HTTPException(status_code=404, detail="File not found. Use /files/create to create new files")
+        
+        # Create backup if requested
+        backup = None
+        if request.create_backup:
+            try:
+                backup = await create_backup(
+                    ssh_client,
+                    current_user["user_id"],
+                    current_user["username"],
+                    request.path,
+                    "edit",
+                    request.backup_description
+                )
+            except Exception as e:
+                logger.warning(f"Backup failed: {str(e)}")
+        
+        # Write file
+        await ssh_write_file(ssh_client, request.path, request.content)
+        
+        await log_audit(current_user["user_id"], "file_write", {
+            "path": request.path,
+            "size": len(request.content),
+            "backup_created": backup is not None,
+            "backup_id": backup.id if backup else None
+        })
+        
+        return {
+            "success": True,
+            "message": "File saved successfully",
+            "backup_id": backup.id if backup else None
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/create")
+async def create_file(request: FileCreateRequest, current_user: dict = Depends(get_current_user)):
+    """Create a new file"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        await ssh_create_file(ssh_client, request.path, request.content)
+        
+        await log_audit(current_user["user_id"], "file_create", {
+            "path": request.path,
+            "size": len(request.content)
+        })
+        
+        return {
+            "success": True,
+            "message": "File created successfully"
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/delete")
+async def delete_file(request: FileDeleteRequest, current_user: dict = Depends(get_current_user)):
+    """Delete a file"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if file exists
+        if not await ssh_file_exists(ssh_client, request.path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        # Create backup if requested
+        backup = None
+        if request.create_backup:
+            try:
+                backup = await create_backup(
+                    ssh_client,
+                    current_user["user_id"],
+                    current_user["username"],
+                    request.path,
+                    "delete",
+                    f"Backup before deletion"
+                )
+            except Exception as e:
+                logger.warning(f"Backup failed: {str(e)}")
+        
+        # Delete file
+        await ssh_delete_file(ssh_client, request.path)
+        
+        await log_audit(current_user["user_id"], "file_delete", {
+            "path": request.path,
+            "backup_created": backup is not None,
+            "backup_id": backup.id if backup else None
+        })
+        
+        return {
+            "success": True,
+            "message": "File deleted successfully",
+            "backup_id": backup.id if backup else None
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/move")
+async def move_file(request: FileMoveRequest, current_user: dict = Depends(get_current_user)):
+    """Move/rename a file"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        await ssh_move_file(ssh_client, request.source_path, request.dest_path)
+        
+        await log_audit(current_user["user_id"], "file_move", {
+            "source": request.source_path,
+            "destination": request.dest_path
+        })
+        
+        return {
+            "success": True,
+            "message": "File moved successfully"
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/backup")
+async def backup_file(request: FileBackupRequest, current_user: dict = Depends(get_current_user)):
+    """Manually create a backup of a file"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Check if file exists
+        if not await ssh_file_exists(ssh_client, request.path):
+            raise HTTPException(status_code=404, detail="File not found")
+        
+        backup = await create_backup(
+            ssh_client,
+            current_user["user_id"],
+            current_user["username"],
+            request.path,
+            "manual",
+            request.description or f"Manual backup of {request.path.split('/')[-1]}"
+        )
+        
+        await log_audit(current_user["user_id"], "file_backup", {
+            "path": request.path,
+            "backup_id": backup.id
+        })
+        
+        return {
+            "success": True,
+            "message": "Backup created successfully",
+            "backup": backup
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.get("/backups", response_model=BackupListResponse)
+async def list_backups(
+    file_path: Optional[str] = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """List all backups or backups for a specific file"""
+    query = {"user_id": current_user["user_id"]}
+    
+    if file_path:
+        query["file_path"] = file_path
+    
+    backup_docs = await db.file_backups.find(query).sort("created_at", -1).to_list(length=None)
+    
+    backups = []
+    for doc in backup_docs:
+        # Parse datetime
+        if isinstance(doc['created_at'], str):
+            doc['created_at'] = datetime.fromisoformat(doc['created_at'])
+        backups.append(FileBackup(**doc))
+    
+    return BackupListResponse(
+        backups=backups,
+        total=len(backups)
+    )
+
+@api_router.post("/backups/restore")
+async def restore_backup(request: RestoreRequest, current_user: dict = Depends(get_current_user)):
+    """Restore a file from backup"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Find backup
+        backup_doc = await db.file_backups.find_one({
+            "id": request.backup_id,
+            "user_id": current_user["user_id"]
+        })
+        
+        if not backup_doc:
+            raise HTTPException(status_code=404, detail="Backup not found")
+        
+        # Parse datetime if string
+        if isinstance(backup_doc['created_at'], str):
+            backup_doc['created_at'] = datetime.fromisoformat(backup_doc['created_at'])
+        
+        backup = FileBackup(**backup_doc)
+        
+        # Create backup of current state before restoring
+        current_backup = None
+        if await ssh_file_exists(ssh_client, backup.file_path):
+            try:
+                current_backup = await create_backup(
+                    ssh_client,
+                    current_user["user_id"],
+                    current_user["username"],
+                    backup.file_path,
+                    "restore",
+                    f"Before restore from {backup.created_at.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+            except Exception as e:
+                logger.warning(f"Current state backup failed: {str(e)}")
+        
+        # Read backup content
+        backup_content = await ssh_read_file(ssh_client, backup.backup_path)
+        
+        # Write to original location
+        await ssh_write_file(ssh_client, backup.file_path, backup_content.content)
+        
+        await log_audit(current_user["user_id"], "backup_restore", {
+            "backup_id": backup.id,
+            "file_path": backup.file_path,
+            "backup_date": backup.created_at.isoformat(),
+            "current_backup_id": current_backup.id if current_backup else None
+        })
+        
+        return {
+            "success": True,
+            "message": "Backup restored successfully",
+            "file_path": backup.file_path,
+            "current_backup_id": current_backup.id if current_backup else None
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.delete("/backups/{backup_id}")
+async def delete_backup(backup_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a backup"""
+    ssh_client = await get_ssh_client(current_user["user_id"])
+    
+    try:
+        # Find backup
+        backup_doc = await db.file_backups.find_one({
+            "id": backup_id,
+            "user_id": current_user["user_id"]
+        })
+        
+        if not backup_doc:
+            raise HTTPException(status_code=404, detail="Backup not found")
+        
+        # Delete file
+        try:
+            await ssh_delete_file(ssh_client, backup_doc['backup_path'])
+        except Exception as e:
+            logger.warning(f"Failed to delete backup file: {str(e)}")
+        
+        # Remove from database
+        await db.file_backups.delete_one({"id": backup_id})
+        
+        await log_audit(current_user["user_id"], "backup_delete", {
+            "backup_id": backup_id,
+            "file_path": backup_doc['file_path']
+        })
+        
+        return {
+            "success": True,
+            "message": "Backup deleted successfully"
+        }
+        
+    finally:
+        ssh_client.close()
 
 # Include the router in the main app
 app.include_router(api_router)

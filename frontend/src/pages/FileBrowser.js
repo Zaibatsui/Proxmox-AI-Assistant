@@ -406,7 +406,7 @@ const FileBrowser = ({ onLogout }) => {
                 {/* Editor Header */}
                 <div className="bg-gray-750 px-4 py-3 border-b border-gray-700 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <File className="w-5 h-5 text-cyan-400" />
+                    <File className="w-5 h-5 text-amber-400" />
                     <div>
                       <div className="text-white font-medium">{selectedFile.path.split('/').pop()}</div>
                       <div className="text-xs text-gray-400">{selectedFile.path}</div>

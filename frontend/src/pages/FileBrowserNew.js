@@ -208,7 +208,7 @@ function FileBrowserNew({ onLogout }) {
               <div className="p-4">
                 <ConnectionManager
                   selectedConnection={selectingForPane === 'left' ? leftConnection : selectingForPane === 'right' ? rightConnection : null}
-                  onSelectConnection={selectingForPane ? handleSelectConnection : undefined}
+                  onSelectConnection={handleSelectConnection}
                 />
               </div>
             </div>

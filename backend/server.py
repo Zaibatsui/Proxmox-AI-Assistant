@@ -827,6 +827,78 @@ async def test_proxmox_connection(current_user: dict = Depends(get_current_user)
         logger.error(f"Connection test error: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+@api_router.get("/health-check")
+async def health_check(current_user: dict = Depends(get_current_user)):
+    """Check health/connectivity of all services"""
+    health_status = {
+        "proxmox": {"status": "disconnected", "error": None},
+        "ssh": {"status": "disconnected", "error": None},
+        "openai": {"status": "disconnected", "error": None}
+    }
+    
+    # Check Proxmox API
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        try:
+            nodes = proxmox.nodes.get()
+            if nodes and len(nodes) > 0:
+                health_status["proxmox"]["status"] = "connected"
+            else:
+                health_status["proxmox"]["error"] = "No nodes found"
+        except Exception as e:
+            health_status["proxmox"]["error"] = str(e)
+    except HTTPException as e:
+        health_status["proxmox"]["error"] = e.detail
+    except Exception as e:
+        health_status["proxmox"]["error"] = str(e)
+    
+    # Check SSH
+    try:
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        host = config['host']
+        if '://' in host:
+            host = host.split('://', 1)[1]
+        host = host.split(':')[0].rstrip('/')
+        
+        ssh_username = config.get('ssh_username', 'root')
+        ssh_password = config.get('ssh_password')
+        
+        if ssh_password:
+            ssh_client.connect(host, username=ssh_username, password=ssh_password, timeout=10, look_for_keys=False, allow_agent=False)
+        else:
+            ssh_client.connect(host, username=ssh_username, timeout=10, look_for_keys=True, allow_agent=True)
+        
+        stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
+        result = stdout.read().decode().strip()
+        if result == "test":
+            health_status["ssh"]["status"] = "connected"
+        ssh_client.close()
+    except Exception as e:
+        health_status["ssh"]["error"] = str(e)
+    
+    # Check OpenAI API
+    try:
+        api_keys_doc = await db.api_keys.find_one({"user_id": current_user["user_id"]})
+        if api_keys_doc and api_keys_doc.get("openai_api_key"):
+            # Try a simple API call to verify the key works
+            try:
+                import openai
+                openai.api_key = api_keys_doc["openai_api_key"]
+                # Simple models list call to test
+                openai.models.list()
+                health_status["openai"]["status"] = "connected"
+            except Exception as e:
+                health_status["openai"]["error"] = f"API key invalid or quota exceeded: {str(e)}"
+        else:
+            health_status["openai"]["error"] = "API key not configured"
+    except Exception as e:
+        health_status["openai"]["error"] = str(e)
+    
+    return health_status
+
 # ==================== THEME ROUTES ====================
 
 @api_router.get("/theme")

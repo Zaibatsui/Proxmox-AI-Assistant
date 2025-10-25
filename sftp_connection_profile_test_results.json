@@ -1,0 +1,86 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Registered and logged in successfully",
+    "details": {},
+    "timestamp": "2025-10-25T15:38:00.794699"
+  },
+  {
+    "test": "Connection Profiles List",
+    "success": true,
+    "message": "Successfully retrieved 0 connection profiles",
+    "details": {
+      "profile_count": 0
+    },
+    "timestamp": "2025-10-25T15:38:00.834965"
+  },
+  {
+    "test": "Create SSH Profile",
+    "success": true,
+    "message": "Successfully created SSH profile with ID: 2f9ce5af-ce66-4ac2-9cf0-2ced5aacee72",
+    "details": {
+      "profile_id": "2f9ce5af-ce66-4ac2-9cf0-2ced5aacee72",
+      "name": "Test SSH Profile"
+    },
+    "timestamp": "2025-10-25T15:38:00.886947"
+  },
+  {
+    "test": "Create SFTP Profile",
+    "success": true,
+    "message": "Successfully created SFTP profile with ID: 052da7ad-fd37-46b8-8737-c50a0f705d28",
+    "details": {
+      "profile_id": "052da7ad-fd37-46b8-8737-c50a0f705d28",
+      "name": "Test SFTP Profile"
+    },
+    "timestamp": "2025-10-25T15:38:00.926655"
+  },
+  {
+    "test": "Profile Connection Test",
+    "success": false,
+    "message": "Connection test failed: [Errno -2] Name or service not known",
+    "details": {
+      "profile_id": "2f9ce5af-ce66-4ac2-9cf0-2ced5aacee72",
+      "status": "failed"
+    },
+    "timestamp": "2025-10-25T15:38:01.014475"
+  },
+  {
+    "test": "Profile Connection Test",
+    "success": false,
+    "message": "Connection test failed: [Errno -2] Name or service not known",
+    "details": {
+      "profile_id": "052da7ad-fd37-46b8-8737-c50a0f705d28",
+      "status": "failed"
+    },
+    "timestamp": "2025-10-25T15:38:01.105930"
+  },
+  {
+    "test": "File List Operation",
+    "success": false,
+    "message": "File listing failed: 500 - {\"detail\":\"SFTP connection failed: [Errno -2] Name or service not known\"}",
+    "details": {},
+    "timestamp": "2025-10-25T15:38:01.143175"
+  },
+  {
+    "test": "Chunked Upload - Chunk 1",
+    "success": false,
+    "message": "Chunk 1 upload failed: 500 - {\"detail\":\"SFTP connection failed: [Errno -2] Name or service not known\"}",
+    "details": {},
+    "timestamp": "2025-10-25T15:38:01.181578"
+  },
+  {
+    "test": "File Download Operation",
+    "success": true,
+    "message": "Download endpoint accessible (expected failure due to no real SFTP server): 500",
+    "details": {},
+    "timestamp": "2025-10-25T15:38:01.219904"
+  },
+  {
+    "test": "Invalid Profile Handling",
+    "success": true,
+    "message": "Correctly returned 404 for invalid profile ID",
+    "details": {},
+    "timestamp": "2025-10-25T15:38:01.258271"
+  }
+]

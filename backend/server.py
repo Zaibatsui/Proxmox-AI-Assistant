@@ -1124,6 +1124,16 @@ async def get_connection_profile(profile_id: str, current_user: dict = Depends(g
     if not profile:
         raise HTTPException(status_code=404, detail="Connection profile not found")
     
+    # Remove MongoDB _id field for JSON serialization
+    if '_id' in profile:
+        del profile['_id']
+    
+    # Convert datetime fields to ISO strings if needed
+    if isinstance(profile.get('created_at'), datetime):
+        profile['created_at'] = profile['created_at'].isoformat()
+    if isinstance(profile.get('updated_at'), datetime):
+        profile['updated_at'] = profile['updated_at'].isoformat()
+    
     return profile
 
 @api_router.put("/connection-profiles/{profile_id}")

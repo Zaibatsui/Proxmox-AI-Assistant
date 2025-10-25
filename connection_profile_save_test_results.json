@@ -1,0 +1,79 @@
+[
+  {
+    "test": "User Authentication",
+    "success": true,
+    "message": "Registered and logged in successfully",
+    "details": {},
+    "timestamp": "2025-10-25T22:25:01.654746"
+  },
+  {
+    "test": "SFTP Profile Creation",
+    "success": true,
+    "message": "Successfully created SFTP profile with ID: 9f5b4f81-df62-41d0-9540-b32e3a9fd2dc",
+    "details": {
+      "profile_id": "9f5b4f81-df62-41d0-9540-b32e3a9fd2dc",
+      "response": {
+        "message": "Connection profile created",
+        "id": "9f5b4f81-df62-41d0-9540-b32e3a9fd2dc"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:01.733673"
+  },
+  {
+    "test": "Profile Verification",
+    "success": false,
+    "message": "Failed to get profiles: 500 - Internal Server Error",
+    "details": {},
+    "timestamp": "2025-10-25T22:25:01.802204"
+  },
+  {
+    "test": "SSH Profile Creation",
+    "success": true,
+    "message": "Successfully created SSH profile with ID: 43380b37-2144-43ca-84da-81141baf70bf",
+    "details": {
+      "profile_id": "43380b37-2144-43ca-84da-81141baf70bf",
+      "response": {
+        "message": "Connection profile created",
+        "id": "43380b37-2144-43ca-84da-81141baf70bf"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:01.846640"
+  },
+  {
+    "test": "Profile Verification",
+    "success": false,
+    "message": "Failed to get profiles: 500 - Internal Server Error",
+    "details": {},
+    "timestamp": "2025-10-25T22:25:01.899532"
+  },
+  {
+    "test": "FTP Profile Creation",
+    "success": true,
+    "message": "Successfully created FTP profile with ID: 67b3d4f5-084b-40db-878b-e5b460d66fba",
+    "details": {
+      "profile_id": "67b3d4f5-084b-40db-878b-e5b460d66fba",
+      "response": {
+        "message": "Connection profile created",
+        "id": "67b3d4f5-084b-40db-878b-e5b460d66fba"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:01.940259"
+  },
+  {
+    "test": "Profile Verification",
+    "success": false,
+    "message": "Failed to get profiles: 500 - Internal Server Error",
+    "details": {},
+    "timestamp": "2025-10-25T22:25:01.984523"
+  },
+  {
+    "test": "Invalid Data Validation",
+    "success": true,
+    "message": "Correctly rejected invalid profile data with validation error",
+    "details": {
+      "status_code": 422,
+      "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"connection_type\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"host\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"}]}"
+    },
+    "timestamp": "2025-10-25T22:25:02.028558"
+  }
+]

@@ -318,7 +318,7 @@ const BackupManager = ({ onLogout }) => {
               </button>
               <button
                 onClick={() => restoreBackup(selectedBackup.id)}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors flex items-center gap-2"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors flex items-center gap-2"
               >
                 <RotateCcw className="w-4 h-4" />
                 Restore This Backup

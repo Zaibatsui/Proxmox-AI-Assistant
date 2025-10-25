@@ -100,45 +100,43 @@ class ConnectionProfileTester:
             self.log_result("Connection Profiles List", False, f"Error getting profiles: {str(e)}")
             return []
     
-    def test_lxc_file_access(self):
-        """Test LXC container file access (no SSH needed)"""
+    def test_create_ssh_profile(self):
+        """Test creating an SSH connection profile"""
         try:
-            file_list_data = {
-                "path": "/root",
-                "location": {
-                    "type": "lxc",
-                    "id": "121"
-                }
+            profile_data = {
+                "name": "Test SSH Profile",
+                "connection_type": "ssh",
+                "host": "test.example.com",
+                "port": 22,
+                "username": "testuser",
+                "password": "testpass",
+                "base_path": "/home/testuser",
+                "notes": "Test SSH profile for SFTP operations testing"
             }
             
             response = requests.post(
-                f"{self.base_url}/files/list", 
-                json=file_list_data, 
+                f"{self.base_url}/connection-profiles", 
+                json=profile_data, 
                 headers=self.get_headers(), 
                 timeout=15
             )
             
             if response.status_code == 200:
-                files = response.json()
+                result = response.json()
+                self.test_profile_id = result.get('id')
                 self.log_result(
-                    "LXC File Access Test", 
+                    "Create SSH Profile", 
                     True, 
-                    f"Successfully accessed LXC 121 files in /root",
-                    {"file_count": len(files.get('files', [])), "path": "/root"}
+                    f"Successfully created SSH profile with ID: {self.test_profile_id}",
+                    {"profile_id": self.test_profile_id, "name": profile_data["name"]}
                 )
                 return True
             else:
-                error_msg = response.text
-                self.log_result(
-                    "LXC File Access Test", 
-                    False, 
-                    f"LXC file access failed: {response.status_code}",
-                    {"error": error_msg}
-                )
+                self.log_result("Create SSH Profile", False, f"Failed to create profile: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
-            self.log_result("LXC File Access Test", False, f"LXC test error: {str(e)}")
+            self.log_result("Create SSH Profile", False, f"Profile creation error: {str(e)}")
             return False
     
     def test_vm_ssh_file_access(self):

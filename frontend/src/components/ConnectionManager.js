@@ -107,7 +107,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     }
     
     try {
-      await axios.delete(`${API}/connection-profiles/${profileId}`);
+      await axios.delete(`${API}/api/connection-profiles/${profileId}`);
       toast.success('Connection profile deleted');
       loadProfiles();
     } catch (error) {

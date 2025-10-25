@@ -327,10 +327,10 @@ function AIAssistant({ onLogout }) {
 
   return (
     <Layout onLogout={onLogout} currentPage="assistant">
-      <div className="h-[calc(100vh-8rem)] flex flex-col" data-testid="ai-assistant">
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">AI Assistant</h1>
-          <p className="text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
+      <div className="h-[calc(100vh-6rem)] flex flex-col" data-testid="ai-assistant">
+        <div className="mb-4 flex-shrink-0">
+          <h1 className="text-3xl font-bold text-slate-100 mb-1">AI Assistant</h1>
+          <p className="text-sm text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
         </div>
 
         {/* Location Selector */}

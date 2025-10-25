@@ -484,13 +484,13 @@ class ConnectionProfileTester:
         return passed == total
 
 if __name__ == "__main__":
-    tester = BackendTester()
+    tester = ConnectionProfileTester()
     success = tester.run_all_tests()
     
     # Save detailed results
-    with open('/app/vm121_test_results.json', 'w') as f:
+    with open('/app/sftp_connection_profile_test_results.json', 'w') as f:
         json.dump(tester.test_results, f, indent=2)
     
-    print(f"\n📄 Detailed results saved to: /app/vm121_test_results.json")
+    print(f"\n📄 Detailed results saved to: /app/sftp_connection_profile_test_results.json")
     
     sys.exit(0 if success else 1)

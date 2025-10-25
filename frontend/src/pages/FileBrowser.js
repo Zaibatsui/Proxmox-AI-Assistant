@@ -562,7 +562,7 @@ const FileBrowser = ({ onLogout }) => {
                   setConnectionTestResult(null);
                   setVmCredentials({ username: 'root', password: '' });
                 }}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors"
               >
                 Cancel
               </button>

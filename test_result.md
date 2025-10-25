@@ -98,8 +98,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "VM/Container 121 SSH Connection Test"
-    - "File Browser Operations for VM/Container 121"
+    - "Connection Profile SFTP File Operations"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

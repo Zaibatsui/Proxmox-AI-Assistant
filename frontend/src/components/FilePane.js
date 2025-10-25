@@ -50,7 +50,7 @@ function FilePane({
     setLoading(true);
     try {
       const response = await axios.post(
-        `${API}/connection-profiles/${connection.id}/files/list`,
+        `${API}/api/connection-profiles/${connection.id}/files/list`,
         null,
         { params: { path } }
       );

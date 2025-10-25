@@ -25,6 +25,10 @@ function AIAssistant({ onLogout }) {
   const [editableContent, setEditableContent] = useState("");
   const [executing, setExecuting] = useState(false);
   
+  // Command and VM action proposals
+  const [pendingCommand, setPendingCommand] = useState(null);
+  const [pendingVMAction, setPendingVMAction] = useState(null);
+  
   // Location awareness
   const [currentLocation, setCurrentLocation] = useState({ type: 'host', label: 'Proxmox Host' });
   const [availableLocations, setAvailableLocations] = useState([]);

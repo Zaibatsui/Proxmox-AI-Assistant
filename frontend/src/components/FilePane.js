@@ -136,17 +136,19 @@ function FilePane({
           reader.readAsDataURL(chunk);
         });
         
-        await axios.post(`${API}/files/upload`, {
-          path: uploadPath,
-          chunk_data: chunkData,
-          chunk_index: i,
-          total_chunks: totalChunks,
-          file_name: file.name,
-          location: {
-            type: connection.connection_type,
-            id: connection.id
+        await axios.post(
+          `${API}/connection-profiles/${connection.id}/files/upload`,
+          null,
+          {
+            params: {
+              path: uploadPath,
+              chunk_data: chunkData,
+              chunk_index: i,
+              total_chunks: totalChunks,
+              file_name: file.name
+            }
           }
-        });
+        );
         
         setUploadProgress({ current: i + 1, total: totalChunks, fileName: file.name });
       }

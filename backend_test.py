@@ -216,57 +216,102 @@ class ConnectionProfileTester:
             self.log_result("Profile Connection Test", False, f"Connection test error: {str(e)}")
             return False
     
-    def check_vms_via_ssh(self):
-        """Check what VMs exist on Proxmox via direct SSH"""
-        try:
-            # Test direct SSH connection to list VMs
-            ssh_test_data = {
-                "path": "/etc/pve/qemu-server",
-                "location": None  # Host location
-            }
+    def test_file_operations(self, profile_id):
+        """Test file operations using connection profile"""
+        if not profile_id:
+            self.log_result("File Operations Test", False, "No profile ID provided")
+            return False
             
+        try:
+            # Test 1: List files
             response = requests.post(
-                f"{self.base_url}/files/list", 
-                json=ssh_test_data, 
+                f"{self.base_url}/connection-profiles/{profile_id}/files/list?path=/", 
                 headers=self.get_headers(), 
                 timeout=15
             )
             
             if response.status_code == 200:
-                files_data = response.json()
-                vm_configs = []
-                
-                # Handle both list and dict responses
-                files_list = files_data if isinstance(files_data, list) else files_data.get('files', [])
-                
-                for file_info in files_list:
-                    if isinstance(file_info, dict) and file_info.get('name', '').endswith('.conf'):
-                        vm_id = file_info.get('name', '').replace('.conf', '')
-                        vm_configs.append(vm_id)
-                    elif isinstance(file_info, str) and file_info.endswith('.conf'):
-                        vm_id = file_info.replace('.conf', '')
-                        vm_configs.append(vm_id)
-                
+                files = response.json()
                 self.log_result(
-                    "Direct VM Check via SSH", 
+                    "File List Operation", 
                     True, 
-                    f"Found {len(vm_configs)} VM config files via SSH",
-                    {"vm_ids": vm_configs}
+                    f"Successfully listed files in root directory",
+                    {"file_count": len(files) if isinstance(files, list) else "unknown"}
                 )
-                
-                # Check if 121.conf exists
-                if "121" in vm_configs:
-                    self.log_result("VM 121 Config Check", True, "VM 121 config file exists on Proxmox host")
-                    return True
-                else:
-                    self.log_result("VM 121 Config Check", False, f"VM 121 config not found. Available VMs: {vm_configs}")
-                    return False
             else:
-                self.log_result("Direct VM Check via SSH", False, f"SSH file listing failed: {response.status_code} - {response.text}")
+                self.log_result("File List Operation", False, f"File listing failed: {response.status_code} - {response.text}")
                 return False
+            
+            # Test 2: Create directory
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/mkdir?path=/test_dir", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result("Directory Create Operation", True, "Successfully created test directory")
+            else:
+                self.log_result("Directory Create Operation", False, f"Directory creation failed: {response.status_code} - {response.text}")
+            
+            # Test 3: Write file
+            test_content = "This is a test file created by the SFTP connection profile test."
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/write?path=/test_dir/test_file.txt&content={test_content}", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result("File Write Operation", True, "Successfully wrote test file")
+            else:
+                self.log_result("File Write Operation", False, f"File write failed: {response.status_code} - {response.text}")
+            
+            # Test 4: Read file
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/read?path=/test_dir/test_file.txt", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                file_data = response.json()
+                content = file_data.get('content', '')
+                if test_content in content:
+                    self.log_result("File Read Operation", True, "Successfully read test file with correct content")
+                else:
+                    self.log_result("File Read Operation", False, f"File content mismatch. Expected: {test_content}, Got: {content}")
+            else:
+                self.log_result("File Read Operation", False, f"File read failed: {response.status_code} - {response.text}")
+            
+            # Test 5: Rename file
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/rename?old_path=/test_dir/test_file.txt&new_name=renamed_file.txt", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result("File Rename Operation", True, "Successfully renamed test file")
+            else:
+                self.log_result("File Rename Operation", False, f"File rename failed: {response.status_code} - {response.text}")
+            
+            # Test 6: Delete file
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/delete?path=/test_dir/renamed_file.txt", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result("File Delete Operation", True, "Successfully deleted test file")
+            else:
+                self.log_result("File Delete Operation", False, f"File delete failed: {response.status_code} - {response.text}")
+            
+            return True
                 
         except Exception as e:
-            self.log_result("Direct VM Check via SSH", False, f"SSH VM check error: {str(e)}")
+            self.log_result("File Operations Test", False, f"File operations error: {str(e)}")
             return False
     
     def test_proxmox_connection(self):

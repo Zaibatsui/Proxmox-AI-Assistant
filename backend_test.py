@@ -139,48 +139,44 @@ class ConnectionProfileTester:
             self.log_result("Create SSH Profile", False, f"Profile creation error: {str(e)}")
             return False
     
-    def test_vm_ssh_file_access(self):
-        """Test VM SSH file access with provided credentials"""
+    def test_create_sftp_profile(self):
+        """Test creating an SFTP connection profile"""
         try:
-            file_list_data = {
-                "path": "/root",
-                "location": {
-                    "type": "vm",
-                    "id": "121",
-                    "ssh_username": "root",
-                    "ssh_password": "10065609Xx!"
-                }
+            profile_data = {
+                "name": "Test SFTP Profile",
+                "connection_type": "sftp",
+                "host": "sftp.example.com",
+                "port": 22,
+                "username": "sftpuser",
+                "password": "sftppass",
+                "base_path": "/uploads",
+                "notes": "Test SFTP profile for file operations testing"
             }
             
             response = requests.post(
-                f"{self.base_url}/files/list", 
-                json=file_list_data, 
+                f"{self.base_url}/connection-profiles", 
+                json=profile_data, 
                 headers=self.get_headers(), 
-                timeout=30  # Longer timeout for SSH
+                timeout=15
             )
             
             if response.status_code == 200:
-                files = response.json()
+                result = response.json()
+                sftp_profile_id = result.get('id')
                 self.log_result(
-                    "VM SSH File Access Test", 
+                    "Create SFTP Profile", 
                     True, 
-                    f"Successfully accessed VM 121 via SSH",
-                    {"file_count": len(files.get('files', [])), "path": "/root"}
+                    f"Successfully created SFTP profile with ID: {sftp_profile_id}",
+                    {"profile_id": sftp_profile_id, "name": profile_data["name"]}
                 )
-                return True
+                return sftp_profile_id
             else:
-                error_msg = response.text
-                self.log_result(
-                    "VM SSH File Access Test", 
-                    False, 
-                    f"VM SSH access failed: {response.status_code}",
-                    {"error": error_msg, "credentials_used": "root/10065609Xx!"}
-                )
-                return False
+                self.log_result("Create SFTP Profile", False, f"Failed to create SFTP profile: {response.status_code} - {response.text}")
+                return None
                 
         except Exception as e:
-            self.log_result("VM SSH File Access Test", False, f"VM SSH test error: {str(e)}")
-            return False
+            self.log_result("Create SFTP Profile", False, f"SFTP profile creation error: {str(e)}")
+            return None
     
     def check_backend_logs(self):
         """Check backend logs for SSH-related errors"""

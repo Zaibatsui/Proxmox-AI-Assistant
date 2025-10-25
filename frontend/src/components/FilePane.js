@@ -99,7 +99,7 @@ function FilePane({
     
     try {
       await axios.post(
-        `${API}/connection-profiles/${connection.id}/files/write`,
+        `${API}/api/connection-profiles/${connection.id}/files/write`,
         null,
         { params: { path: filePath, content: fileContent } }
       );

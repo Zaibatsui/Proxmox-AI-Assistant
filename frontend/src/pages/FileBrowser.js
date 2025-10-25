@@ -485,7 +485,7 @@ const FileBrowser = ({ onLogout }) => {
                     setVmCredentials({ ...vmCredentials, username: e.target.value });
                     setConnectionTestResult(null); // Reset test result on change
                   }}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none"
                   placeholder="root"
                 />
               </div>
@@ -503,7 +503,7 @@ const FileBrowser = ({ onLogout }) => {
                       testVMConnection();
                     }
                   }}
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-amber-500 focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none"
                   placeholder="Enter VM password"
                 />
               </div>

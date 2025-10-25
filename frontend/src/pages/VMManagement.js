@@ -84,14 +84,25 @@ function VMManagement({ onLogout }) {
     return (
       <Card
         key={idx}
-        className="border-slate-800 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all"
+        className={`border-slate-700 bg-gradient-to-br ${
+          isRunning 
+            ? 'from-emerald-900/20 to-slate-900/80 hover:from-emerald-900/30' 
+            : 'from-slate-900/80 to-slate-800/50 hover:from-slate-800/90'
+        } backdrop-blur-sm hover:to-slate-700/50 transition-all relative overflow-hidden`}
         data-testid={`vm-card-${idx}`}
       >
-        <CardHeader className="pb-3">
+        <div className={`absolute top-0 right-0 w-32 h-32 ${
+          isRunning ? 'bg-emerald-500/5' : 'bg-slate-500/5'
+        } rounded-full blur-3xl`} />
+        <CardHeader className="pb-3 relative">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3 flex-1">
-              <div className="p-2 bg-cyan-500/10 rounded-lg flex-shrink-0">
-                <Icon className="w-5 h-5 text-cyan-400" />
+              <div className={`p-2.5 rounded-xl ${
+                isRunning 
+                  ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 ring-1 ring-emerald-500/20' 
+                  : 'bg-gradient-to-br from-amber-500/20 to-amber-600/10 ring-1 ring-amber-500/20'
+              } flex-shrink-0`}>
+                <Icon className={`w-5 h-5 ${isRunning ? 'text-emerald-400' : 'text-amber-400'}`} />
               </div>
               <div className="flex-1 min-w-0">
                 <CardTitle className="text-lg text-slate-100 mb-1 truncate">

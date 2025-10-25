@@ -52,8 +52,8 @@ export const themes = {
 
 export function ThemeProvider({ children }) {
   const [currentTheme, setCurrentTheme] = useState("amber");
-  const [background, setBackground] = useState("dark");
-  const [cardStyle, setCardStyle] = useState("glass");
+  const [background, setBackground] = useState("darker");
+  const [cardStyle, setCardStyle] = useState("solid");
   const [accentColor, setAccentColor] = useState(null);
   // Advanced appearance options
   const [primaryColor, setPrimaryColor] = useState(null);

@@ -3365,6 +3365,216 @@ async def delete_backup(backup_id: str, current_user: dict = Depends(get_current
     finally:
         ssh_client.close()
 
+# ==================== ENHANCED FILE OPERATIONS ====================
+
+@api_router.post("/files/upload")
+async def upload_file_chunk(request: FileUploadChunk, current_user: dict = Depends(get_current_user)):
+    """Upload a file in chunks"""
+    import base64
+    
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
+    
+    try:
+        # Decode chunk data
+        chunk_data = base64.b64decode(request.chunk_data)
+        
+        # Create temp directory for chunks
+        temp_dir = f"/tmp/upload_{current_user['user_id']}_{request.file_name.replace('/', '_')}"
+        chunk_path = f"{temp_dir}/chunk_{request.chunk_index}"
+        
+        # Create temp dir if first chunk
+        if request.chunk_index == 0:
+            await exec_in_location(ssh_client, f"mkdir -p '{temp_dir}'", request.location)
+        
+        # Write chunk to temp location
+        # Use base64 encoding to safely transfer binary data
+        encoded_chunk = base64.b64encode(chunk_data).decode('utf-8')
+        cmd = f"echo '{encoded_chunk}' | base64 -d > '{chunk_path}'"
+        exit_code, _, stderr = await exec_in_location(ssh_client, cmd, request.location)
+        
+        if exit_code != 0:
+            raise HTTPException(status_code=500, detail=f"Failed to write chunk: {stderr}")
+        
+        # If this is the last chunk, combine all chunks
+        if request.chunk_index == request.total_chunks - 1:
+            # Combine chunks
+            combine_cmd = f"cat {temp_dir}/chunk_* > '{request.path}' && rm -rf '{temp_dir}'"
+            exit_code, _, stderr = await exec_in_location(ssh_client, combine_cmd, request.location)
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail=f"Failed to combine chunks: {stderr}")
+            
+            await log_audit(current_user["user_id"], "file_upload", {
+                "path": request.path,
+                "location": request.location.model_dump() if request.location else {"type": "host"},
+                "file_name": request.file_name,
+                "chunks": request.total_chunks
+            })
+            
+            return {
+                "success": True,
+                "message": "File uploaded successfully",
+                "path": request.path,
+                "complete": True
+            }
+        else:
+            return {
+                "success": True,
+                "message": f"Chunk {request.chunk_index + 1}/{request.total_chunks} uploaded",
+                "complete": False
+            }
+            
+    finally:
+        ssh_client.close()
+
+@api_router.get("/files/download")
+async def download_file(path: str, location_type: str = "host", location_id: Optional[str] = None, current_user: dict = Depends(get_current_user)):
+    """Download a file"""
+    from fastapi.responses import StreamingResponse
+    import io
+    
+    # Build location
+    location = None
+    if location_type != "host":
+        location = FileLocation(
+            type=location_type,
+            id=location_id
+        )
+    
+    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+    
+    try:
+        # Read file content
+        file_content = await location_read_file(ssh_client, path, location)
+        
+        # Get filename from path
+        filename = path.split('/')[-1]
+        
+        await log_audit(current_user["user_id"], "file_download", {
+            "path": path,
+            "location": location.model_dump() if location else {"type": "host"}
+        })
+        
+        # Return as streaming response
+        return StreamingResponse(
+            io.BytesIO(file_content.content.encode('utf-8')),
+            media_type='application/octet-stream',
+            headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+        )
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/rename")
+async def rename_file(request: FileRenameRequest, current_user: dict = Depends(get_current_user)):
+    """Rename a file or directory"""
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
+    
+    try:
+        # Get directory and construct new path
+        dir_path = '/'.join(request.old_path.split('/')[:-1])
+        new_path = f"{dir_path}/{request.new_name}" if dir_path else request.new_name
+        
+        # Check if old path exists
+        if not await location_file_exists(ssh_client, request.old_path, request.location):
+            raise HTTPException(status_code=404, detail="File or directory not found")
+        
+        # Check if new path already exists
+        if await location_file_exists(ssh_client, new_path, request.location):
+            raise HTTPException(status_code=400, detail="A file or directory with this name already exists")
+        
+        # Rename
+        exit_code, _, stderr = await exec_in_location(ssh_client, f"mv '{request.old_path}' '{new_path}'", request.location)
+        
+        if exit_code != 0:
+            raise HTTPException(status_code=500, detail=f"Failed to rename: {stderr}")
+        
+        await log_audit(current_user["user_id"], "file_rename", {
+            "old_path": request.old_path,
+            "new_path": new_path,
+            "location": request.location.model_dump() if request.location else {"type": "host"}
+        })
+        
+        return {
+            "success": True,
+            "message": "Renamed successfully",
+            "new_path": new_path
+        }
+        
+    finally:
+        ssh_client.close()
+
+@api_router.post("/files/copy")
+async def copy_file(request: FileCopyRequest, current_user: dict = Depends(get_current_user)):
+    """Copy a file between locations"""
+    source_ssh = await get_location_ssh_client(current_user["user_id"], request.source_location)
+    
+    try:
+        # Check if source exists
+        if not await location_file_exists(source_ssh, request.source_path, request.source_location):
+            raise HTTPException(status_code=404, detail="Source file not found")
+        
+        # Read source file
+        source_content = await location_read_file(source_ssh, request.source_path, request.source_location)
+        
+        # If destination is same location, use cp command
+        if request.source_location == request.dest_location:
+            exit_code, _, stderr = await exec_in_location(source_ssh, f"cp -r '{request.source_path}' '{request.dest_path}'", request.source_location)
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail=f"Failed to copy: {stderr}")
+        else:
+            # Different location - need to read and write
+            dest_ssh = await get_location_ssh_client(current_user["user_id"], request.dest_location)
+            try:
+                await location_write_file(dest_ssh, request.dest_path, source_content.content, request.dest_location)
+            finally:
+                dest_ssh.close()
+        
+        await log_audit(current_user["user_id"], "file_copy", {
+            "source_path": request.source_path,
+            "dest_path": request.dest_path,
+            "source_location": request.source_location.model_dump() if request.source_location else {"type": "host"},
+            "dest_location": request.dest_location.model_dump() if request.dest_location else {"type": "host"}
+        })
+        
+        return {
+            "success": True,
+            "message": "File copied successfully"
+        }
+        
+    finally:
+        source_ssh.close()
+
+@api_router.post("/files/mkdir")
+async def create_directory(request: DirectoryCreateRequest, current_user: dict = Depends(get_current_user)):
+    """Create a new directory"""
+    ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
+    
+    try:
+        # Check if directory already exists
+        if await location_file_exists(ssh_client, request.path, request.location):
+            raise HTTPException(status_code=400, detail="Directory already exists")
+        
+        # Create directory
+        exit_code, _, stderr = await exec_in_location(ssh_client, f"mkdir -p '{request.path}'", request.location)
+        
+        if exit_code != 0:
+            raise HTTPException(status_code=500, detail=f"Failed to create directory: {stderr}")
+        
+        await log_audit(current_user["user_id"], "directory_create", {
+            "path": request.path,
+            "location": request.location.model_dump() if request.location else {"type": "host"}
+        })
+        
+        return {
+            "success": True,
+            "message": "Directory created successfully"
+        }
+        
+    finally:
+        ssh_client.close()
+
 # Include the router in the main app
 app.include_router(api_router)
 

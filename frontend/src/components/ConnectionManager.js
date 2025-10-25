@@ -78,7 +78,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const handleEdit = async (profile) => {
     try {
       // Load full profile with credentials
-      const response = await axios.get(`${API}/connection-profiles/${profile.id}`);
+      const response = await axios.get(`${API}/api/connection-profiles/${profile.id}`);
       const fullProfile = response.data;
       
       setFormData({

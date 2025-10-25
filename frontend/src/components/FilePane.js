@@ -167,7 +167,10 @@ function FilePane({
     const filePath = currentPath === '/' ? `/${file.name}` : `${currentPath}/${file.name}`;
     
     try {
-      window.open(`${API}/files/download?path=${encodeURIComponent(filePath)}&location_type=${connection.connection_type}&location_id=${connection.id}`, '_blank');
+      window.open(
+        `${API}/connection-profiles/${connection.id}/files/download?path=${encodeURIComponent(filePath)}`,
+        '_blank'
+      );
       toast.success('Download started');
     } catch (error) {
       console.error('Download failed:', error);

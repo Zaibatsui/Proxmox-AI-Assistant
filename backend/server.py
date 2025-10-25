@@ -338,6 +338,29 @@ class BackupListResponse(BaseModel):
     backups: List[FileBackup]
     total: int
 
+class FileUploadChunk(BaseModel):
+    path: str
+    chunk_data: str  # Base64 encoded
+    chunk_index: int
+    total_chunks: int
+    file_name: str
+    location: Optional[FileLocation] = None
+
+class FileRenameRequest(BaseModel):
+    old_path: str
+    new_name: str
+    location: Optional[FileLocation] = None
+
+class FileCopyRequest(BaseModel):
+    source_path: str
+    dest_path: str
+    source_location: Optional[FileLocation] = None
+    dest_location: Optional[FileLocation] = None
+
+class DirectoryCreateRequest(BaseModel):
+    path: str
+    location: Optional[FileLocation] = None
+
 class RestoreRequest(BaseModel):
     backup_id: str
 

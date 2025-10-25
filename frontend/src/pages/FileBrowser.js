@@ -324,7 +324,7 @@ const FileBrowser = ({ onLogout }) => {
               <button
                 key={item.path}
                 onClick={() => navigateTo(item.path)}
-                className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors flex items-center gap-2"
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded transition-colors flex items-center gap-2"
               >
                 <FolderOpen className="w-4 h-4" />
                 {item.label}
@@ -433,7 +433,7 @@ const FileBrowser = ({ onLogout }) => {
                   <button
                     onClick={createBackup}
                     disabled={loading}
-                    className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded transition-colors flex items-center gap-2"
+                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-sm rounded transition-colors flex items-center gap-2"
                   >
                     <Upload className="w-4 h-4" />
                     Backup

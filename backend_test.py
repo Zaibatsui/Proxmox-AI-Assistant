@@ -178,66 +178,43 @@ class ConnectionProfileTester:
             self.log_result("Create SFTP Profile", False, f"SFTP profile creation error: {str(e)}")
             return None
     
-    def check_backend_logs(self):
-        """Check backend logs for SSH-related errors"""
+    def test_profile_connection(self, profile_id):
+        """Test connection profile connectivity"""
         try:
-            import subprocess
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/test", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
             
-            # Check supervisor backend logs
-            log_files = [
-                "/var/log/supervisor/backend.err.log",
-                "/var/log/supervisor/backend.out.log"
-            ]
-            
-            ssh_errors = []
-            
-            for log_file in log_files:
-                try:
-                    result = subprocess.run(
-                        ["tail", "-n", "50", log_file], 
-                        capture_output=True, 
-                        text=True, 
-                        timeout=10
+            if response.status_code == 200:
+                result = response.json()
+                status = result.get('status', 'unknown')
+                message = result.get('message', 'No message')
+                
+                if status == 'success':
+                    self.log_result(
+                        "Profile Connection Test", 
+                        True, 
+                        f"Connection test successful: {message}",
+                        {"profile_id": profile_id, "status": status}
                     )
-                    
-                    if result.returncode == 0:
-                        log_content = result.stdout
-                        
-                        # Look for SSH-related errors
-                        ssh_keywords = [
-                            "SSH connection failed",
-                            "Could not determine IP",
-                            "QEMU guest agent",
-                            "VM 121",
-                            "paramiko",
-                            "Connection refused",
-                            "Authentication failed"
-                        ]
-                        
-                        for line in log_content.split('\n'):
-                            for keyword in ssh_keywords:
-                                if keyword.lower() in line.lower():
-                                    ssh_errors.append(line.strip())
-                                    
-                except Exception as e:
-                    print(f"Could not read {log_file}: {str(e)}")
-            
-            if ssh_errors:
-                self.log_result(
-                    "Backend Log Analysis", 
-                    True, 
-                    f"Found {len(ssh_errors)} SSH-related log entries",
-                    {"errors": ssh_errors[:10]}  # Limit to first 10
-                )
+                    return True
+                else:
+                    self.log_result(
+                        "Profile Connection Test", 
+                        False, 
+                        f"Connection test failed: {message}",
+                        {"profile_id": profile_id, "status": status}
+                    )
+                    return False
             else:
-                self.log_result(
-                    "Backend Log Analysis", 
-                    True, 
-                    "No SSH-related errors found in recent logs"
-                )
+                self.log_result("Profile Connection Test", False, f"Connection test request failed: {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_result("Backend Log Analysis", False, f"Log analysis error: {str(e)}")
+            self.log_result("Profile Connection Test", False, f"Connection test error: {str(e)}")
+            return False
     
     def check_vms_via_ssh(self):
         """Check what VMs exist on Proxmox via direct SSH"""

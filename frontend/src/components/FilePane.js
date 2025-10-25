@@ -137,7 +137,7 @@ function FilePane({
         });
         
         await axios.post(
-          `${API}/connection-profiles/${connection.id}/files/upload`,
+          `${API}/api/connection-profiles/${connection.id}/files/upload`,
           null,
           {
             params: {

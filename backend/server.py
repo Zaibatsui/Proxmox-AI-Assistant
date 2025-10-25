@@ -1438,6 +1438,65 @@ ai_tools = [
                 "required": ["path", "new_content", "reason"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_command_execution",
+            "description": "Propose execution of a shell command on the Proxmox host, VM, or container. ALWAYS use this for any command execution. System will evaluate risk and require user confirmation before execution.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The shell command to execute (e.g., 'systemctl restart nginx', 'apt update', 'docker ps')"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where to execute: 'host' for Proxmox host, 'lxc:CTID' for container, 'vm:VMID' for VM. Default is 'host'."
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "description": "Clear explanation of what this command does and why it's needed"
+                    },
+                    "expected_outcome": {
+                        "type": "string",
+                        "description": "What the expected result/output should be"
+                    }
+                },
+                "required": ["command", "purpose", "expected_outcome"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_vm_action",
+            "description": "Propose an action on a VM or container (start, stop, restart, create, delete). System will evaluate risk and require user confirmation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["start", "stop", "restart", "shutdown", "create", "delete"],
+                        "description": "The action to perform"
+                    },
+                    "vmid": {
+                        "type": "string",
+                        "description": "The VM/Container ID (required for existing VMs)"
+                    },
+                    "vm_config": {
+                        "type": "object",
+                        "description": "Configuration for creating a new VM (only for 'create' action). Include: name, cores, memory, disk, template, etc."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Why this action is needed"
+                    }
+                },
+                "required": ["action", "reason"]
+            }
+        }
     }
 ]
 

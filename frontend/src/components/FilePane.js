@@ -206,7 +206,7 @@ function FilePane({
     
     try {
       await axios.post(
-        `${API}/connection-profiles/${connection.id}/files/mkdir`,
+        `${API}/api/connection-profiles/${connection.id}/files/mkdir`,
         null,
         { params: { path: folderPath } }
       );

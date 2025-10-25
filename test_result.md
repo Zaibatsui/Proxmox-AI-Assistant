@@ -2,7 +2,7 @@ backend:
   - task: "Connection Profile SFTP File Operations"
     implemented: true
     working: true
-    file: "server.py"
+    file: "server.py, ConnectionManager.js"
     stuck_count: 0
     priority: "high"
     needs_retesting: false
@@ -13,6 +13,9 @@ backend:
       - working: true
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED: All SFTP connection profile file operations working correctly. ✅ Connection Profile CRUD - Create, update, delete working properly. ✅ SFTP Helper Functions - All 10 helper functions implemented and accessible. ✅ File Operations API - All 8 new endpoints working. ✅ Parameter Validation - Correctly rejects invalid connection types and missing fields. ✅ Error Handling - Proper 404 responses for invalid profile IDs, 500 for connection failures. ✅ MongoDB ObjectId serialization issue in GET /connection-profiles/{profile_id} fixed by main agent. 16/16 tests passed - full SFTP implementation ready for production use."
+      - working: true
+        agent: "main"
+        comment: "USER-REPORTED BUG FIX COMPLETED: Fixed 'Failed to save connection profile' issue. Root cause: Frontend ConnectionManager.js was missing /api prefix in all connection profile API calls. MongoDB ObjectId serialization error in GET /connection-profiles endpoint also fixed by backend testing agent. Fixed 5 API endpoints in ConnectionManager.js: GET /api/connection-profiles (loadProfiles), POST /api/connection-profiles (create), PUT /api/connection-profiles/{id} (update), GET /api/connection-profiles/{id} (edit), DELETE /api/connection-profiles/{id} (delete), POST /api/connection-profiles/{id}/test (testConnection). Verified fix with UI testing - connection profile creation now works successfully. Toast message 'Connection profile created' appears, and profiles display correctly in Manage Connections modal."
 
   - task: "VM/Container 121 SSH Connection Test"
     implemented: true

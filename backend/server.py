@@ -3367,6 +3367,89 @@ async def delete_backup(backup_id: str, current_user: dict = Depends(get_current
     finally:
         ssh_client.close()
 
+# ==================== FTP HELPER FUNCTIONS ====================
+
+async def get_ftp_client(profile: dict):
+    """Get FTP client from connection profile"""
+    try:
+        ftp = FTP()
+        ftp.connect(profile['host'], profile['port'], timeout=10)
+        ftp.login(profile['username'], profile.get('password', ''))
+        
+        # Change to base path if specified
+        if profile.get('base_path') and profile['base_path'] != '/':
+            ftp.cwd(profile['base_path'])
+        
+        return ftp
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"FTP connection failed: {str(e)}")
+
+async def ftp_list_directory(profile: dict, path: str):
+    """List directory contents via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        ftp.cwd(path)
+        files = []
+        ftp.retrlines('LIST', lambda line: files.append(line))
+        
+        result = []
+        for file_line in files:
+            parts = file_line.split(None, 8)
+            if len(parts) >= 9:
+                perms = parts[0]
+                name = parts[8]
+                is_dir = perms.startswith('d')
+                result.append({
+                    'name': name,
+                    'type': 'directory' if is_dir else 'file',
+                    'size': parts[4] if not is_dir else '0',
+                    'permissions': perms
+                })
+        
+        return result
+    finally:
+        ftp.quit()
+
+async def ftp_read_file(profile: dict, path: str):
+    """Read file content via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        content = io.BytesIO()
+        ftp.retrbinary(f'RETR {path}', content.write)
+        return content.getvalue().decode('utf-8', errors='replace')
+    finally:
+        ftp.quit()
+
+async def ftp_write_file(profile: dict, path: str, content: str):
+    """Write file content via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        content_bytes = content.encode('utf-8')
+        ftp.storbinary(f'STOR {path}', io.BytesIO(content_bytes))
+    finally:
+        ftp.quit()
+
+async def ftp_delete_file(profile: dict, path: str):
+    """Delete file via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        # Try to delete as file first
+        try:
+            ftp.delete(path)
+        except:
+            # If that fails, try as directory
+            ftp.rmd(path)
+    finally:
+        ftp.quit()
+
+async def ftp_create_directory(profile: dict, path: str):
+    """Create directory via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        ftp.mkd(path)
+    finally:
+        ftp.quit()
+
 # ==================== ENHANCED FILE OPERATIONS ====================
 
 @api_router.post("/files/upload")

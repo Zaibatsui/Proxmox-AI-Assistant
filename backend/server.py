@@ -3379,6 +3379,112 @@ async def delete_backup(backup_id: str, current_user: dict = Depends(get_current
     finally:
         ssh_client.close()
 
+# ==================== SFTP HELPER FUNCTIONS ====================
+
+async def get_sftp_client(profile: dict):
+    """Get SFTP client from connection profile"""
+    try:
+        transport = paramiko.Transport((profile['host'], profile['port']))
+        
+        if profile.get('private_key'):
+            # Use key-based auth
+            from io import StringIO
+            key_file = StringIO(profile['private_key'])
+            private_key = paramiko.RSAKey.from_private_key(key_file)
+            transport.connect(username=profile['username'], pkey=private_key)
+        else:
+            # Use password auth
+            transport.connect(username=profile['username'], password=profile.get('password'))
+        
+        sftp = paramiko.SFTPClient.from_transport(transport)
+        
+        # Change to base path if specified
+        if profile.get('base_path') and profile['base_path'] != '/':
+            try:
+                sftp.chdir(profile['base_path'])
+            except:
+                pass
+        
+        return sftp, transport
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"SFTP connection failed: {str(e)}")
+
+async def sftp_list_directory(profile: dict, path: str):
+    """List directory contents via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        files = []
+        for item in sftp.listdir_attr(path):
+            is_dir = stat.S_ISDIR(item.st_mode)
+            files.append({
+                'name': item.filename,
+                'type': 'directory' if is_dir else 'file',
+                'size': str(item.st_size) if not is_dir else '0',
+                'permissions': oct(item.st_mode)[-4:]
+            })
+        return files
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_read_file(profile: dict, path: str):
+    """Read file content via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        with sftp.open(path, 'r') as f:
+            content = f.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8', errors='replace')
+            return content
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_write_file(profile: dict, path: str, content: str):
+    """Write file content via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        with sftp.open(path, 'w') as f:
+            f.write(content)
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_delete_file(profile: dict, path: str):
+    """Delete file or directory via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        try:
+            # Try as file first
+            sftp.remove(path)
+        except:
+            # Try as directory
+            sftp.rmdir(path)
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_create_directory(profile: dict, path: str):
+    """Create directory via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        sftp.mkdir(path)
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_file_exists(profile: dict, path: str):
+    """Check if file/directory exists via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        sftp.stat(path)
+        return True
+    except:
+        return False
+    finally:
+        sftp.close()
+        transport.close()
+
 # ==================== FTP HELPER FUNCTIONS ====================
 
 async def get_ftp_client(profile: dict):

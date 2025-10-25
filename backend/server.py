@@ -885,10 +885,9 @@ async def health_check(current_user: dict = Depends(get_current_user)):
         if api_keys_doc and api_keys_doc.get("openai_api_key"):
             # Try a simple API call to verify the key works
             try:
-                import openai
-                openai.api_key = api_keys_doc["openai_api_key"]
-                # Simple models list call to test
-                openai.models.list()
+                test_client = AsyncOpenAI(api_key=api_keys_doc["openai_api_key"])
+                # Simple models list call to test - just check if we can connect
+                await test_client.models.list()
                 health_status["openai"]["status"] = "connected"
             except Exception as e:
                 health_status["openai"]["error"] = f"API key invalid or quota exceeded: {str(e)}"

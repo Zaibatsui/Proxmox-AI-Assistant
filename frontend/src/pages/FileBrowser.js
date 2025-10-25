@@ -291,7 +291,7 @@ const FileBrowser = ({ onLogout }) => {
           </div>
 
           {/* Location Selector */}
-          <div className="bg-gray-800 rounded-lg p-4 mb-4">
+          <div className="bg-slate-900/80 backdrop-blur-sm rounded-lg p-4 mb-4 border border-slate-700">
             <h3 className="text-sm font-semibold text-gray-400 mb-2">LOCATION</h3>
             <select
               value={JSON.stringify(location)}

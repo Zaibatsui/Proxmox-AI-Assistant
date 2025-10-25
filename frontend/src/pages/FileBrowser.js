@@ -357,7 +357,7 @@ const FileBrowser = ({ onLogout }) => {
                     {idx > 0 && <ChevronRight className="w-4 h-4 text-gray-500 flex-shrink-0" />}
                     <button
                       onClick={() => navigateTo(crumb.path)}
-                      className="text-cyan-400 hover:text-cyan-300 whitespace-nowrap"
+                      className="text-amber-400 hover:text-amber-300 whitespace-nowrap"
                     >
                       {crumb.name}
                     </button>

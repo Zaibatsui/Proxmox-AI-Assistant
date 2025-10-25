@@ -185,7 +185,7 @@ function FilePane({
     
     try {
       await axios.post(
-        `${API}/connection-profiles/${connection.id}/files/delete`,
+        `${API}/api/connection-profiles/${connection.id}/files/delete`,
         null,
         { params: { path: filePath } }
       );

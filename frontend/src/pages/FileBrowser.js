@@ -512,7 +512,7 @@ const FileBrowser = ({ onLogout }) => {
               <button
                 onClick={testVMConnection}
                 disabled={!vmCredentials.password || testingConnection}
-                className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors flex items-center justify-center gap-2"
+                className="w-full px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors flex items-center justify-center gap-2"
               >
                 {testingConnection ? (
                   <>

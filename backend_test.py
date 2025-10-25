@@ -314,55 +314,55 @@ class ConnectionProfileTester:
             self.log_result("File Operations Test", False, f"File operations error: {str(e)}")
             return False
     
-    def test_proxmox_connection(self):
-        """Test if Proxmox connection is configured and working"""
+    def test_chunked_upload(self, profile_id):
+        """Test chunked file upload functionality"""
+        if not profile_id:
+            self.log_result("Chunked Upload Test", False, "No profile ID provided")
+            return False
+            
         try:
-            response = requests.get(f"{self.base_url}/proxmox/config", headers=self.get_headers(), timeout=10)
+            # Create test content
+            test_content = "This is a test file for chunked upload. " * 100  # Make it larger
+            content_bytes = test_content.encode('utf-8')
+            
+            # Split into chunks (simulate 2 chunks)
+            chunk_size = len(content_bytes) // 2
+            chunk1 = content_bytes[:chunk_size]
+            chunk2 = content_bytes[chunk_size:]
+            
+            # Upload chunk 1
+            chunk1_b64 = base64.b64encode(chunk1).decode('utf-8')
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/upload?path=/&chunk_data={chunk1_b64}&chunk_index=0&total_chunks=2&file_name=chunked_test.txt", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
             
             if response.status_code == 200:
-                config = response.json()
-                if config:
-                    self.log_result(
-                        "Proxmox Configuration", 
-                        True, 
-                        f"Proxmox configured for host: {config.get('host', 'unknown')}"
-                    )
-                    
-                    # Test the actual connection
-                    test_response = requests.post(f"{self.base_url}/proxmox/test-connection", headers=self.get_headers(), timeout=30)
-                    if test_response.status_code == 200:
-                        test_result = test_response.json()
-                        api_status = test_result.get('api', {}).get('status', 'unknown')
-                        ssh_status = test_result.get('ssh', {}).get('status', 'unknown')
-                        
-                        if api_status == 'success':
-                            self.log_result("Proxmox API Test", True, f"Proxmox API connection successful")
-                        else:
-                            api_error = test_result.get('api', {}).get('error', 'Unknown error')
-                            self.log_result("Proxmox API Test", False, f"Proxmox API failed: {api_error}")
-                        
-                        if ssh_status == 'success':
-                            self.log_result("Proxmox SSH Test", True, f"Proxmox SSH connection successful")
-                        else:
-                            ssh_error = test_result.get('ssh', {}).get('error', 'Unknown error')
-                            self.log_result("Proxmox SSH Test", False, f"Proxmox SSH failed: {ssh_error}")
-                    else:
-                        self.log_result("Proxmox Connection Test", False, f"Connection test failed: {test_response.status_code} - {test_response.text}")
-                else:
-                    self.log_result(
-                        "Proxmox Configuration", 
-                        False, 
-                        "No Proxmox configuration found - this may be why VM 121 cannot be accessed"
-                    )
+                self.log_result("Chunked Upload - Chunk 1", True, "Successfully uploaded first chunk")
             else:
-                self.log_result(
-                    "Proxmox Configuration", 
-                    False, 
-                    f"Could not check Proxmox config: {response.status_code}"
-                )
+                self.log_result("Chunked Upload - Chunk 1", False, f"Chunk 1 upload failed: {response.status_code} - {response.text}")
+                return False
+            
+            # Upload chunk 2
+            chunk2_b64 = base64.b64encode(chunk2).decode('utf-8')
+            response = requests.post(
+                f"{self.base_url}/connection-profiles/{profile_id}/files/upload?path=/&chunk_data={chunk2_b64}&chunk_index=1&total_chunks=2&file_name=chunked_test.txt", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result("Chunked Upload - Chunk 2", True, "Successfully uploaded second chunk")
+            else:
+                self.log_result("Chunked Upload - Chunk 2", False, f"Chunk 2 upload failed: {response.status_code} - {response.text}")
+                return False
+            
+            return True
                 
         except Exception as e:
-            self.log_result("Proxmox Configuration", False, f"Proxmox config check error: {str(e)}")
+            self.log_result("Chunked Upload Test", False, f"Chunked upload error: {str(e)}")
+            return False
     
     def run_all_tests(self):
         """Run all tests for VM/Container 121"""

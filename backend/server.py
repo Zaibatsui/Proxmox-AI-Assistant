@@ -1204,6 +1204,18 @@ async def test_connection_profile(profile_id: str, current_user: dict = Depends(
             else:
                 return {"status": "failed", "message": "Connection test failed"}
                 
+        elif profile['connection_type'] == 'ftp':
+            # Test FTP connection
+            try:
+                ftp = FTP()
+                ftp.connect(profile['host'], profile['port'], timeout=10)
+                ftp.login(profile['username'], profile.get('password', ''))
+                ftp.pwd()  # Test command
+                ftp.quit()
+                return {"status": "success", "message": "FTP connection successful"}
+            except Exception as e:
+                return {"status": "failed", "message": f"FTP connection failed: {str(e)}"}
+                
         elif profile['connection_type'] == 'reverse_proxy':
             # For reverse proxy, we can't really test from backend
             # Just validate the host format

@@ -40,8 +40,8 @@ function Layout({ children, onLogout, currentPage }) {
           </div>
         </div>
 
-        <nav className="flex-1 space-y-1" data-testid="sidebar-nav" style={{ 
-          padding: 'calc(1rem * var(--layout-density))'
+        <nav className="flex-1 space-y-0.5 overflow-y-auto" data-testid="sidebar-nav" style={{ 
+          padding: 'calc(0.75rem * var(--layout-density))'
         }}>
           {navItems.map((item) => {
             const Icon = item.icon;

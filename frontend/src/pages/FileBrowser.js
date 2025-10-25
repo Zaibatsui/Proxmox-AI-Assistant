@@ -414,7 +414,7 @@ const FileBrowser = ({ onLogout }) => {
                   </div>
                   <button
                     onClick={closeFile}
-                    className="p-1 hover:bg-gray-700 rounded text-gray-400 hover:text-white transition-colors"
+                    className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition-colors"
                   >
                     <X className="w-5 h-5" />
                   </button>

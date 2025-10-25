@@ -246,7 +246,7 @@ const BackupManager = ({ onLogout }) => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => previewBackup(backup)}
-                            className="p-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                            className="p-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded transition-colors"
                             title="Preview"
                           >
                             <Eye className="w-4 h-4" />

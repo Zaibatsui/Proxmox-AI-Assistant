@@ -1231,6 +1231,612 @@ async def test_connection_profile(profile_id: str, current_user: dict = Depends(
     except Exception as e:
         return {"status": "failed", "message": str(e)}
 
+# ==================== CONNECTION PROFILE FILE OPERATIONS ====================
+
+@api_router.post("/connection-profiles/{profile_id}/files/list")
+async def list_files_by_profile(profile_id: str, path: str = "/", current_user: dict = Depends(get_current_user)):
+    """List files and directories using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            files = await sftp_list_directory(profile, path)
+            # Convert to FileInfo format
+            result = []
+            for file in files:
+                result.append({
+                    "name": file['name'],
+                    "path": f"{path.rstrip('/')}/{file['name']}",
+                    "type": file['type'],
+                    "size": int(file['size']) if file['type'] == 'file' else None,
+                    "modified": None,
+                    "permissions": file.get('permissions')
+                })
+            return result
+        elif profile['connection_type'] == 'ssh':
+            # For SSH, use paramiko to execute ls command
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            stdin, stdout, stderr = ssh_client.exec_command(f"ls -lAh --time-style='+%Y-%m-%d %H:%M:%S' '{path}' 2>&1")
+            output = stdout.read().decode()
+            ssh_client.close()
+            
+            files = []
+            for line in output.strip().split('\n'):
+                if not line or line.startswith('total'):
+                    continue
+                
+                parts = line.split(None, 8)
+                if len(parts) < 9:
+                    continue
+                
+                permissions = parts[0]
+                size_str = parts[4]
+                modified = f"{parts[5]} {parts[6]}"
+                name = parts[8]
+                
+                if name in ['.', '..']:
+                    continue
+                
+                file_type = 'directory' if permissions.startswith('d') else 'file'
+                
+                size = None
+                if file_type == 'file':
+                    try:
+                        if 'K' in size_str:
+                            size = int(float(size_str.replace('K', '')) * 1024)
+                        elif 'M' in size_str:
+                            size = int(float(size_str.replace('M', '')) * 1024 * 1024)
+                        elif 'G' in size_str:
+                            size = int(float(size_str.replace('G', '')) * 1024 * 1024 * 1024)
+                        else:
+                            size = int(size_str)
+                    except (ValueError, AttributeError):
+                        size = 0
+                
+                file_path = f"{path.rstrip('/')}/{name}"
+                
+                files.append({
+                    "name": name,
+                    "path": file_path,
+                    "type": file_type,
+                    "size": size,
+                    "modified": modified,
+                    "permissions": permissions
+                })
+            
+            return files
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported for file operations")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to list files: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/read")
+async def read_file_by_profile(profile_id: str, path: str, current_user: dict = Depends(get_current_user)):
+    """Read file content using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            content = await sftp_read_file(profile, path)
+            file_stat = await sftp_get_file_stat(profile, path)
+            
+            return {
+                "path": path,
+                "content": content,
+                "size": file_stat.st_size,
+                "modified": datetime.fromtimestamp(file_stat.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+            }
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            # Get file size
+            stdin, stdout, stderr = ssh_client.exec_command(f"stat -c %s '{path}'")
+            size_output = stdout.read().decode().strip()
+            file_size = int(size_output)
+            
+            # Read content
+            stdin, stdout, stderr = ssh_client.exec_command(f"cat '{path}'")
+            content = stdout.read().decode('utf-8', errors='replace')
+            
+            # Get modified time
+            stdin, stdout, stderr = ssh_client.exec_command(f"stat -c %y '{path}'")
+            modified = stdout.read().decode().strip()
+            
+            ssh_client.close()
+            
+            return {
+                "path": path,
+                "content": content,
+                "size": file_size,
+                "modified": modified
+            }
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read file: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/write")
+async def write_file_by_profile(profile_id: str, path: str, content: str, current_user: dict = Depends(get_current_user)):
+    """Write/create file content using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            await sftp_write_file(profile, path, content)
+            return {"success": True, "message": "File written successfully", "path": path}
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            # Use echo with base64 to avoid shell escaping issues
+            import base64
+            encoded_content = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+            command = f"echo '{encoded_content}' | base64 -d > '{path}'"
+            stdin, stdout, stderr = ssh_client.exec_command(command)
+            exit_code = stdout.channel.recv_exit_status()
+            
+            ssh_client.close()
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail="Failed to write file")
+            
+            return {"success": True, "message": "File written successfully", "path": path}
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to write file: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/delete")
+async def delete_file_by_profile(profile_id: str, path: str, current_user: dict = Depends(get_current_user)):
+    """Delete file or directory using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            await sftp_delete_file(profile, path)
+            return {"success": True, "message": "File deleted successfully"}
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            stdin, stdout, stderr = ssh_client.exec_command(f"rm -rf '{path}'")
+            exit_code = stdout.channel.recv_exit_status()
+            
+            ssh_client.close()
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail="Failed to delete file")
+            
+            return {"success": True, "message": "File deleted successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to delete file: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/mkdir")
+async def create_directory_by_profile(profile_id: str, path: str, current_user: dict = Depends(get_current_user)):
+    """Create directory using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            await sftp_create_directory(profile, path)
+            return {"success": True, "message": "Directory created successfully"}
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            stdin, stdout, stderr = ssh_client.exec_command(f"mkdir -p '{path}'")
+            exit_code = stdout.channel.recv_exit_status()
+            
+            ssh_client.close()
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail="Failed to create directory")
+            
+            return {"success": True, "message": "Directory created successfully"}
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create directory: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/rename")
+async def rename_file_by_profile(profile_id: str, old_path: str, new_name: str, current_user: dict = Depends(get_current_user)):
+    """Rename file or directory using a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    # Calculate new path
+    parent_dir = '/'.join(old_path.split('/')[:-1]) or '/'
+    new_path = f"{parent_dir.rstrip('/')}/{new_name}"
+    
+    try:
+        if profile['connection_type'] == 'sftp':
+            await sftp_rename_file(profile, old_path, new_path)
+            return {"success": True, "message": "File renamed successfully", "new_path": new_path}
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            stdin, stdout, stderr = ssh_client.exec_command(f"mv '{old_path}' '{new_path}'")
+            exit_code = stdout.channel.recv_exit_status()
+            
+            ssh_client.close()
+            
+            if exit_code != 0:
+                raise HTTPException(status_code=500, detail="Failed to rename file")
+            
+            return {"success": True, "message": "File renamed successfully", "new_path": new_path}
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to rename file: {str(e)}")
+
+@api_router.post("/connection-profiles/{profile_id}/files/upload")
+async def upload_file_by_profile(
+    profile_id: str, 
+    path: str,
+    chunk_data: str,
+    chunk_index: int,
+    total_chunks: int,
+    file_name: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload file in chunks using a connection profile"""
+    import base64
+    
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        # Decode chunk data
+        chunk_bytes = base64.b64decode(chunk_data)
+        
+        # Create temp directory for chunks
+        temp_dir = f"/tmp/upload_{current_user['user_id']}_{file_name.replace('/', '_')}"
+        chunk_path = f"{temp_dir}/chunk_{chunk_index}"
+        
+        if profile['connection_type'] == 'sftp':
+            sftp, transport = await get_sftp_client(profile)
+            
+            try:
+                # Create temp dir if first chunk
+                if chunk_index == 0:
+                    try:
+                        sftp.mkdir(temp_dir)
+                    except:
+                        pass  # Directory might already exist
+                
+                # Write chunk
+                with sftp.open(chunk_path, 'wb') as f:
+                    f.write(chunk_bytes)
+                
+                # If last chunk, combine all chunks
+                if chunk_index == total_chunks - 1:
+                    # Read all chunks and combine
+                    combined = b''
+                    for i in range(total_chunks):
+                        with sftp.open(f"{temp_dir}/chunk_{i}", 'rb') as f:
+                            combined += f.read()
+                    
+                    # Write final file
+                    with sftp.open(path, 'wb') as f:
+                        f.write(combined)
+                    
+                    # Cleanup temp directory
+                    for i in range(total_chunks):
+                        try:
+                            sftp.remove(f"{temp_dir}/chunk_{i}")
+                        except:
+                            pass
+                    try:
+                        sftp.rmdir(temp_dir)
+                    except:
+                        pass
+                    
+                    return {
+                        "success": True,
+                        "message": "File uploaded successfully",
+                        "path": path,
+                        "complete": True
+                    }
+                else:
+                    return {
+                        "success": True,
+                        "message": f"Chunk {chunk_index + 1}/{total_chunks} uploaded",
+                        "complete": False
+                    }
+            finally:
+                sftp.close()
+                transport.close()
+                
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            # Create temp dir if first chunk
+            if chunk_index == 0:
+                stdin, stdout, stderr = ssh_client.exec_command(f"mkdir -p '{temp_dir}'")
+                stdout.channel.recv_exit_status()
+            
+            # Write chunk using base64 encoding
+            encoded_chunk = base64.b64encode(chunk_bytes).decode('utf-8')
+            cmd = f"echo '{encoded_chunk}' | base64 -d > '{chunk_path}'"
+            stdin, stdout, stderr = ssh_client.exec_command(cmd)
+            exit_code = stdout.channel.recv_exit_status()
+            
+            if exit_code != 0:
+                ssh_client.close()
+                raise HTTPException(status_code=500, detail="Failed to write chunk")
+            
+            # If last chunk, combine all chunks
+            if chunk_index == total_chunks - 1:
+                combine_cmd = f"cat {temp_dir}/chunk_* > '{path}' && rm -rf '{temp_dir}'"
+                stdin, stdout, stderr = ssh_client.exec_command(combine_cmd)
+                exit_code = stdout.channel.recv_exit_status()
+                
+                ssh_client.close()
+                
+                if exit_code != 0:
+                    raise HTTPException(status_code=500, detail="Failed to combine chunks")
+                
+                return {
+                    "success": True,
+                    "message": "File uploaded successfully",
+                    "path": path,
+                    "complete": True
+                }
+            else:
+                ssh_client.close()
+                return {
+                    "success": True,
+                    "message": f"Chunk {chunk_index + 1}/{total_chunks} uploaded",
+                    "complete": False
+                }
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
+
+@api_router.get("/connection-profiles/{profile_id}/files/download")
+async def download_file_by_profile(profile_id: str, path: str, current_user: dict = Depends(get_current_user)):
+    """Download file using a connection profile"""
+    from fastapi.responses import StreamingResponse
+    
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        filename = path.split('/')[-1]
+        
+        if profile['connection_type'] == 'sftp':
+            content = await sftp_download_file(profile, path)
+            
+            return StreamingResponse(
+                io.BytesIO(content),
+                media_type='application/octet-stream',
+                headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+            )
+        elif profile['connection_type'] == 'ssh':
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            # Read file content
+            stdin, stdout, stderr = ssh_client.exec_command(f"cat '{path}'")
+            content = stdout.read()
+            
+            ssh_client.close()
+            
+            return StreamingResponse(
+                io.BytesIO(content),
+                media_type='application/octet-stream',
+                headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+            )
+        else:
+            raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to download file: {str(e)}")
+
 # ==================== DEVICE SCANNING ROUTES (MOCK) ====================
 
 @api_router.post("/devices/scan", response_model=ScanResult)

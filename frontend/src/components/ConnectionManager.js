@@ -42,7 +42,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const loadProfiles = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API}/connection-profiles`);
+      const response = await axios.get(`${API}/api/connection-profiles`);
       setProfiles(response.data.profiles || []);
     } catch (error) {
       console.error('Failed to load profiles:', error);

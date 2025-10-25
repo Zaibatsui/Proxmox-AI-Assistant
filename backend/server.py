@@ -901,8 +901,8 @@ async def get_theme(current_user: dict = Depends(get_current_user)):
     if not theme_doc:
         return {
             "theme_name": "amber",
-            "background": "dark",
-            "card_style": "glass",
+            "background": "darker",
+            "card_style": "solid",
             "accent_color": None,
             "primary_color": None,
             "secondary_color": None,

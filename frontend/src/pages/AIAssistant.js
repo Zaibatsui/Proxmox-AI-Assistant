@@ -334,8 +334,8 @@ function AIAssistant({ onLogout }) {
         </div>
 
         {/* Location Selector */}
-        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm mb-4">
-          <CardContent className="p-4">
+        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm mb-3 flex-shrink-0">
+          <CardContent className="p-3">
             <div className="flex items-center gap-4">
               <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
                 <Server className="w-4 h-4" />

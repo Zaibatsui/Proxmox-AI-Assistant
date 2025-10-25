@@ -25,17 +25,17 @@ function Layout({ children, onLogout, currentPage }) {
         backgroundColor: 'var(--sidebar-bg)',
         borderColor: 'var(--bg-border)'
       }}>
-        <div className="border-b" style={{ 
-          padding: 'calc(1.5rem * var(--layout-density))',
+        <div className="border-b flex-shrink-0" style={{ 
+          padding: 'calc(1rem * var(--layout-density))',
           borderColor: 'var(--bg-border)'
         }}>
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-cyan-500/10 rounded-lg">
-              <Server className="w-6 h-6 text-cyan-400" />
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-cyan-500/10 rounded-lg">
+              <Server className="w-5 h-5 text-cyan-400" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-100">Proxmox AI</h1>
-              <p className="text-xs text-slate-500">Hardware Admin</p>
+              <h1 className="text-base font-bold text-slate-100">Proxmox AI</h1>
+              <p className="text-[10px] text-slate-500">Hardware Admin</p>
             </div>
           </div>
         </div>

@@ -1752,6 +1752,89 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         "reason": function_args.get("reason"),
                         "requires_confirmation": True
                     }
+                elif function_name == "propose_command_execution":
+                    # Evaluate risk level for the command
+                    command = function_args.get("command", "")
+                    risk_level = "low"
+                    risk_factors = []
+                    
+                    # Destructive command patterns
+                    destructive_patterns = [
+                        "rm -rf", "dd if=", "mkfs", "> /dev/", "fdisk", "parted",
+                        "shutdown", "reboot", "halt", "poweroff",
+                        "iptables -F", "systemctl stop", "systemctl disable",
+                        "kill -9", "pkill", "killall"
+                    ]
+                    
+                    # High risk patterns
+                    high_risk_patterns = [
+                        "apt remove", "apt purge", "yum remove", "dnf remove",
+                        "systemctl restart", "docker rm", "docker stop",
+                        "userdel", "groupdel", "chmod 777", "chown -R"
+                    ]
+                    
+                    # Check for destructive commands
+                    for pattern in destructive_patterns:
+                        if pattern in command.lower():
+                            risk_level = "critical"
+                            risk_factors.append(f"Destructive operation: {pattern}")
+                            break
+                    
+                    # Check for high risk commands
+                    if risk_level != "critical":
+                        for pattern in high_risk_patterns:
+                            if pattern in command.lower():
+                                risk_level = "high"
+                                risk_factors.append(f"Potentially disruptive: {pattern}")
+                                break
+                    
+                    # Check if running as root or sudo
+                    if "sudo" in command or function_args.get("location") == "host":
+                        if risk_level == "low":
+                            risk_level = "medium"
+                        risk_factors.append("Running with elevated privileges")
+                    
+                    function_response = {
+                        "type": "command_execution_proposal",
+                        "command": command,
+                        "location": function_args.get("location", "host"),
+                        "purpose": function_args.get("purpose"),
+                        "expected_outcome": function_args.get("expected_outcome"),
+                        "risk_level": risk_level,
+                        "risk_factors": risk_factors,
+                        "requires_confirmation": True
+                    }
+                elif function_name == "propose_vm_action":
+                    action = function_args.get("action")
+                    vmid = function_args.get("vmid")
+                    
+                    # Evaluate risk level
+                    risk_level = "low"
+                    risk_factors = []
+                    
+                    if action in ["delete"]:
+                        risk_level = "critical"
+                        risk_factors.append("Permanent data loss - VM will be completely removed")
+                    elif action in ["stop", "shutdown"]:
+                        risk_level = "medium"
+                        risk_factors.append("Service interruption - VM will be unavailable")
+                    elif action == "restart":
+                        risk_level = "medium"
+                        risk_factors.append("Brief service interruption during restart")
+                    elif action == "create":
+                        risk_level = "low"
+                        risk_factors.append("Resource allocation - new VM will consume storage/memory")
+                    
+                    function_response = {
+                        "type": "vm_action_proposal",
+                        "action": action,
+                        "vmid": vmid,
+                        "vm_config": function_args.get("vm_config"),
+                        "reason": function_args.get("reason"),
+                        "risk_level": risk_level,
+                        "risk_factors": risk_factors,
+                        "requires_confirmation": True
+                    }
                 
                 # Add tool response
                 messages.append({

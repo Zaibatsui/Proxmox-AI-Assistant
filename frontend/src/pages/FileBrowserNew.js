@@ -74,8 +74,12 @@ function FileBrowserNew({ onLogout }) {
     } else if (selectingForPane === 'right') {
       setRightConnection(connection);
     }
-    setShowConnectionManager(false);
-    setSelectingForPane(null);
+    // When selectingForPane is null (from Manage Connections button), just close the modal
+    // The connection will be used when clicking on a profile from the modal
+    if (selectingForPane) {
+      setShowConnectionManager(false);
+      setSelectingForPane(null);
+    }
   };
 
   return (

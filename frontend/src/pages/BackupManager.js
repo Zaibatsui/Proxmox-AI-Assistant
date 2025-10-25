@@ -303,7 +303,7 @@ const BackupManager = ({ onLogout }) => {
 
             {/* Modal Body */}
             <div className="flex-1 overflow-auto p-6">
-              <pre className="bg-gray-900 text-gray-300 p-4 rounded font-mono text-sm overflow-auto">
+              <pre className="bg-slate-950 text-slate-300 p-4 rounded font-mono text-sm overflow-auto border border-slate-800">
                 {previewContent}
               </pre>
             </div>

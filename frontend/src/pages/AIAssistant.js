@@ -157,14 +157,23 @@ function AIAssistant({ onLogout }) {
           content: response.data.answer,
           commands: response.data.suggested_commands,
           hasActions: hasActions,
-          fileEditProposal: fileEditProposal
+          fileEditProposal: fileEditProposal,
+          commandProposal: commandProposal,
+          vmActionProposal: vmActionProposal
         }
       ]);
 
+      // Handle proposals
       if (fileEditProposal) {
         setPendingFileEdit(fileEditProposal);
         setEditableContent(fileEditProposal.new_content);
         toast.info("AI proposes a file edit. Review and confirm to execute.");
+      } else if (commandProposal) {
+        setPendingCommand(commandProposal);
+        toast.info(`AI proposes a command execution (${commandProposal.risk_level} risk). Review and confirm.`);
+      } else if (vmActionProposal) {
+        setPendingVMAction(vmActionProposal);
+        toast.info(`AI proposes VM action: ${vmActionProposal.action} (${vmActionProposal.risk_level} risk). Review and confirm.`);
       } else if (hasActions) {
         toast.success("AI created actionable steps! Check the Actions page to execute them.", {
           duration: 5000

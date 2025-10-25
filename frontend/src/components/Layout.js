@@ -82,8 +82,8 @@ function Layout({ children, onLogout, currentPage }) {
           })}
         </nav>
 
-        <div className="border-t" style={{ 
-          padding: 'calc(1rem * var(--layout-density))',
+        <div className="border-t flex-shrink-0" style={{ 
+          padding: 'calc(0.75rem * var(--layout-density))',
           borderColor: 'var(--bg-border)'
         }}>
           <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>

@@ -380,9 +380,9 @@ function AIAssistant({ onLogout }) {
           </CardContent>
         </Card>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden" style={{ height: 'calc(100vh - 20rem)' }}>
           {/* Chat Area */}
-          <div className="lg:col-span-3 flex flex-col overflow-hidden">
+          <div className="lg:col-span-3 flex flex-col overflow-hidden h-full">
             <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col h-full">
               <CardHeader className="border-b border-slate-800 flex-shrink-0 py-3">
                 <CardTitle className="text-slate-100 flex items-center gap-2 text-lg">
@@ -391,7 +391,7 @@ function AIAssistant({ onLogout }) {
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
-                <ScrollArea className="flex-1 p-4" style={{ maxHeight: 'calc(100vh - 24rem)' }}>
+                <ScrollArea className="flex-1 p-4">
                   {conversations.length === 0 ? (
                     <div className="text-center text-slate-500 py-12">
                       <Bot className="w-12 h-12 mx-auto mb-4 opacity-50" />

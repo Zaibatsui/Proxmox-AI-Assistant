@@ -1080,6 +1080,142 @@ async def delete_api_keys(current_user: dict = Depends(get_current_user)):
     await log_audit(current_user["user_id"], "api_keys_deleted", {})
     return {"message": "API keys deleted"}
 
+# ==================== CONNECTION PROFILES ROUTES ====================
+
+@api_router.get("/connection-profiles")
+async def get_connection_profiles(current_user: dict = Depends(get_current_user)):
+    """Get all connection profiles for the current user"""
+    profiles = await db.connection_profiles.find({"user_id": current_user["user_id"]}).to_list(length=None)
+    
+    # Don't send passwords/keys in list view
+    for profile in profiles:
+        if 'password' in profile:
+            profile['password'] = '******' if profile['password'] else None
+        if 'private_key' in profile:
+            profile['private_key'] = '******' if profile['private_key'] else None
+    
+    return {"profiles": profiles}
+
+@api_router.post("/connection-profiles")
+async def create_connection_profile(profile_data: ConnectionProfileCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new connection profile"""
+    profile = ConnectionProfile(
+        user_id=current_user["user_id"],
+        **profile_data.model_dump()
+    )
+    
+    doc = profile.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.connection_profiles.insert_one(doc)
+    
+    await log_audit(current_user["user_id"], "connection_profile_created", {"name": profile_data.name, "type": profile_data.connection_type})
+    
+    return {"message": "Connection profile created", "id": profile.id}
+
+@api_router.get("/connection-profiles/{profile_id}")
+async def get_connection_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific connection profile (with credentials)"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    return profile
+
+@api_router.put("/connection-profiles/{profile_id}")
+async def update_connection_profile(profile_id: str, profile_data: ConnectionProfileUpdate, current_user: dict = Depends(get_current_user)):
+    """Update a connection profile"""
+    # Check if profile exists
+    existing = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    # Update only provided fields
+    update_data = {k: v for k, v in profile_data.model_dump(exclude_unset=True).items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    await db.connection_profiles.update_one(
+        {"id": profile_id, "user_id": current_user["user_id"]},
+        {"$set": update_data}
+    )
+    
+    await log_audit(current_user["user_id"], "connection_profile_updated", {"id": profile_id})
+    
+    return {"message": "Connection profile updated"}
+
+@api_router.delete("/connection-profiles/{profile_id}")
+async def delete_connection_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete a connection profile"""
+    result = await db.connection_profiles.delete_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    await log_audit(current_user["user_id"], "connection_profile_deleted", {"id": profile_id})
+    
+    return {"message": "Connection profile deleted"}
+
+@api_router.post("/connection-profiles/{profile_id}/test")
+async def test_connection_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
+    """Test a connection profile"""
+    profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    
+    if not profile:
+        raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    try:
+        if profile['connection_type'] in ['ssh', 'sftp']:
+            # Test SSH connection
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            if profile.get('private_key'):
+                # Use key-based auth
+                from io import StringIO
+                key_file = StringIO(profile['private_key'])
+                private_key = paramiko.RSAKey.from_private_key(key_file)
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    pkey=private_key,
+                    timeout=10
+                )
+            else:
+                # Use password auth
+                ssh_client.connect(
+                    profile['host'],
+                    port=profile['port'],
+                    username=profile['username'],
+                    password=profile.get('password'),
+                    timeout=10
+                )
+            
+            # Test a simple command
+            stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
+            result = stdout.read().decode().strip()
+            ssh_client.close()
+            
+            if result == "test":
+                return {"status": "success", "message": "Connection successful"}
+            else:
+                return {"status": "failed", "message": "Connection test failed"}
+                
+        elif profile['connection_type'] == 'reverse_proxy':
+            # For reverse proxy, we can't really test from backend
+            # Just validate the host format
+            if profile['host'].startswith('http://') or profile['host'].startswith('https://'):
+                return {"status": "success", "message": "Reverse proxy configuration looks valid"}
+            else:
+                return {"status": "failed", "message": "Host should start with http:// or https://"}
+        
+        else:
+            return {"status": "failed", "message": f"Connection type {profile['connection_type']} not yet supported"}
+            
+    except Exception as e:
+        return {"status": "failed", "message": str(e)}
+
 # ==================== DEVICE SCANNING ROUTES (MOCK) ====================
 
 @api_router.post("/devices/scan", response_model=ScanResult)

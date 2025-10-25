@@ -273,12 +273,11 @@ function Dashboard({ onLogout }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Quick Access Shortcuts */}
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-slate-100">Quick Access</CardTitle>
-              <CardDescription className="text-slate-400">Jump to key features</CardDescription>
+          <Card className="border-slate-700 bg-slate-900/80 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-100 text-lg">Quick Access</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-2" noPaddingTop={true}>
+            <CardContent className="space-y-1.5" noPaddingTop={true}>
               {quickAccessButtons.map((btn, idx) => {
                 const Icon = btn.icon;
                 return (
@@ -286,12 +285,12 @@ function Dashboard({ onLogout }) {
                     key={idx}
                     onClick={btn.action}
                     variant="ghost"
-                    className="w-full justify-start h-auto py-3 px-4 hover:bg-slate-800"
+                    className="w-full justify-start h-auto py-2.5 px-3 hover:bg-slate-800 group"
                   >
-                    <div className={`p-2 rounded-lg bg-${btn.color}-500/10 mr-3`}>
-                      <Icon className={`w-4 h-4 text-${btn.color}-400`} />
+                    <div className={`p-1.5 rounded-lg bg-amber-500/10 mr-2.5 group-hover:bg-amber-500/20 transition-colors`}>
+                      <Icon className={`w-4 h-4 text-amber-400`} />
                     </div>
-                    <span className="text-slate-200">{btn.label}</span>
+                    <span className="text-sm text-slate-200">{btn.label}</span>
                   </Button>
                 );
               })}

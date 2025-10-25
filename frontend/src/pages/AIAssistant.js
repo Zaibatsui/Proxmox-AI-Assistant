@@ -226,6 +226,67 @@ function AIAssistant({ onLogout }) {
     toast.info("File edit cancelled");
   };
 
+  const executeCommand = async () => {
+    if (!pendingCommand) return;
+
+    setExecuting(true);
+    try {
+      await axios.post(`${API}/execute-command`, {
+        command: pendingCommand.command,
+        location: pendingCommand.location
+      });
+      toast.success(`Command executed successfully!`);
+      setPendingCommand(null);
+      setConversations(prev => [
+        ...prev,
+        {
+          type: "system",
+          content: `✅ Command executed: ${pendingCommand.command}`
+        }
+      ]);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to execute command");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const cancelCommand = () => {
+    setPendingCommand(null);
+    toast.info("Command execution cancelled");
+  };
+
+  const executeVMAction = async () => {
+    if (!pendingVMAction) return;
+
+    setExecuting(true);
+    try {
+      await axios.post(`${API}/vm-action`, {
+        action: pendingVMAction.action,
+        vmid: pendingVMAction.vmid,
+        vm_config: pendingVMAction.vm_config
+      });
+      toast.success(`VM action ${pendingVMAction.action} executed successfully!`);
+      setPendingVMAction(null);
+      setConversations(prev => [
+        ...prev,
+        {
+          type: "system",
+          content: `✅ VM Action executed: ${pendingVMAction.action} on VM ${pendingVMAction.vmid || 'new'}`
+        }
+      ]);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to execute VM action");
+    } finally {
+      setExecuting(false);
+    }
+  };
+
+  const cancelVMAction = () => {
+    setPendingVMAction(null);
+    toast.info("VM action cancelled");
+  };
+
   const saveVMCredentials = () => {
     if (!vmCredentials.password) {
       toast.error("Password is required");

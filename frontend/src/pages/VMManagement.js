@@ -229,11 +229,11 @@ function VMManagement({ onLogout }) {
 
   return (
     <Layout onLogout={onLogout} currentPage="vms">
-      <div className="space-y-6" data-testid="vm-management">
+      <div className="space-y-4" data-testid="vm-management">
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-4xl font-bold text-slate-100 mb-2">VM & Container Management</h1>
-            <p className="text-slate-400">View and manage virtual machines and LXC containers</p>
+            <h1 className="text-3xl font-bold text-slate-100 mb-1">VM & Container Management</h1>
+            <p className="text-sm text-slate-400">Manage virtual machines and LXC containers</p>
           </div>
 
           {/* Node Filter */}

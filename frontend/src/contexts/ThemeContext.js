@@ -51,7 +51,7 @@ export const themes = {
 };
 
 export function ThemeProvider({ children }) {
-  const [currentTheme, setCurrentTheme] = useState("cyan");
+  const [currentTheme, setCurrentTheme] = useState("amber");
   const [background, setBackground] = useState("dark");
   const [cardStyle, setCardStyle] = useState("glass");
   const [accentColor, setAccentColor] = useState(null);

@@ -65,6 +65,21 @@ backend:
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED: All advanced theme API endpoints working correctly. ✅ GET /theme returns proper defaults with all new fields. ✅ POST /theme saves all advanced appearance options successfully. ✅ MongoDB persistence verified - all theme data saves and retrieves correctly. ✅ Partial field updates handled properly with correct defaults. Minor: POST response missing accent_color field in return statement (line 898-911 in server.py), and no validation for layout_density enum values - but core functionality works perfectly. 5/7 tests passed - 2 minor issues don't affect functionality."
 
+  - task: "Connection Profile Save Issue Fix"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: false
+        agent: "testing"
+        comment: "CRITICAL ISSUE IDENTIFIED: User reported 'Failed to save connection profile' error. Testing revealed MongoDB ObjectId serialization error in GET /connection-profiles endpoint causing 500 Internal Server Error. Connection profiles were being created successfully (POST working) but GET endpoint failed due to unhandled MongoDB _id field in JSON response."
+      - working: true
+        agent: "testing"
+        comment: "ISSUE RESOLVED: Fixed MongoDB ObjectId serialization error in GET /connection-profiles endpoint by removing _id field and properly handling datetime serialization. ✅ POST /connection-profiles working correctly for all types (SFTP, SSH, FTP) ✅ GET /connection-profiles now returns proper JSON without serialization errors ✅ Profile verification successful - all created profiles properly saved and retrievable ✅ Input validation working correctly (422 errors for missing fields) ✅ All 8/8 tests passed. The 'Failed to save connection profile' issue is now completely resolved."
+
 frontend:
   - task: "File Browser UI Integration"
     implemented: true

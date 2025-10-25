@@ -508,7 +508,7 @@ function AIAssistant({ onLogout }) {
                     </div>
                   )}
                 </ScrollArea>
-                <div className="p-4 border-t border-slate-800 flex-shrink-0">
+                <div className="p-3 border-t border-slate-800 flex-shrink-0 bg-slate-900/80">
                   <div className="flex gap-2">
                     <Textarea
                       value={question}

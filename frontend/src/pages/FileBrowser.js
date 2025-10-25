@@ -448,7 +448,7 @@ const FileBrowser = ({ onLogout }) => {
                   <textarea
                     value={fileContent}
                     onChange={(e) => setFileContent(e.target.value)}
-                    className="w-full h-[500px] bg-gray-900 text-white font-mono text-sm p-4 rounded border border-gray-700 focus:border-amber-500 focus:outline-none resize-none"
+                    className="w-full h-[500px] bg-slate-950 text-white font-mono text-sm p-4 rounded border border-slate-700 focus:border-amber-500 focus:outline-none resize-none"
                     spellCheck={false}
                   />
                 </div>

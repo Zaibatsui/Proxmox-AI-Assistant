@@ -296,7 +296,7 @@ const FileBrowser = ({ onLogout }) => {
             <select
               value={JSON.stringify(location)}
               onChange={(e) => handleLocationChange(JSON.parse(e.target.value))}
-              className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-cyan-500 focus:outline-none"
+              className="w-full px-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-amber-500 focus:outline-none"
             >
               <option value={JSON.stringify({ type: 'host' })}>Proxmox Host</option>
               <optgroup label="Containers">

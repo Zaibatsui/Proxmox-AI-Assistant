@@ -253,7 +253,7 @@ const BackupManager = ({ onLogout }) => {
                           </button>
                           <button
                             onClick={() => restoreBackup(backup.id)}
-                            className="p-1.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded transition-colors"
+                            className="p-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded transition-colors"
                             title="Restore"
                           >
                             <RotateCcw className="w-4 h-4" />

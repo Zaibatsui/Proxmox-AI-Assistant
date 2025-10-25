@@ -348,7 +348,7 @@ const FileBrowser = ({ onLogout }) => {
         {/* Main Content */}
         <div className="grid grid-cols-12 gap-4">
           {/* File List Panel */}
-          <div className="col-span-12 lg:col-span-5 bg-gray-800 rounded-lg overflow-hidden">
+          <div className="col-span-12 lg:col-span-5 bg-slate-900/80 backdrop-blur-sm rounded-lg overflow-hidden border border-slate-700">
             {/* Breadcrumbs */}
             <div className="bg-gray-750 px-4 py-3 border-b border-gray-700">
               <div className="flex items-center gap-1 text-sm overflow-x-auto">

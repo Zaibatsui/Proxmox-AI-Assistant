@@ -298,10 +298,9 @@ function Dashboard({ onLogout }) {
           </Card>
 
           {/* Recent Activity Feed */}
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-            <CardHeader>
-              <CardTitle className="text-slate-100">Recent Activity</CardTitle>
-              <CardDescription className="text-slate-400">Latest actions and events</CardDescription>
+          <Card className="border-slate-700 bg-slate-900/80 backdrop-blur-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-slate-100 text-lg">Recent Activity</CardTitle>
             </CardHeader>
             <CardContent noPaddingTop={true}>
               {loading ? (

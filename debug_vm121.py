@@ -9,7 +9,7 @@ import os
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 
-BACKEND_URL = "https://filemind-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://proxai-assistant.preview.emergentagent.com/api"
 
 async def check_database():
     """Check MongoDB for existing configurations"""

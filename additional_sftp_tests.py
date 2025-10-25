@@ -9,7 +9,7 @@ import json
 import sys
 from datetime import datetime
 
-BACKEND_URL = "https://filemind-1.preview.emergentagent.com/api"
+BACKEND_URL = "https://proxai-assistant.preview.emergentagent.com/api"
 
 class AdditionalSFTPTester:
     def __init__(self):

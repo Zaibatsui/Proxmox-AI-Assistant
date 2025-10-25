@@ -205,13 +205,11 @@ function FilePane({
     const folderPath = currentPath === '/' ? `/${folderName}` : `${currentPath}/${folderName}`;
     
     try {
-      await axios.post(`${API}/files/mkdir`, {
-        path: folderPath,
-        location: {
-          type: connection.connection_type,
-          id: connection.id
-        }
-      });
+      await axios.post(
+        `${API}/connection-profiles/${connection.id}/files/mkdir`,
+        null,
+        { params: { path: folderPath } }
+      );
       
       toast.success('Folder created');
       loadDirectory(currentPath);

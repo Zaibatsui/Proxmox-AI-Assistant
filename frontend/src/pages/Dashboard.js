@@ -243,25 +243,27 @@ function Dashboard({ onLogout }) {
             return (
               <Card
                 key={idx}
-                className="border-slate-800 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all cursor-pointer group"
+                className="border-slate-700 bg-gradient-to-br from-slate-900/90 to-slate-800/50 hover:from-slate-800/90 hover:to-slate-700/50 transition-all cursor-pointer group relative overflow-hidden"
                 onClick={stat.action}
               >
-                <CardContent>
-                  <div className="flex items-start justify-between" style={{ marginBottom: 'calc(1rem * var(--layout-density))' }}>
-                    <div className={`p-3 rounded-lg bg-${stat.color}-500/10`}>
-                      <Icon className={`w-5 h-5 text-${stat.color}-400`} />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-amber-500/5 to-transparent rounded-full blur-2xl" />
+                <CardContent className="relative">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`p-2.5 rounded-xl bg-gradient-to-br from-amber-500/20 to-amber-600/10 ring-1 ring-amber-500/20`}>
+                      <Icon className={`w-5 h-5 text-amber-400 group-hover:scale-110 transition-transform`} />
                     </div>
+                    <div className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 transition-opacity">View →</div>
                   </div>
-                  <div className="space-y-1">
-                    <div className="text-3xl font-bold text-slate-100">
+                  <div className="space-y-0.5">
+                    <div className="text-2xl font-bold text-slate-100">
                       {loading ? (
                         <span className="animate-pulse">--</span>
                       ) : (
                         stat.value
                       )}
                     </div>
-                    <div className="text-sm font-medium text-slate-300">{stat.title}</div>
-                    <div className="text-xs text-slate-500">{stat.subtitle}</div>
+                    <div className="text-xs font-medium text-slate-300">{stat.title}</div>
+                    <div className="text-[10px] text-slate-500">{stat.subtitle}</div>
                   </div>
                 </CardContent>
               </Card>

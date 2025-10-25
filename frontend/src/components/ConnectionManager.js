@@ -119,7 +119,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const testConnection = async (profileId) => {
     setTestingConnection(profileId);
     try {
-      const response = await axios.post(`${API}/connection-profiles/${profileId}/test`);
+      const response = await axios.post(`${API}/api/connection-profiles/${profileId}/test`);
       
       if (response.data.status === 'success') {
         toast.success(response.data.message || 'Connection successful!');

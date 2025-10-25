@@ -10,7 +10,7 @@ import AIAssistant from "./pages/AIAssistant";
 import ActionQueue from "./pages/ActionQueue";
 import AuditLog from "./pages/AuditLog";
 import Settings from "./pages/Settings";
-import FileBrowser from "./pages/FileBrowser";
+import FileBrowser from "./pages/FileBrowserNew";
 import BackupManager from "./pages/BackupManager";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./contexts/ThemeContext";

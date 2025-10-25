@@ -76,54 +76,29 @@ class ConnectionProfileTester:
         """Get headers with auth token"""
         return {"Authorization": f"Bearer {self.token}"}
     
-    def test_vm_list_api(self):
-        """Test GET /api/vms to find VM/Container 121"""
+    def test_connection_profiles_list(self):
+        """Test GET /api/connection-profiles"""
         try:
-            response = requests.get(f"{self.base_url}/vms", headers=self.get_headers(), timeout=15)
+            response = requests.get(f"{self.base_url}/connection-profiles", headers=self.get_headers(), timeout=15)
             
             if response.status_code == 200:
-                vms = response.json()
-                vm_121 = None
+                data = response.json()
+                profiles = data.get('profiles', [])
                 
-                # First, show all available VMs for debugging
-                print(f"\n🔍 Available VMs/Containers ({len(vms)} total):")
-                for vm in vms:
-                    print(f"  - VMID: {vm.get('vmid')}, Name: {vm.get('name', 'Unknown')}, Type: {vm.get('type', 'unknown')}, Status: {vm.get('status', 'unknown')}")
-                
-                # Look for VM/Container 121
-                for vm in vms:
-                    if str(vm.get('vmid')) == '121':
-                        vm_121 = vm
-                        break
-                
-                if vm_121:
-                    vm_type = vm_121.get('type', 'unknown')
-                    vm_name = vm_121.get('name', 'Unknown')
-                    vm_status = vm_121.get('status', 'unknown')
-                    
-                    self.log_result(
-                        "VM 121 Detection", 
-                        True, 
-                        f"Found VM/Container 121: {vm_name} (type: {vm_type}, status: {vm_status})",
-                        {
-                            "vmid": "121",
-                            "type": vm_type,
-                            "name": vm_name,
-                            "status": vm_status,
-                            "node": vm_121.get('node', 'unknown')
-                        }
-                    )
-                    return vm_121
-                else:
-                    self.log_result("VM 121 Detection", False, f"VM/Container 121 not found. Available VMIDs: {[vm.get('vmid') for vm in vms]}")
-                    return None
+                self.log_result(
+                    "Connection Profiles List", 
+                    True, 
+                    f"Successfully retrieved {len(profiles)} connection profiles",
+                    {"profile_count": len(profiles)}
+                )
+                return profiles
             else:
-                self.log_result("VM 121 Detection", False, f"Failed to get VMs list: {response.status_code} - {response.text}")
-                return None
+                self.log_result("Connection Profiles List", False, f"Failed to get profiles: {response.status_code} - {response.text}")
+                return []
                 
         except Exception as e:
-            self.log_result("VM 121 Detection", False, f"Error getting VMs: {str(e)}")
-            return None
+            self.log_result("Connection Profiles List", False, f"Error getting profiles: {str(e)}")
+            return []
     
     def test_lxc_file_access(self):
         """Test LXC container file access (no SSH needed)"""

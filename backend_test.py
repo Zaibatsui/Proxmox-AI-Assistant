@@ -37,20 +37,35 @@ class ConnectionProfileTester:
             print(f"   Details: {details}")
     
     def authenticate(self):
-        """Authenticate with test user (Proxmox config already copied via database)"""
+        """Authenticate with test user or create one"""
         try:
-            # User exists, try login
-            login_data = {
-                "username": "vm121_tester", 
+            # Try to register a new test user first
+            register_data = {
+                "username": "sftp_tester", 
                 "password": "TestPass123!"
             }
-            response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
+            response = requests.post(f"{self.base_url}/auth/register", json=register_data, timeout=10)
+            
             if response.status_code == 200:
                 self.token = response.json()["token"]
-                self.log_result("Authentication", True, "Logged in successfully (Proxmox config pre-configured with port 8006)")
+                self.log_result("Authentication", True, "Registered and logged in successfully")
                 return True
+            elif response.status_code == 400 and "already exists" in response.text:
+                # User exists, try login
+                login_data = {
+                    "username": "sftp_tester", 
+                    "password": "TestPass123!"
+                }
+                response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)
+                if response.status_code == 200:
+                    self.token = response.json()["token"]
+                    self.log_result("Authentication", True, "Logged in successfully")
+                    return True
+                else:
+                    self.log_result("Authentication", False, f"Login failed: {response.status_code} - {response.text}")
+                    return False
             else:
-                self.log_result("Authentication", False, f"Login failed: {response.status_code} - {response.text}")
+                self.log_result("Authentication", False, f"Registration failed: {response.status_code} - {response.text}")
                 return False
             
         except Exception as e:

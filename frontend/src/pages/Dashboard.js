@@ -88,13 +88,16 @@ function Dashboard({ onLogout }) {
       const response = await axios.get(`${API}/health-check`);
       const health = response.data;
       
+      console.log('Health check response:', health);
+      
       setConnections({
-        proxmox: health.proxmox.status === 'connected' ? 'connected' : 'disconnected',
-        ssh: health.ssh.status === 'connected' ? 'connected' : 'disconnected',
-        openai: health.openai.status === 'connected' ? 'connected' : 'disconnected'
+        proxmox: health.proxmox?.status === 'connected' ? 'connected' : 'disconnected',
+        ssh: health.ssh?.status === 'connected' ? 'connected' : 'disconnected',
+        openai: health.openai?.status === 'connected' ? 'connected' : 'disconnected'
       });
     } catch (error) {
       console.error('Connection status fetch error:', error);
+      console.error('Error details:', error.response?.data);
       // Set all to unknown if health check fails
       setConnections({
         proxmox: 'unknown',

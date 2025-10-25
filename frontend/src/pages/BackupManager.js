@@ -153,7 +153,7 @@ const BackupManager = ({ onLogout }) => {
           {/* Header */}
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-              <Archive className="w-8 h-8 text-cyan-400" />
+              <Archive className="w-8 h-8 text-amber-400" />
               Backup Manager
           </h1>
           <p className="text-gray-400">View and restore file backups</p>

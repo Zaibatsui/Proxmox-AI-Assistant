@@ -138,7 +138,7 @@ const BackupManager = ({ onLogout }) => {
   // Get change type badge color
   const getChangeTypeBadge = (type) => {
     const colors = {
-      edit: 'bg-blue-500/20 text-blue-400',
+      edit: 'bg-amber-500/20 text-amber-400',
       delete: 'bg-red-500/20 text-red-400',
       manual: 'bg-green-500/20 text-green-400',
       restore: 'bg-purple-500/20 text-purple-400'

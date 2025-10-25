@@ -49,13 +49,11 @@ function FilePane({
     
     setLoading(true);
     try {
-      const response = await axios.post(`${API}/files/list`, {
-        path,
-        location: {
-          type: connection.connection_type,
-          id: connection.id
-        }
-      });
+      const response = await axios.post(
+        `${API}/connection-profiles/${connection.id}/files/list`,
+        null,
+        { params: { path } }
+      );
       
       setFiles(response.data || []);
       setCurrentPath(path);

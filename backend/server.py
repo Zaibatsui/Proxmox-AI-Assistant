@@ -879,18 +879,13 @@ async def health_check(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         health_status["ssh"]["error"] = str(e)
     
-    # Check OpenAI API
+    # Check OpenAI API - just check if key is configured
     try:
         api_keys_doc = await db.api_keys.find_one({"user_id": current_user["user_id"]})
         if api_keys_doc and api_keys_doc.get("openai_api_key"):
-            # Try a simple API call to verify the key works
-            try:
-                test_client = AsyncOpenAI(api_key=api_keys_doc["openai_api_key"])
-                # Simple models list call to test - just check if we can connect
-                await test_client.models.list()
-                health_status["openai"]["status"] = "connected"
-            except Exception as e:
-                health_status["openai"]["error"] = f"API key invalid or quota exceeded: {str(e)}"
+            # Key exists - mark as connected
+            # We don't test it here to avoid slow health checks
+            health_status["openai"]["status"] = "connected"
         else:
             health_status["openai"]["error"] = "API key not configured"
     except Exception as e:

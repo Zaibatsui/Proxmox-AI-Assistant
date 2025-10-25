@@ -425,7 +425,7 @@ const FileBrowser = ({ onLogout }) => {
                   <button
                     onClick={saveFile}
                     disabled={saving || fileContent === originalContent}
-                    className="px-3 py-1.5 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors flex items-center gap-2"
+                    className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white text-sm rounded transition-colors flex items-center gap-2"
                   >
                     <Save className="w-4 h-4" />
                     {saving ? 'Saving...' : 'Save'}

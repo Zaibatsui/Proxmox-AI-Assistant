@@ -148,7 +148,7 @@ const BackupManager = ({ onLogout }) => {
 
   return (
     <Layout onLogout={onLogout} currentPage="backups">
-      <div className="min-h-screen p-6 bg-gray-900">
+      <div className="min-h-screen p-6" style={{ backgroundColor: 'var(--bg-primary)' }}>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-6">

@@ -214,40 +214,30 @@ function Dashboard({ onLogout }) {
   return (
     <Layout onLogout={onLogout} currentPage="dashboard">
       <div className="space-y-6" data-testid="dashboard">
-        {/* Header */}
-        <div>
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Dashboard</h1>
-          <p className="text-slate-400">Welcome to Proxmox AI Admin v2.0</p>
+        {/* Header with Status Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-100 mb-1">Dashboard</h1>
+            <p className="text-sm text-slate-400">Proxmox AI Admin</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50">
+              {getConnectionIcon(connections.proxmox)}
+              <span className="text-xs text-slate-300">Proxmox</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50">
+              {getConnectionIcon(connections.ssh)}
+              <span className="text-xs text-slate-300">SSH</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50">
+              {getConnectionIcon(connections.openai)}
+              <span className="text-xs text-slate-300">AI</span>
+            </div>
+          </div>
         </div>
 
-        {/* At-a-Glance Status Bar */}
-        <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
-          <CardContent>
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div className="flex items-center gap-6">
-                <div className="flex items-center gap-2">
-                  {getConnectionIcon(connections.proxmox)}
-                  <span className="text-sm text-slate-300">Proxmox API</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getConnectionIcon(connections.ssh)}
-                  <span className="text-sm text-slate-300">SSH Access</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  {getConnectionIcon(connections.openai)}
-                  <span className="text-sm text-slate-300">OpenAI API</span>
-                </div>
-              </div>
-              <div className="text-xs text-slate-500 flex items-center gap-2">
-                <Clock className="w-3 h-3" />
-                Last updated: {new Date().toLocaleTimeString()}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
         {/* Quick Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {quickStatsCards.map((stat, idx) => {
             const Icon = stat.icon;
             return (

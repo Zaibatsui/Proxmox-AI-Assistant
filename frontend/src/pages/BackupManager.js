@@ -195,7 +195,7 @@ const BackupManager = ({ onLogout }) => {
         </div>
 
         {/* Backups Table */}
-        <div className="bg-gray-800 rounded-lg overflow-hidden">
+        <div className="bg-slate-900/80 backdrop-blur-sm rounded-lg overflow-hidden border border-slate-700">
           {loading && backups.length === 0 ? (
             <div className="p-8 text-center text-gray-400">Loading backups...</div>
           ) : filteredBackups.length === 0 ? (

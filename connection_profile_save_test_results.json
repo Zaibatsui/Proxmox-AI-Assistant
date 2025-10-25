@@ -2,69 +2,117 @@
   {
     "test": "User Authentication",
     "success": true,
-    "message": "Registered and logged in successfully",
+    "message": "Logged in successfully",
     "details": {},
-    "timestamp": "2025-10-25T22:25:01.654746"
+    "timestamp": "2025-10-25T22:25:45.628641"
   },
   {
     "test": "SFTP Profile Creation",
     "success": true,
-    "message": "Successfully created SFTP profile with ID: 9f5b4f81-df62-41d0-9540-b32e3a9fd2dc",
+    "message": "Successfully created SFTP profile with ID: f1cdf42c-71a6-4bfd-9b8d-64486d8d4b26",
     "details": {
-      "profile_id": "9f5b4f81-df62-41d0-9540-b32e3a9fd2dc",
+      "profile_id": "f1cdf42c-71a6-4bfd-9b8d-64486d8d4b26",
       "response": {
         "message": "Connection profile created",
-        "id": "9f5b4f81-df62-41d0-9540-b32e3a9fd2dc"
+        "id": "f1cdf42c-71a6-4bfd-9b8d-64486d8d4b26"
       }
     },
-    "timestamp": "2025-10-25T22:25:01.733673"
+    "timestamp": "2025-10-25T22:25:45.667395"
   },
   {
     "test": "Profile Verification",
-    "success": false,
-    "message": "Failed to get profiles: 500 - Internal Server Error",
-    "details": {},
-    "timestamp": "2025-10-25T22:25:01.802204"
+    "success": true,
+    "message": "Successfully verified profile 'Test SFTP' exists in database",
+    "details": {
+      "profile": {
+        "id": "f1cdf42c-71a6-4bfd-9b8d-64486d8d4b26",
+        "user_id": "2e9c8e20-eeca-47b2-bd0f-2615489e655a",
+        "name": "Test SFTP",
+        "connection_type": "sftp",
+        "host": "test.example.com",
+        "port": 22,
+        "username": "testuser",
+        "password": "******",
+        "private_key": null,
+        "base_path": "/",
+        "notes": null,
+        "created_at": "2025-10-25T22:25:45.662656+00:00",
+        "updated_at": "2025-10-25T22:25:45.662657+00:00"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:45.703959"
   },
   {
     "test": "SSH Profile Creation",
     "success": true,
-    "message": "Successfully created SSH profile with ID: 43380b37-2144-43ca-84da-81141baf70bf",
+    "message": "Successfully created SSH profile with ID: b282064c-96be-4353-8372-ac52b835fe19",
     "details": {
-      "profile_id": "43380b37-2144-43ca-84da-81141baf70bf",
+      "profile_id": "b282064c-96be-4353-8372-ac52b835fe19",
       "response": {
         "message": "Connection profile created",
-        "id": "43380b37-2144-43ca-84da-81141baf70bf"
+        "id": "b282064c-96be-4353-8372-ac52b835fe19"
       }
     },
-    "timestamp": "2025-10-25T22:25:01.846640"
+    "timestamp": "2025-10-25T22:25:45.742030"
   },
   {
     "test": "Profile Verification",
-    "success": false,
-    "message": "Failed to get profiles: 500 - Internal Server Error",
-    "details": {},
-    "timestamp": "2025-10-25T22:25:01.899532"
+    "success": true,
+    "message": "Successfully verified profile 'Test SSH' exists in database",
+    "details": {
+      "profile": {
+        "id": "b282064c-96be-4353-8372-ac52b835fe19",
+        "user_id": "2e9c8e20-eeca-47b2-bd0f-2615489e655a",
+        "name": "Test SSH",
+        "connection_type": "ssh",
+        "host": "test.example.com",
+        "port": 22,
+        "username": "testuser",
+        "password": "******",
+        "private_key": null,
+        "base_path": "/",
+        "notes": null,
+        "created_at": "2025-10-25T22:25:45.737872+00:00",
+        "updated_at": "2025-10-25T22:25:45.737874+00:00"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:45.783191"
   },
   {
     "test": "FTP Profile Creation",
     "success": true,
-    "message": "Successfully created FTP profile with ID: 67b3d4f5-084b-40db-878b-e5b460d66fba",
+    "message": "Successfully created FTP profile with ID: f3408a71-7e4c-4f1f-b338-1e4f10387002",
     "details": {
-      "profile_id": "67b3d4f5-084b-40db-878b-e5b460d66fba",
+      "profile_id": "f3408a71-7e4c-4f1f-b338-1e4f10387002",
       "response": {
         "message": "Connection profile created",
-        "id": "67b3d4f5-084b-40db-878b-e5b460d66fba"
+        "id": "f3408a71-7e4c-4f1f-b338-1e4f10387002"
       }
     },
-    "timestamp": "2025-10-25T22:25:01.940259"
+    "timestamp": "2025-10-25T22:25:45.823806"
   },
   {
     "test": "Profile Verification",
-    "success": false,
-    "message": "Failed to get profiles: 500 - Internal Server Error",
-    "details": {},
-    "timestamp": "2025-10-25T22:25:01.984523"
+    "success": true,
+    "message": "Successfully verified profile 'Test FTP' exists in database",
+    "details": {
+      "profile": {
+        "id": "f3408a71-7e4c-4f1f-b338-1e4f10387002",
+        "user_id": "2e9c8e20-eeca-47b2-bd0f-2615489e655a",
+        "name": "Test FTP",
+        "connection_type": "ftp",
+        "host": "test.example.com",
+        "port": 21,
+        "username": "testuser",
+        "password": "******",
+        "private_key": null,
+        "base_path": "/",
+        "notes": null,
+        "created_at": "2025-10-25T22:25:45.819652+00:00",
+        "updated_at": "2025-10-25T22:25:45.819653+00:00"
+      }
+    },
+    "timestamp": "2025-10-25T22:25:45.861658"
   },
   {
     "test": "Invalid Data Validation",
@@ -74,6 +122,6 @@
       "status_code": 422,
       "response": "{\"detail\":[{\"type\":\"missing\",\"loc\":[\"body\",\"connection_type\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"host\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"},{\"type\":\"missing\",\"loc\":[\"body\",\"username\"],\"msg\":\"Field required\",\"input\":{\"name\":\"Invalid Profile\",\"port\":22},\"url\":\"https://errors.pydantic.dev/2.12/v/missing\"}]}"
     },
-    "timestamp": "2025-10-25T22:25:02.028558"
+    "timestamp": "2025-10-25T22:25:45.901533"
   }
 ]

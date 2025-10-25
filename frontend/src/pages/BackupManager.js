@@ -284,7 +284,7 @@ const BackupManager = ({ onLogout }) => {
       {/* Preview Modal */}
       {showPreview && selectedBackup && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+          <div className="bg-slate-900 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col border border-slate-700">
             {/* Modal Header */}
             <div className="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
               <div>

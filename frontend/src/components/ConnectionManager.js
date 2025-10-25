@@ -58,11 +58,11 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     try {
       if (editingProfile) {
         // Update existing
-        await axios.put(`${API}/connection-profiles/${editingProfile.id}`, formData);
+        await axios.put(`${API}/api/connection-profiles/${editingProfile.id}`, formData);
         toast.success('Connection profile updated');
       } else {
         // Create new
-        await axios.post(`${API}/connection-profiles`, formData);
+        await axios.post(`${API}/api/connection-profiles`, formData);
         toast.success('Connection profile created');
       }
       

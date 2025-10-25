@@ -168,7 +168,7 @@ function FilePane({
     
     try {
       window.open(
-        `${API}/connection-profiles/${connection.id}/files/download?path=${encodeURIComponent(filePath)}`,
+        `${API}/api/connection-profiles/${connection.id}/files/download?path=${encodeURIComponent(filePath)}`,
         '_blank'
       );
       toast.success('Download started');

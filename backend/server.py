@@ -1090,8 +1090,19 @@ async def get_connection_profiles(current_user: dict = Depends(get_current_user)
     """Get all connection profiles for the current user"""
     profiles = await db.connection_profiles.find({"user_id": current_user["user_id"]}).to_list(length=None)
     
-    # Don't send passwords/keys in list view
+    # Don't send passwords/keys in list view and remove MongoDB _id field
     for profile in profiles:
+        # Remove MongoDB _id field for JSON serialization
+        if '_id' in profile:
+            del profile['_id']
+        
+        # Convert datetime fields to ISO strings if needed
+        if isinstance(profile.get('created_at'), datetime):
+            profile['created_at'] = profile['created_at'].isoformat()
+        if isinstance(profile.get('updated_at'), datetime):
+            profile['updated_at'] = profile['updated_at'].isoformat()
+        
+        # Don't send passwords/keys in list view
         if 'password' in profile:
             profile['password'] = '******' if profile['password'] else None
         if 'private_key' in profile:

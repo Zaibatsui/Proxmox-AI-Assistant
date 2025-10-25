@@ -79,13 +79,11 @@ function FilePane({
     const filePath = currentPath === '/' ? `/${file.name}` : `${currentPath}/${file.name}`;
     
     try {
-      const response = await axios.post(`${API}/files/read`, {
-        path: filePath,
-        location: {
-          type: connection.connection_type,
-          id: connection.id
-        }
-      });
+      const response = await axios.post(
+        `${API}/connection-profiles/${connection.id}/files/read`,
+        null,
+        { params: { path: filePath } }
+      );
       
       setFileContent(response.data.content || '');
     } catch (error) {

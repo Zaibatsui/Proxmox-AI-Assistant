@@ -1,0 +1,72 @@
+[
+  {
+    "test": "Authentication",
+    "success": true,
+    "message": "Logged in successfully",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:08.820792"
+  },
+  {
+    "test": "Profile Validation - Missing Fields",
+    "success": true,
+    "message": "Correctly rejected profile with missing required fields",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:08.861841"
+  },
+  {
+    "test": "Profile Validation - Invalid Type",
+    "success": true,
+    "message": "Correctly rejected profile with invalid connection type",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:08.903153"
+  },
+  {
+    "test": "Parameter Validation - List Default Path",
+    "success": true,
+    "message": "List endpoint handles missing path parameter correctly",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.030982"
+  },
+  {
+    "test": "Parameter Validation - Write Missing Content",
+    "success": true,
+    "message": "Write endpoint handles missing content parameter",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.067336"
+  },
+  {
+    "test": "CRUD - Create",
+    "success": true,
+    "message": "Successfully created profile: 2cd8041a-ed9a-4edb-9758-96db9cf91a60",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.107291"
+  },
+  {
+    "test": "CRUD - Read",
+    "success": false,
+    "message": "Failed to read profile: 500",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.147923"
+  },
+  {
+    "test": "CRUD - Update",
+    "success": true,
+    "message": "Successfully updated profile",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.184288"
+  },
+  {
+    "test": "CRUD - Delete",
+    "success": true,
+    "message": "Successfully deleted profile",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.255781"
+  },
+  {
+    "test": "CRUD - Delete Verification",
+    "success": true,
+    "message": "Profile deletion verified (404 on read)",
+    "details": {},
+    "timestamp": "2025-10-25T15:39:09.292646"
+  }
+]

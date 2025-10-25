@@ -400,7 +400,7 @@ const FileBrowser = ({ onLogout }) => {
           </div>
 
           {/* Editor Panel */}
-          <div className="col-span-12 lg:col-span-7 bg-gray-800 rounded-lg overflow-hidden">
+          <div className="col-span-12 lg:col-span-7 bg-slate-900/80 backdrop-blur-sm rounded-lg overflow-hidden border border-slate-700">
             {selectedFile ? (
               <>
                 {/* Editor Header */}

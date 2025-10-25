@@ -1,23 +1,25 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for VM/Container 121 SSH Connection
-Testing VM/Container SSH Connection for ID 121 as requested in review.
+Backend API Testing for Connection Profile SFTP File Operations
+Testing the new SFTP connection profile implementation with file operations.
 """
 
 import requests
 import json
 import os
 import sys
+import base64
 from datetime import datetime
 
 # Get backend URL from frontend env
 BACKEND_URL = "https://filemind-1.preview.emergentagent.com/api"
 
-class BackendTester:
+class ConnectionProfileTester:
     def __init__(self):
         self.base_url = BACKEND_URL
         self.token = None
         self.test_results = []
+        self.test_profile_id = None
         
     def log_result(self, test_name, success, message, details=None):
         """Log test result"""

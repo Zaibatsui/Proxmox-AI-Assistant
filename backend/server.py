@@ -3486,6 +3486,45 @@ async def sftp_file_exists(profile: dict, path: str):
         sftp.close()
         transport.close()
 
+async def sftp_rename_file(profile: dict, old_path: str, new_path: str):
+    """Rename/move file or directory via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        sftp.rename(old_path, new_path)
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_download_file(profile: dict, path: str):
+    """Download file content via SFTP (returns bytes)"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        with sftp.open(path, 'rb') as f:
+            content = f.read()
+        return content
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_upload_file(profile: dict, path: str, content: bytes):
+    """Upload file content via SFTP (accepts bytes)"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        with sftp.open(path, 'wb') as f:
+            f.write(content)
+    finally:
+        sftp.close()
+        transport.close()
+
+async def sftp_get_file_stat(profile: dict, path: str):
+    """Get file/directory stats via SFTP"""
+    sftp, transport = await get_sftp_client(profile)
+    try:
+        return sftp.stat(path)
+    finally:
+        sftp.close()
+        transport.close()
+
 # ==================== FTP HELPER FUNCTIONS ====================
 
 async def get_ftp_client(profile: dict):

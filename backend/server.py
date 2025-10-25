@@ -900,7 +900,7 @@ async def get_theme(current_user: dict = Depends(get_current_user)):
     theme_doc = await db.themes.find_one({"user_id": current_user["user_id"]})
     if not theme_doc:
         return {
-            "theme_name": "cyan",
+            "theme_name": "amber",
             "background": "dark",
             "card_style": "glass",
             "accent_color": None,

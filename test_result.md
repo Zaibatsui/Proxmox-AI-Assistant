@@ -1,10 +1,22 @@
 backend:
+  - task: "Connection Profile SFTP File Operations"
+    implemented: true
+    working: "pending_test"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "Implemented full SFTP support with connection profiles. Added helper functions: sftp_rename_file, sftp_download_file, sftp_upload_file, sftp_get_file_stat. Created 8 new API endpoints: POST /connection-profiles/{profile_id}/files/list, POST /connection-profiles/{profile_id}/files/read, POST /connection-profiles/{profile_id}/files/write, POST /connection-profiles/{profile_id}/files/delete, POST /connection-profiles/{profile_id}/files/mkdir, POST /connection-profiles/{profile_id}/files/rename, POST /connection-profiles/{profile_id}/files/upload, GET /connection-profiles/{profile_id}/files/download. All endpoints support both SSH and SFTP connection types. Updated frontend FilePane.js to use new endpoints. Backend started successfully. Ready for testing."
+
   - task: "VM/Container 121 SSH Connection Test"
     implemented: true
     working: "NA"
     file: "server.py"
     stuck_count: 0
-    priority: "high"
+    priority: "low"
     needs_retesting: false
     status_history:
       - working: "NA"
@@ -22,7 +34,7 @@ backend:
     working: "NA"
     file: "server.py"
     stuck_count: 0
-    priority: "high"
+    priority: "low"
     needs_retesting: false
     status_history:
       - working: "NA"
@@ -40,7 +52,7 @@ backend:
     working: true
     file: "server.py"
     stuck_count: 0
-    priority: "high"
+    priority: "medium"
     needs_retesting: false
     status_history:
       - working: true

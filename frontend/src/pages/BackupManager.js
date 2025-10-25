@@ -181,7 +181,7 @@ const BackupManager = ({ onLogout }) => {
                 placeholder="Search backups by file path or description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-gray-700 text-white rounded border border-gray-600 focus:border-amber-500 focus:outline-none"
+                className="w-full pl-10 pr-4 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none"
               />
             </div>
             <button

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import Layout from '../components/Layout';
 import ConnectionManager from '../components/ConnectionManager';
 import FilePane from '../components/FilePane';
-import { ArrowRightLeft } from 'lucide-react';
+import { ArrowRightLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 

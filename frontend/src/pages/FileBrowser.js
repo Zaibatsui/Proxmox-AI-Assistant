@@ -569,7 +569,7 @@ const FileBrowser = ({ onLogout }) => {
               <button
                 onClick={saveVMCredentials}
                 disabled={!vmCredentials.password || connectionTestResult !== 'success'}
-                className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded transition-colors"
               >
                 Connect
               </button>

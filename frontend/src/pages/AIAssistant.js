@@ -99,37 +99,51 @@ function AIAssistant({ onLogout }) {
     try {
       const response = await axios.post(`${API}/ai/query`, requestPayload);
       
-      // Check for file edit proposal in the response
+      // Check for proposals in the response
       let fileEditProposal = null;
+      let commandProposal = null;
+      let vmActionProposal = null;
+      
       try {
-        // Check if the answer contains file edit proposal markers
-        if (response.data.answer.includes('"type": "file_edit_proposal"') || 
-            response.data.answer.includes('propose_file_edit')) {
-          // Try to extract the proposal from the tool response
-          const proposalMatch = response.data.answer.match(/"type":\s*"file_edit_proposal"[^}]*}(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*(?:[^}]*})*/);
-          if (proposalMatch) {
+        const answer = response.data.answer;
+        
+        // Check for file edit proposal
+        if (answer.includes('"type": "file_edit_proposal"')) {
+          const match = answer.match(/"type":\s*"file_edit_proposal"[^}]*}(?:[^}]*})*/);
+          if (match) {
             try {
-              fileEditProposal = JSON.parse('{' + proposalMatch[0]);
+              fileEditProposal = JSON.parse('{' + match[0]);
             } catch (e) {
-              // If parsing fails, look for individual fields
-              const pathMatch = response.data.answer.match(/"path":\s*"([^"]*)"/);
-              const contentMatch = response.data.answer.match(/"new_content":\s*"([^"]*)"/);
-              const reasonMatch = response.data.answer.match(/"reason":\s*"([^"]*)"/);
-              
-              if (pathMatch && contentMatch && reasonMatch) {
-                fileEditProposal = {
-                  type: "file_edit_proposal",
-                  path: pathMatch[1],
-                  new_content: contentMatch[1].replace(/\\n/g, '\n'),
-                  reason: reasonMatch[1],
-                  requires_confirmation: true
-                };
-              }
+              console.error("Error parsing file edit proposal:", e);
+            }
+          }
+        }
+        
+        // Check for command execution proposal
+        if (answer.includes('"type": "command_execution_proposal"')) {
+          const match = answer.match(/"type":\s*"command_execution_proposal"[^}]*}(?:[^}]*})*/);
+          if (match) {
+            try {
+              commandProposal = JSON.parse('{' + match[0]);
+            } catch (e) {
+              console.error("Error parsing command proposal:", e);
+            }
+          }
+        }
+        
+        // Check for VM action proposal
+        if (answer.includes('"type": "vm_action_proposal"')) {
+          const match = answer.match(/"type":\s*"vm_action_proposal"[^}]*}(?:[^}]*})*/);
+          if (match) {
+            try {
+              vmActionProposal = JSON.parse('{' + match[0]);
+            } catch (e) {
+              console.error("Error parsing VM action proposal:", e);
             }
           }
         }
       } catch (e) {
-        console.error("Error parsing file edit proposal:", e);
+        console.error("Error parsing proposals:", e);
       }
       
       // Check if actions were created

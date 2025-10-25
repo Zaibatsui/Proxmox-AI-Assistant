@@ -184,13 +184,11 @@ function FilePane({
     const filePath = currentPath === '/' ? `/${file.name}` : `${currentPath}/${file.name}`;
     
     try {
-      await axios.post(`${API}/files/delete`, {
-        path: filePath,
-        location: {
-          type: connection.connection_type,
-          id: connection.id
-        }
-      });
+      await axios.post(
+        `${API}/connection-profiles/${connection.id}/files/delete`,
+        null,
+        { params: { path: filePath } }
+      );
       
       toast.success('File deleted');
       loadDirectory(currentPath);

@@ -641,6 +641,220 @@ function AIAssistant({ onLogout }) {
           </div>
         )}
 
+        {/* Command Execution Confirmation Modal */}
+        {pendingCommand && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl border-slate-700 bg-slate-900 max-h-[90vh] overflow-y-auto">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    pendingCommand.risk_level === 'critical' ? 'bg-red-500/20' :
+                    pendingCommand.risk_level === 'high' ? 'bg-orange-500/20' :
+                    pendingCommand.risk_level === 'medium' ? 'bg-yellow-500/20' : 'bg-green-500/20'
+                  }`}>
+                    <AlertCircle className={`w-6 h-6 ${
+                      pendingCommand.risk_level === 'critical' ? 'text-red-400' :
+                      pendingCommand.risk_level === 'high' ? 'text-orange-400' :
+                      pendingCommand.risk_level === 'medium' ? 'text-yellow-400' : 'text-green-400'
+                    }`} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-white">Command Execution Approval Required</CardTitle>
+                    <Badge className={`mt-1 ${
+                      pendingCommand.risk_level === 'critical' ? 'bg-red-500/20 text-red-400' :
+                      pendingCommand.risk_level === 'high' ? 'bg-orange-500/20 text-orange-400' :
+                      pendingCommand.risk_level === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+                    }`}>
+                      {pendingCommand.risk_level.toUpperCase()} RISK
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Command Details */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-2">Command:</h3>
+                    <pre className="bg-slate-800 p-3 rounded text-cyan-400 text-sm overflow-x-auto">
+                      {pendingCommand.command}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-1">Location:</h3>
+                    <p className="text-slate-400 text-sm">{pendingCommand.location || 'Proxmox Host'}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-1">Purpose:</h3>
+                    <p className="text-slate-300 text-sm">{pendingCommand.purpose}</p>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-1">Expected Outcome:</h3>
+                    <p className="text-slate-300 text-sm">{pendingCommand.expected_outcome}</p>
+                  </div>
+
+                  {/* Risk Factors */}
+                  {pendingCommand.risk_factors && pendingCommand.risk_factors.length > 0 && (
+                    <div className={`p-3 rounded-lg ${
+                      pendingCommand.risk_level === 'critical' ? 'bg-red-500/10 border border-red-500/30' :
+                      pendingCommand.risk_level === 'high' ? 'bg-orange-500/10 border border-orange-500/30' :
+                      pendingCommand.risk_level === 'medium' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-green-500/10 border border-green-500/30'
+                    }`}>
+                      <h3 className="text-sm font-semibold text-slate-200 mb-2">⚠️ Risk Assessment:</h3>
+                      <ul className="space-y-1">
+                        {pendingCommand.risk_factors.map((factor, idx) => (
+                          <li key={idx} className="text-sm text-slate-300">• {factor}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4 border-t border-slate-700">
+                  <Button
+                    onClick={cancelCommand}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={executing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={executeCommand}
+                    disabled={executing}
+                    className={`flex-1 text-white ${
+                      pendingCommand.risk_level === 'critical' ? 'bg-red-600 hover:bg-red-700' :
+                      pendingCommand.risk_level === 'high' ? 'bg-orange-600 hover:bg-orange-700' :
+                      'bg-cyan-600 hover:bg-cyan-700'
+                    }`}
+                  >
+                    {executing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirm & Execute
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* VM Action Confirmation Modal */}
+        {pendingVMAction && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <Card className="w-full max-w-2xl border-slate-700 bg-slate-900">
+              <CardHeader>
+                <div className="flex items-center gap-3">
+                  <div className={`p-2 rounded-lg ${
+                    pendingVMAction.risk_level === 'critical' ? 'bg-red-500/20' :
+                    pendingVMAction.risk_level === 'medium' ? 'bg-yellow-500/20' : 'bg-green-500/20'
+                  }`}>
+                    <Server className={`w-6 h-6 ${
+                      pendingVMAction.risk_level === 'critical' ? 'text-red-400' :
+                      pendingVMAction.risk_level === 'medium' ? 'text-yellow-400' : 'text-green-400'
+                    }`} />
+                  </div>
+                  <div>
+                    <CardTitle className="text-white">VM Action Approval Required</CardTitle>
+                    <Badge className={`mt-1 ${
+                      pendingVMAction.risk_level === 'critical' ? 'bg-red-500/20 text-red-400' :
+                      pendingVMAction.risk_level === 'medium' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+                    }`}>
+                      {pendingVMAction.risk_level.toUpperCase()} RISK
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-1">Action:</h3>
+                    <p className="text-cyan-400 text-lg font-semibold">{pendingVMAction.action.toUpperCase()}</p>
+                  </div>
+
+                  {pendingVMAction.vmid && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-300 mb-1">Target VM/Container:</h3>
+                      <p className="text-slate-300 text-sm">ID: {pendingVMAction.vmid}</p>
+                    </div>
+                  )}
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-300 mb-1">Reason:</h3>
+                    <p className="text-slate-300 text-sm">{pendingVMAction.reason}</p>
+                  </div>
+
+                  {pendingVMAction.vm_config && (
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-300 mb-2">Configuration:</h3>
+                      <pre className="bg-slate-800 p-3 rounded text-sm text-slate-300 overflow-x-auto">
+                        {JSON.stringify(pendingVMAction.vm_config, null, 2)}
+                      </pre>
+                    </div>
+                  )}
+
+                  {/* Risk Factors */}
+                  {pendingVMAction.risk_factors && pendingVMAction.risk_factors.length > 0 && (
+                    <div className={`p-3 rounded-lg ${
+                      pendingVMAction.risk_level === 'critical' ? 'bg-red-500/10 border border-red-500/30' :
+                      pendingVMAction.risk_level === 'medium' ? 'bg-yellow-500/10 border border-yellow-500/30' : 'bg-green-500/10 border border-green-500/30'
+                    }`}>
+                      <h3 className="text-sm font-semibold text-slate-200 mb-2">⚠️ Risk Assessment:</h3>
+                      <ul className="space-y-1">
+                        {pendingVMAction.risk_factors.map((factor, idx) => (
+                          <li key={idx} className="text-sm text-slate-300">• {factor}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex gap-2 pt-4 border-t border-slate-700">
+                  <Button
+                    onClick={cancelVMAction}
+                    variant="outline"
+                    className="flex-1"
+                    disabled={executing}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={executeVMAction}
+                    disabled={executing}
+                    className={`flex-1 text-white ${
+                      pendingVMAction.risk_level === 'critical' ? 'bg-red-600 hover:bg-red-700' :
+                      'bg-cyan-600 hover:bg-cyan-700'
+                    }`}
+                  >
+                    {executing ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Confirm & Execute
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* VM Credentials Modal */}
         {showVMCredentials && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

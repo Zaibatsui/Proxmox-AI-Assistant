@@ -540,13 +540,13 @@ function AIAssistant({ onLogout }) {
           </div>
 
           {/* History Sidebar */}
-          <div className="lg:col-span-1 overflow-hidden">
-            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col" style={{ maxHeight: 'calc(100vh - 24rem)' }}>
+          <div className="lg:col-span-1 overflow-hidden h-full">
+            <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm flex flex-col h-full">
               <CardHeader className="border-b border-slate-800 flex-shrink-0 py-3">
                 <CardTitle className="text-slate-100 text-sm">Recent History</CardTitle>
               </CardHeader>
               <CardContent className="flex-1 p-0 overflow-hidden">
-                <ScrollArea className="h-full" style={{ maxHeight: 'calc(100vh - 28rem)' }}>
+                <ScrollArea className="h-full">
                   <div className="p-3 space-y-2">
                     {history.map((item, idx) => (
                       <button

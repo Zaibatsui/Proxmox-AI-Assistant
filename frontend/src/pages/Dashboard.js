@@ -85,30 +85,24 @@ function Dashboard({ onLogout }) {
 
   const fetchConnectionStatus = async () => {
     try {
-      // First check if configs exist
-      const [configRes, keysRes] = await Promise.all([
-        axios.get(`${API}/proxmox-config`).catch(() => null),
-        axios.get(`${API}/api-keys`).catch(() => null)
-      ]);
+      const keysRes = await axios.get(`${API}/api-keys`).catch(() => null);
       
       let proxmoxStatus = 'disconnected';
       let sshStatus = 'disconnected';
       let openaiStatus = 'disconnected';
       
-      // If Proxmox config exists, test the connection
-      if (configRes?.data) {
-        try {
-          const testRes = await axios.post(`${API}/proxmox/test-connection`);
-          proxmoxStatus = testRes.data.api?.status === 'success' ? 'connected' : 'disconnected';
-          sshStatus = testRes.data.ssh?.status === 'success' ? 'connected' : 'disconnected';
-        } catch (error) {
-          // Config exists but connection test failed
-          proxmoxStatus = 'disconnected';
-          sshStatus = 'disconnected';
-        }
+      // Test Proxmox and SSH with real connection test
+      try {
+        const testRes = await axios.post(`${API}/proxmox/test-connection`);
+        proxmoxStatus = testRes.data.api?.status === 'success' ? 'connected' : 'disconnected';
+        sshStatus = testRes.data.ssh?.status === 'success' ? 'connected' : 'disconnected';
+      } catch (error) {
+        // Connection test failed
+        proxmoxStatus = 'disconnected';
+        sshStatus = 'disconnected';
       }
       
-      // Check OpenAI key
+      // OpenAI - just check if key exists (simple config check)
       if (keysRes?.data?.has_openai_key) {
         openaiStatus = 'connected';
       }

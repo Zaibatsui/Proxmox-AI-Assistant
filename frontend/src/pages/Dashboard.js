@@ -317,21 +317,21 @@ function Dashboard({ onLogout }) {
                   <p className="text-sm">No recent activity</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {auditLog.map((log, idx) => (
-                    <div key={idx} className="flex items-start gap-3 p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors">
-                      <div className="mt-1">
+                    <div key={idx} className="flex items-start gap-2.5 p-2.5 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition-colors group">
+                      <div className="mt-0.5">
                         {getActionIcon(log.action)}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm text-slate-200 font-medium">
+                        <div className="text-xs text-slate-200 font-medium">
                           {log.action.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         </div>
-                        <div className="text-xs text-slate-500 truncate">
-                          {JSON.stringify(log.details).slice(0, 60)}...
+                        <div className="text-[10px] text-slate-500 truncate">
+                          {JSON.stringify(log.details).slice(0, 50)}...
                         </div>
                       </div>
-                      <div className="text-xs text-slate-500 whitespace-nowrap">
+                      <div className="text-[10px] text-slate-500 whitespace-nowrap">
                         {formatRelativeTime(log.timestamp)}
                       </div>
                     </div>

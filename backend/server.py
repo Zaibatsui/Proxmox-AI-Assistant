@@ -145,6 +145,46 @@ class APIKeysResponse(BaseModel):
     has_openai_key: bool
     openai_key_preview: Optional[str] = None  # Last 4 chars only
 
+# ==================== CONNECTION PROFILE MODELS ====================
+
+class ConnectionProfile(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str
+    connection_type: Literal["ssh", "ftp", "sftp", "reverse_proxy"]
+    host: str
+    port: int
+    username: str
+    password: Optional[str] = None
+    private_key: Optional[str] = None  # For SSH key auth
+    base_path: Optional[str] = "/"  # Starting directory
+    notes: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class ConnectionProfileCreate(BaseModel):
+    name: str
+    connection_type: Literal["ssh", "ftp", "sftp", "reverse_proxy"]
+    host: str
+    port: int = 22  # Default SSH port
+    username: str
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+    base_path: Optional[str] = "/"
+    notes: Optional[str] = None
+
+class ConnectionProfileUpdate(BaseModel):
+    name: Optional[str] = None
+    connection_type: Optional[Literal["ssh", "ftp", "sftp", "reverse_proxy"]] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+    base_path: Optional[str] = None
+    notes: Optional[str] = None
+
 # ==================== DEVICE MODELS ====================
 
 class PCIDevice(BaseModel):

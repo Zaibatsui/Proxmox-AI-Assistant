@@ -468,7 +468,7 @@ const FileBrowser = ({ onLogout }) => {
       {/* VM Credentials Modal */}
       {showVMCredentials && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 z-50">
-          <div className="bg-gray-800 rounded-lg max-w-md w-full border border-gray-700">
+          <div className="bg-slate-900 rounded-lg max-w-md w-full border border-slate-700">
             <div className="px-6 py-4 border-b border-gray-700">
               <h3 className="text-lg font-bold text-white">VM SSH Credentials</h3>
               <p className="text-sm text-gray-400 mt-1">

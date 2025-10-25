@@ -20,6 +20,8 @@ import paramiko
 import re
 import requests
 import urllib3
+from ftplib import FTP
+import io
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

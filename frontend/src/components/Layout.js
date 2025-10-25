@@ -20,7 +20,7 @@ function Layout({ children, onLogout, currentPage }) {
   return (
     <div className="min-h-screen flex" style={{ backgroundColor: 'var(--bg-primary)' }}>
       {/* Sidebar */}
-      <aside className="flex flex-col border-r" style={{ 
+      <aside className="flex flex-col border-r h-screen sticky top-0 overflow-y-auto" style={{ 
         width: 'var(--sidebar-width)', 
         backgroundColor: 'var(--sidebar-bg)',
         borderColor: 'var(--bg-border)'

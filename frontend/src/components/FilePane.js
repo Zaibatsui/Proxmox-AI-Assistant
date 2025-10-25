@@ -98,14 +98,11 @@ function FilePane({
     const filePath = currentPath === '/' ? `/${editingFile.name}` : `${currentPath}/${editingFile.name}`;
     
     try {
-      await axios.post(`${API}/files/create`, {
-        path: filePath,
-        content: fileContent,
-        location: {
-          type: connection.connection_type,
-          id: connection.id
-        }
-      });
+      await axios.post(
+        `${API}/connection-profiles/${connection.id}/files/write`,
+        null,
+        { params: { path: filePath, content: fileContent } }
+      );
       
       toast.success('File saved successfully');
       setEditingFile(null);

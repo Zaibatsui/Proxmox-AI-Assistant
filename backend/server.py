@@ -3115,6 +3115,122 @@ ai_tools = [
                 "required": ["compose_file_path"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "list_container_files",
+            "description": "List files and directories inside a Docker container. Use this to browse the filesystem of a running container.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name (get from docker_list_containers)"
+                    },
+                    "path": {
+                        "type": "string",
+                        "description": "Path inside the container to list (e.g., /app, /etc, /var/log). Default is /"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    }
+                },
+                "required": ["container_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_container_file",
+            "description": "Read the contents of a file inside a Docker container. Use this to view config files, logs, or any file inside a container.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Full path to the file inside the container (e.g., /app/config.json, /etc/nginx/nginx.conf)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    }
+                },
+                "required": ["container_id", "file_path"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "propose_container_file_edit",
+            "description": "Propose an edit to a file inside a Docker container. This will show the user what changes you want to make and ask for confirmation. ALWAYS use this instead of directly editing container files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name"
+                    },
+                    "file_path": {
+                        "type": "string",
+                        "description": "Full path to the file inside the container"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    },
+                    "new_content": {
+                        "type": "string",
+                        "description": "The complete new content for the file"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Brief explanation of what changes are being made and why"
+                    }
+                },
+                "required": ["container_id", "file_path", "new_content", "reason"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "execute_container_command",
+            "description": "Propose execution of a command inside a Docker container. System will require user confirmation before execution. Use this for container-specific operations like restarting services, checking status, or running diagnostics.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name"
+                    },
+                    "command": {
+                        "type": "string",
+                        "description": "The command to execute inside the container (e.g., 'nginx -t', 'ps aux', 'cat /var/log/app.log')"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    },
+                    "purpose": {
+                        "type": "string",
+                        "description": "Clear explanation of what this command does and why it's needed"
+                    },
+                    "expected_outcome": {
+                        "type": "string",
+                        "description": "What the expected result/output should be"
+                    }
+                },
+                "required": ["container_id", "command", "purpose", "expected_outcome"]
+            }
+        }
     }
 ]
 

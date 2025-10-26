@@ -79,8 +79,6 @@ class ProxmoxConfig(BaseModel):
     api_token_name: str  # e.g., "root@pam!token-name"
     api_token_secret: str
     verify_ssl: bool = False
-    ssh_username: Optional[str] = "root"
-    ssh_password: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class ProxmoxConfigCreate(BaseModel):
@@ -88,13 +86,59 @@ class ProxmoxConfigCreate(BaseModel):
     api_token_name: str
     api_token_secret: str
     verify_ssl: bool = False
-    ssh_username: Optional[str] = "root"
-    ssh_password: Optional[str] = None
+
+class ProxmoxConfigUpdate(BaseModel):
+    host: Optional[str] = None
+    api_token_name: Optional[str] = None
+    api_token_secret: Optional[str] = None
+    verify_ssl: Optional[bool] = None
 
 class ProxmoxConfigResponse(BaseModel):
     id: str
     host: str
     api_token_name: str
+    verify_ssl: bool
+    created_at: datetime
+
+# ==================== SSH CONFIGURATION MODELS ====================
+
+class SSHConfig(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    name: str  # Friendly name (e.g., "Proxmox Host SSH", "VM119 SSH")
+    host: str  # Can be IP or hostname
+    port: int = 22
+    username: str = "root"
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class SSHConfigCreate(BaseModel):
+    name: str
+    host: str
+    port: int = 22
+    username: str = "root"
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+
+class SSHConfigUpdate(BaseModel):
+    name: Optional[str] = None
+    host: Optional[str] = None
+    port: Optional[int] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    private_key: Optional[str] = None
+
+class SSHConfigResponse(BaseModel):
+    id: str
+    name: str
+    host: str
+    port: int
+    username: str
+    created_at: datetime
+    updated_at: datetime
     verify_ssl: bool
     ssh_username: Optional[str] = "root"
     created_at: datetime

@@ -282,7 +282,7 @@ function AIAssistant({ onLogout }) {
     }
     setSessionCredentials({
       ...sessionCredentials,
-      [currentLocation.id]: vmCredentials
+      [currentConnection.id]: vmCredentials
     });
     setShowVMCredentials(false);
     toast.success("Credentials saved for this session");

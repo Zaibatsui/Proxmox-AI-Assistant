@@ -149,10 +149,11 @@ class DockerContainerTester:
             
             # FileLocation query parameter
             location_params = {
-                "location": json.dumps({
-                    "type": "host",
-                    "id": None
-                })
+            # FileLocation query parameters
+            location_params = {
+                "type": "host"
+                # id is optional and defaults to None
+            }
             }
             
             response = requests.post(
@@ -192,10 +193,11 @@ class DockerContainerTester:
             
             # FileLocation query parameter
             location_params = {
-                "location": json.dumps({
-                    "type": "host",
-                    "id": None
-                })
+            # FileLocation query parameters
+            location_params = {
+                "type": "host"
+                # id is optional and defaults to None
+            }
             }
             
             response = requests.post(
@@ -246,10 +248,11 @@ class DockerContainerTester:
             
             # FileLocation query parameter
             location_params = {
-                "location": json.dumps({
-                    "type": "host",
-                    "id": None
-                })
+            # FileLocation query parameters
+            location_params = {
+                "type": "host"
+                # id is optional and defaults to None
+            }
             }
             
             response = requests.post(
@@ -293,10 +296,11 @@ class DockerContainerTester:
             
             # FileLocation query parameter
             location_params = {
-                "location": json.dumps({
-                    "type": "host",
-                    "id": None
-                })
+            # FileLocation query parameters
+            location_params = {
+                "type": "host"
+                # id is optional and defaults to None
+            }
             }
             
             response = requests.post(
@@ -337,10 +341,11 @@ class DockerContainerTester:
             }
             
             location_params = {
-                "location": json.dumps({
-                    "type": "host",
-                    "id": None
-                })
+            # FileLocation query parameters
+            location_params = {
+                "type": "host"
+                # id is optional and defaults to None
+            }
             }
             
             response = requests.post(

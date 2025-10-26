@@ -119,9 +119,17 @@ function FileBrowserNew({ onLogout }) {
       toast.info(`Uploading ${file.name} to ${fromPane === 'left' ? 'right' : 'left'} pane...`);
       
       const fileContent = await downloadResponse.data.arrayBuffer();
-      const base64Content = btoa(
-        new Uint8Array(fileContent).reduce((data, byte) => data + String.fromCharCode(byte), '')
-      );
+      
+      // Safe base64 encoding for binary files
+      const arrayBufferToBase64 = (buffer) => {
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+          binary += String.fromCharCode(bytes[i]);
+        }
+        return btoa(binary);
+      };
       
       // Upload to target in chunks
       const chunkSize = 1024 * 1024; // 1MB chunks
@@ -131,9 +139,7 @@ function FileBrowserNew({ onLogout }) {
         const start = i * chunkSize;
         const end = Math.min(start + chunkSize, fileContent.byteLength);
         const chunk = fileContent.slice(start, end);
-        const chunkBase64 = btoa(
-          new Uint8Array(chunk).reduce((data, byte) => data + String.fromCharCode(byte), '')
-        );
+        const chunkBase64 = arrayBufferToBase64(chunk);
         
         await axios.post(
           `${API}/api/connection-profiles/${targetConnection.id}/files/upload`,
@@ -148,12 +154,17 @@ function FileBrowserNew({ onLogout }) {
             }
           }
         );
+        
+        // Show progress for multiple chunks
+        if (totalChunks > 1) {
+          toast.info(`Uploading chunk ${i + 1}/${totalChunks}...`, { id: 'upload-progress' });
+        }
       }
       
       toast.success(`Successfully transferred ${file.name}`);
     } catch (error) {
       console.error('Transfer failed:', error);
-      toast.error(error.response?.data?.detail || 'Failed to transfer file');
+      toast.error(error.response?.data?.detail || `Failed to transfer file: ${error.message}`);
     } finally {
       setTransferring(false);
     }

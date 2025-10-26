@@ -27,19 +27,28 @@ function Dashboard({ onLogout }) {
 
   useEffect(() => {
     fetchAllData();
-    const interval = setInterval(fetchAllData, 30000); // Refresh every 30s
+    // Increase interval to 60 seconds to reduce load
+    const interval = setInterval(fetchAllData, 60000);
     return () => clearInterval(interval);
   }, []);
 
   const fetchAllData = async () => {
     try {
+      // Only fetch stats and connection status on refresh, not VMs/backups/logs
+      // VMs, backups, and logs are expensive and change less frequently
       await Promise.all([
         fetchStats(),
-        fetchVMs(),
-        fetchBackups(),
-        fetchAuditLog(),
         fetchConnectionStatus()
       ]);
+      
+      // Only fetch VMs, backups, and audit log on first load
+      if (loading) {
+        await Promise.all([
+          fetchVMs(),
+          fetchBackups(),
+          fetchAuditLog()
+        ]);
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

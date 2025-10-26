@@ -3769,6 +3769,149 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         "total": result.get("total", 0),
                         "error": result.get("error")
                     }
+                elif function_name == "list_container_files":
+                    # List files inside a Docker container - no confirmation needed (read-only)
+                    try:
+                        container_id = function_args.get("container_id")
+                        path = function_args.get("path", "/")
+                        location_str = function_args.get("location", "host")
+                        
+                        location = parse_location_string(location_str)
+                        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                        
+                        # Use docker exec to list files
+                        command = f"docker exec {container_id} ls -lAh {path}"
+                        result = await execute_command_on_location(ssh_client, command, location)
+                        ssh_client.close()
+                        
+                        if result["success"]:
+                            # Parse ls output into file list
+                            files = []
+                            for line in result["output"].strip().split('\n')[1:]:  # Skip total line
+                                if line:
+                                    parts = line.split(None, 8)
+                                    if len(parts) >= 9:
+                                        files.append({
+                                            "name": parts[8],
+                                            "permissions": parts[0],
+                                            "size": parts[4],
+                                            "modified": f"{parts[5]} {parts[6]} {parts[7]}",
+                                            "is_directory": parts[0].startswith('d')
+                                        })
+                            
+                            function_response = {
+                                "type": "container_files_list",
+                                "container_id": container_id,
+                                "path": path,
+                                "files": files,
+                                "location": location_str
+                            }
+                        else:
+                            function_response = {
+                                "type": "container_files_list",
+                                "container_id": container_id,
+                                "error": result["error"]
+                            }
+                    except Exception as e:
+                        function_response = {
+                            "type": "container_files_list",
+                            "error": str(e)
+                        }
+                elif function_name == "read_container_file":
+                    # Read a file from inside a Docker container - no confirmation needed (read-only)
+                    try:
+                        container_id = function_args.get("container_id")
+                        file_path = function_args.get("file_path")
+                        location_str = function_args.get("location", "host")
+                        
+                        location = parse_location_string(location_str)
+                        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                        
+                        # Use docker exec to read file
+                        command = f"docker exec {container_id} cat {file_path}"
+                        result = await execute_command_on_location(ssh_client, command, location)
+                        ssh_client.close()
+                        
+                        if result["success"]:
+                            function_response = {
+                                "type": "container_file_content",
+                                "container_id": container_id,
+                                "file_path": file_path,
+                                "content": result["output"],
+                                "location": location_str
+                            }
+                        else:
+                            function_response = {
+                                "type": "container_file_content",
+                                "container_id": container_id,
+                                "file_path": file_path,
+                                "error": result["error"]
+                            }
+                    except Exception as e:
+                        function_response = {
+                            "type": "container_file_content",
+                            "error": str(e)
+                        }
+                elif function_name == "propose_container_file_edit":
+                    # Propose editing a file inside a Docker container - requires confirmation
+                    function_response = {
+                        "type": "container_file_edit_proposal",
+                        "container_id": function_args.get("container_id"),
+                        "file_path": function_args.get("file_path"),
+                        "location": function_args.get("location", "host"),
+                        "new_content": function_args.get("new_content"),
+                        "reason": function_args.get("reason"),
+                        "requires_confirmation": True
+                    }
+                elif function_name == "execute_container_command":
+                    # Propose executing a command inside a Docker container - requires confirmation
+                    command = function_args.get("command", "")
+                    container_id = function_args.get("container_id")
+                    
+                    # Evaluate risk level for container commands
+                    risk_level = "low"
+                    risk_factors = []
+                    
+                    # Destructive command patterns
+                    destructive_patterns = [
+                        "rm -rf", "dd if=", "mkfs", "> /dev/",
+                        "shutdown", "reboot", "halt", "poweroff",
+                        "kill -9", "pkill", "killall"
+                    ]
+                    
+                    # High risk patterns
+                    high_risk_patterns = [
+                        "apt remove", "apt purge", "yum remove", "dnf remove",
+                        "systemctl restart", "systemctl stop",
+                        "chmod 777", "chown -R"
+                    ]
+                    
+                    # Check for destructive commands
+                    for pattern in destructive_patterns:
+                        if pattern in command.lower():
+                            risk_level = "critical"
+                            risk_factors.append(f"Destructive operation: {pattern}")
+                            break
+                    
+                    # Check for high risk commands
+                    if risk_level != "critical":
+                        for pattern in high_risk_patterns:
+                            if pattern in command.lower():
+                                risk_level = "high"
+                                risk_factors.append(f"Potentially disruptive: {pattern}")
+                                break
+                    
+                    function_response = {
+                        "type": "container_command_execution_proposal",
+                        "container_id": container_id,
+                        "command": command,
+                        "location": function_args.get("location", "host"),
+                        "purpose": function_args.get("purpose"),
+                        "expected_outcome": function_args.get("expected_outcome"),
+                        "risk_level": risk_level,
+                        "risk_factors": risk_factors,
+                        "requires_confirmation": True
+                    }
                 
                 # Add tool response
                 messages.append({

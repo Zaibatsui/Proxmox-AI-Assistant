@@ -45,6 +45,13 @@ code {
   border-color: var(--theme-primary) !important;
 }
 
+/* Vertical text for minimized pane */
+.writing-mode-vertical {
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  letter-spacing: 2px;
+}
+
 /* Apply global appearance settings */
 [class*="rounded"], 
 .rounded, .rounded-lg, .rounded-md, .rounded-sm,

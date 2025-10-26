@@ -148,12 +148,9 @@ class DockerContainerTester:
             }
             
             # FileLocation query parameter
-            location_params = {
             # FileLocation query parameters
             location_params = {
                 "type": "host"
-                # id is optional and defaults to None
-            }
             }
             
             response = requests.post(

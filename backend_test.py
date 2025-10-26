@@ -15,7 +15,7 @@ from datetime import datetime
 # Get backend URL from frontend env
 BACKEND_URL = "https://proxwizard.preview.emergentagent.com/api"
 
-class ConnectionProfileTester:
+class DockerContainerTester:
     def __init__(self):
         self.base_url = BACKEND_URL
         self.token = None

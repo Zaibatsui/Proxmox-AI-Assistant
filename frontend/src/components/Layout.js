@@ -1,6 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { LogOut, Server, Cpu, Box, MessageSquare, Activity, FileText, Settings, FolderOpen, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import ConnectionSelector from "./ConnectionSelector";
 
 function Layout({ children, onLogout, currentPage }) {
   const username = localStorage.getItem("username");

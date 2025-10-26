@@ -1365,6 +1365,20 @@ async def list_files_by_profile(profile_id: str, path: str = "/", current_user: 
                     "permissions": file.get('permissions')
                 })
             return result
+        elif profile['connection_type'] == 'reverse_proxy':
+            # For reverse proxy, use HTTP API
+            files_data = await rproxy_list_directory(profile, path)
+            result = []
+            for file in files_data:
+                result.append({
+                    "name": file.get('name'),
+                    "path": file.get('path'),
+                    "type": file.get('type'),
+                    "size": file.get('size'),
+                    "modified": file.get('modified'),
+                    "permissions": file.get('permissions')
+                })
+            return result
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported for file operations")
     except HTTPException:

@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for Connection Profile SFTP File Operations
-Testing the new SFTP connection profile implementation with file operations.
+Backend API Testing for File Browser Connection Profile Operations
+Testing all connection types: SSH, SFTP, FTP, and Reverse Proxy file operations.
+Focus on new Reverse Proxy functionality and protocol support verification.
 """
 
 import requests

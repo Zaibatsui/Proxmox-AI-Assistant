@@ -2523,6 +2523,93 @@ ai_tools = [
 @api_router.post("/ai/query", response_model=AIResponse)
 async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user)):
     try:
+        # Get or create conversation session
+        session_id = query.session_id or str(uuid.uuid4())
+        session = await db.conversation_sessions.find_one({
+            "id": session_id,
+            "user_id": current_user["user_id"]
+        })
+        
+        if not session:
+            session = {
+                "id": session_id,
+                "user_id": current_user["user_id"],
+                "messages": [],
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
+                "pending_action": None
+            }
+            await db.conversation_sessions.insert_one(session)
+        
+        # Check if this is a simple confirmation (yes, do it, proceed, etc.)
+        confirmation_keywords = ["yes", "do it", "proceed", "confirm", "execute", "go ahead", "sure", "ok", "okay"]
+        is_confirmation = query.question.strip().lower() in confirmation_keywords
+        
+        # If it's a confirmation and there's a pending action, execute it
+        if is_confirmation and session.get("pending_action"):
+            pending = session["pending_action"]
+            
+            # Execute based on action type
+            if pending.get("type") == "file_edit_proposal":
+                # Execute the file edit
+                try:
+                    location_str = pending.get("location", "host")
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    await location_write_file(
+                        ssh_client, 
+                        pending["path"],
+                        pending["new_content"],
+                        location,
+                        create_backup=True
+                    )
+                    ssh_client.close()
+                    
+                    response_text = f"✅ **File edit executed successfully!**\n\nFile `{pending['path']}` has been updated on {location_str}."
+                except Exception as e:
+                    response_text = f"❌ **Failed to execute file edit:** {str(e)}"
+                
+                # Clear pending action
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"pending_action": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                # Add to conversation history
+                session["messages"].append({
+                    "role": "user",
+                    "content": query.question,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                session["messages"].append({
+                    "role": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"messages": session["messages"]}}
+                )
+                
+                # Save to AI history
+                ai_response_obj = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": current_user["user_id"],
+                    "question": query.question,
+                    "answer": response_text,
+                    "suggested_commands": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "session_id": session_id
+                }
+                await db.ai_queries.insert_one(ai_response_obj)
+                
+                return AIResponse(**ai_response_obj)
+                
         # Get user's API key first, fallback to environment variable
         keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
         api_key = None

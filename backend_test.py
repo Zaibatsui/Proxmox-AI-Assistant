@@ -552,9 +552,13 @@ class DockerContainerTester:
                 print(f"\n🔍 Testing comprehensive file operations on container {self.test_container_id[:12]}...")
                 self.test_comprehensive_container_operations(self.test_container_id)
             
-            # Step 6: Test error handling
-            print(f"\n🔍 Testing error handling...")
-            self.test_error_handling()
+        # Step 5: Test error handling and endpoint structure
+        print(f"\n🔍 Testing error handling and endpoint structure...")
+        self.test_error_handling()
+        
+        # Step 6: Test endpoint structure with mock data
+        print(f"\n🔍 Testing endpoint structure with mock data...")
+        self.test_endpoint_structure()
         
         # Summary
         print("\n" + "=" * 80)

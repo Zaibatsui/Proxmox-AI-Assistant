@@ -69,14 +69,14 @@ function FilePane({
       
       // Check if this is a Proxmox location or a connection profile
       if (connection.source === 'proxmox' || connection.vmid) {
-        // Use the generic files endpoint with location parameter
+        // Use the generic files endpoint with location in request body
         response = await axios.post(
           `${API}/api/files/list`,
-          { path },
           {
-            params: {
-              location_type: connection.type,
-              location_id: connection.vmid || connection.id
+            path,
+            location: {
+              type: connection.type,
+              id: String(connection.vmid || connection.id)
             }
           }
         );

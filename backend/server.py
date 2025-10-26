@@ -2757,10 +2757,20 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
             context_str = f"\n\nAdditional Context:\n{query.context}"
         
         # Initial message to GPT with tools
-        messages = [
-            {"role": "system", "content": system_message},
-            {"role": "user", "content": f"{query.question}{context_str}"}
-        ]
+        # Build conversation messages with history
+        messages = [{"role": "system", "content": system_message}]
+        
+        # Add conversation history from session (last 10 messages to avoid token limits)
+        if session and session.get("messages"):
+            recent_messages = session["messages"][-10:]  # Last 10 messages
+            for msg in recent_messages:
+                messages.append({
+                    "role": msg["role"],
+                    "content": msg["content"]
+                })
+        
+        # Add current question
+        messages.append({"role": "user", "content": f"{query.question}{context_str}"})
         
         # Send message with function calling enabled
         completion = await client.chat.completions.create(

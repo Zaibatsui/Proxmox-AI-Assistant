@@ -86,8 +86,10 @@ function FileBrowserNew({ onLogout }) {
   const handleSelectConnection = (connection) => {
     if (selectingForPane === 'left') {
       setLeftConnection(connection);
+      toast.success(`Left pane: ${connection.name}`);
     } else if (selectingForPane === 'right') {
       setRightConnection(connection);
+      toast.success(`Right pane: ${connection.name}`);
     }
     // When selectingForPane is null (from Manage Connections button), just close the modal
     // The connection will be used when clicking on a profile from the modal

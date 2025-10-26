@@ -350,136 +350,63 @@ class DockerContainerTester:
             self.log_result("Invalid Container Error Handling", False, f"Error handling test error: {str(e)}")
             return False
     
-    def test_file_operations(self, profile_id, connection_type="unknown"):
-        """Test file operations using connection profile"""
-        if not profile_id:
-            self.log_result(f"{connection_type.upper()} File Operations Test", False, "No profile ID provided")
+    def test_comprehensive_container_operations(self, container_id):
+        """Test comprehensive file operations on a Docker container"""
+        if not container_id:
+            self.log_result("Comprehensive Container Operations", False, "No container ID provided")
             return False
             
         try:
-            # Test 1: List files
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/list?path=/", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
+            # Test 1: List root directory files
+            print(f"\n🔍 Testing file listing in container {container_id[:12]}...")
+            files = self.test_list_container_files(container_id, "/")
             
-            # For reverse proxy, we expect 500 errors (no real server), but NOT 400 "not supported" errors
-            if response.status_code == 200:
-                files = response.json()
-                self.log_result(
-                    f"{connection_type.upper()} File List Operation", 
-                    True, 
-                    f"Successfully listed files in root directory",
-                    {"file_count": len(files) if isinstance(files, list) else "unknown"}
-                )
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                # Expected for reverse proxy without real server - check it's not "not supported" error
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File List Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File List Operation", False, f"Unsupported connection type error: {response.text}")
-                    return False
-            else:
-                self.log_result(f"{connection_type.upper()} File List Operation", False, f"File listing failed: {response.status_code} - {response.text}")
-                if connection_type != "reverse_proxy":  # Only fail for non-reverse-proxy
-                    return False
+            # Test 2: Try to read a common file (like /etc/hostname)
+            print(f"\n🔍 Testing file reading in container {container_id[:12]}...")
+            hostname_content = self.test_read_container_file(container_id, "/etc/hostname")
             
-            # Test 2: Create directory
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/mkdir?path=/test_dir", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
+            # Test 3: Write a test file to /tmp
+            print(f"\n🔍 Testing file writing in container {container_id[:12]}...")
+            test_content = "Hello Docker Container! This is a test file from Portainer Agent API."
+            write_success = self.test_write_container_file(container_id, "/tmp/test.txt", test_content)
             
-            if response.status_code == 200:
-                self.log_result(f"{connection_type.upper()} Directory Create Operation", True, "Successfully created test directory")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} Directory Create Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} Directory Create Operation", False, f"Unsupported connection type error: {response.text}")
-            else:
-                self.log_result(f"{connection_type.upper()} Directory Create Operation", False, f"Directory creation failed: {response.status_code} - {response.text}")
+            # Test 4: Read back the written file to verify
+            if write_success:
+                print(f"\n🔍 Verifying written file in container {container_id[:12]}...")
+                written_content = self.test_read_container_file(container_id, "/tmp/test.txt")
+                if written_content:
+                    try:
+                        decoded_content = base64.b64decode(written_content).decode('utf-8')
+                        if test_content in decoded_content:
+                            self.log_result("File Write Verification", True, "Written file content matches expected content")
+                        else:
+                            self.log_result("File Write Verification", False, f"Content mismatch. Expected: {test_content}, Got: {decoded_content}")
+                    except Exception as e:
+                        self.log_result("File Write Verification", False, f"Error decoding written file: {str(e)}")
             
-            # Test 3: Write file
-            test_content = f"This is a test file created by the {connection_type.upper()} connection profile test."
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/write?path=/test_dir/test_file.txt&content={test_content}", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
+            # Test 5: Upload a file using the upload endpoint
+            print(f"\n🔍 Testing file upload in container {container_id[:12]}...")
+            upload_content = "Test Upload Content via Portainer Agent API"
+            upload_success = self.test_upload_container_file(container_id, "/tmp", "uploaded.txt", upload_content)
             
-            if response.status_code == 200:
-                self.log_result(f"{connection_type.upper()} File Write Operation", True, "Successfully wrote test file")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File Write Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Write Operation", False, f"Unsupported connection type error: {response.text}")
-            else:
-                self.log_result(f"{connection_type.upper()} File Write Operation", False, f"File write failed: {response.status_code} - {response.text}")
-            
-            # Test 4: Read file
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/read?path=/test_dir/test_file.txt", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                file_data = response.json()
-                content = file_data.get('content', '')
-                if test_content in content:
-                    self.log_result(f"{connection_type.upper()} File Read Operation", True, "Successfully read test file with correct content")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Read Operation", False, f"File content mismatch. Expected: {test_content}, Got: {content}")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File Read Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Read Operation", False, f"Unsupported connection type error: {response.text}")
-            else:
-                self.log_result(f"{connection_type.upper()} File Read Operation", False, f"File read failed: {response.status_code} - {response.text}")
-            
-            # Test 5: Rename file
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/rename?old_path=/test_dir/test_file.txt&new_name=renamed_file.txt", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                self.log_result(f"{connection_type.upper()} File Rename Operation", True, "Successfully renamed test file")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File Rename Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Rename Operation", False, f"Unsupported connection type error: {response.text}")
-            else:
-                self.log_result(f"{connection_type.upper()} File Rename Operation", False, f"File rename failed: {response.status_code} - {response.text}")
-            
-            # Test 6: Delete file
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/delete?path=/test_dir/renamed_file.txt", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
-            
-            if response.status_code == 200:
-                self.log_result(f"{connection_type.upper()} File Delete Operation", True, "Successfully deleted test file")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File Delete Operation", True, f"Endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Delete Operation", False, f"Unsupported connection type error: {response.text}")
-            else:
-                self.log_result(f"{connection_type.upper()} File Delete Operation", False, f"File delete failed: {response.status_code} - {response.text}")
+            # Test 6: Verify uploaded file
+            if upload_success:
+                print(f"\n🔍 Verifying uploaded file in container {container_id[:12]}...")
+                uploaded_content = self.test_read_container_file(container_id, "/tmp/uploaded.txt")
+                if uploaded_content:
+                    try:
+                        decoded_content = base64.b64decode(uploaded_content).decode('utf-8')
+                        if upload_content in decoded_content:
+                            self.log_result("File Upload Verification", True, "Uploaded file content matches expected content")
+                        else:
+                            self.log_result("File Upload Verification", False, f"Upload content mismatch. Expected: {upload_content}, Got: {decoded_content}")
+                    except Exception as e:
+                        self.log_result("File Upload Verification", False, f"Error decoding uploaded file: {str(e)}")
             
             return True
                 
         except Exception as e:
-            self.log_result(f"{connection_type.upper()} File Operations Test", False, f"File operations error: {str(e)}")
+            self.log_result("Comprehensive Container Operations", False, f"Container operations error: {str(e)}")
             return False
     
     def test_chunked_upload(self, profile_id, connection_type="unknown"):

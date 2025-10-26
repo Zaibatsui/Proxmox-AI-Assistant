@@ -32,6 +32,8 @@ function FileBrowserNew({ onLogout }) {
   const [transferring, setTransferring] = useState(false);
   const [rightPaneMode, setRightPaneMode] = useState('files'); // 'files' or 'terminal'
   const [selectedContainer, setSelectedContainer] = useState(null);
+  const [showContainerBrowser, setShowContainerBrowser] = useState(false);
+  const [containerBrowserFor, setContainerBrowserFor] = useState(null); // 'left' or 'right'
 
   // Auto-set left pane when global connection changes
   useEffect(() => {

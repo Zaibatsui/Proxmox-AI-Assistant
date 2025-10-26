@@ -139,9 +139,6 @@ class SSHConfigResponse(BaseModel):
     username: str
     created_at: datetime
     updated_at: datetime
-    verify_ssl: bool
-    ssh_username: Optional[str] = "root"
-    created_at: datetime
 
 # ==================== THEME MODELS ====================
 

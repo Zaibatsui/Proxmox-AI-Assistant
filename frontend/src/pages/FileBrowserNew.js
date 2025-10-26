@@ -143,15 +143,12 @@ function FileBrowserNew({ onLogout }) {
         
         await axios.post(
           `${API}/api/connection-profiles/${targetConnection.id}/files/upload`,
-          null,
           {
-            params: {
-              path: sourcePath, // Use same path
-              chunk_data: chunkBase64,
-              chunk_index: i,
-              total_chunks: totalChunks,
-              file_name: file.name
-            }
+            path: sourcePath,
+            chunk_data: chunkBase64,
+            chunk_index: i,
+            total_chunks: totalChunks,
+            file_name: file.name
           }
         );
         

@@ -4,21 +4,14 @@
     "success": true,
     "message": "Logged in with existing user successfully",
     "details": {},
-    "timestamp": "2025-10-26T17:31:51.492166"
+    "timestamp": "2025-10-26T17:34:42.294924"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Using existing Proxmox configuration",
     "details": {},
-    "timestamp": "2025-10-26T17:31:51.533705"
-  },
-  {
-    "test": "Base64 Encoding/Decoding",
-    "success": true,
-    "message": "Base64 encoding and decoding working correctly",
-    "details": {},
-    "timestamp": "2025-10-26T17:31:51.534301"
+    "timestamp": "2025-10-26T17:34:42.378459"
   },
   {
     "test": "Docker Container List",
@@ -27,14 +20,7 @@
     "details": {
       "note": "This indicates the Docker container endpoints are working correctly but need real SSH credentials"
     },
-    "timestamp": "2025-10-26T17:31:55.011135"
-  },
-  {
-    "test": "Invalid Container Error Handling",
-    "success": false,
-    "message": "Unexpected response for invalid container: 422",
-    "details": {},
-    "timestamp": "2025-10-26T17:31:55.054687"
+    "timestamp": "2025-10-26T17:34:45.843087"
   },
   {
     "test": "Docker Endpoint Structure",
@@ -44,6 +30,6 @@
       "endpoints_tested": 5,
       "endpoints_working": 1
     },
-    "timestamp": "2025-10-26T17:31:58.691829"
+    "timestamp": "2025-10-26T17:34:49.467781"
   }
 ]

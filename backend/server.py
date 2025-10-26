@@ -1643,6 +1643,9 @@ async def create_directory_by_profile(profile_id: str, path: str, current_user: 
         elif profile['connection_type'] == 'ftp':
             await ftp_create_directory(profile, path)
             return {"success": True, "message": "Directory created successfully"}
+        elif profile['connection_type'] == 'reverse_proxy':
+            await rproxy_create_directory(profile, path)
+            return {"success": True, "message": "Directory created successfully"}
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

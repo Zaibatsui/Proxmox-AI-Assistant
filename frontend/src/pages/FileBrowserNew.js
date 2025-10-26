@@ -404,6 +404,10 @@ function FileBrowserNew({ onLogout }) {
                 }
               }}
               onTransferFile={(file, path) => handleTransferFile(file, path, 'right')}
+              onShowContainers={() => {
+                setContainerBrowserFor('right');
+                setShowContainerBrowser(true);
+              }}
               style={{
                 width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
                 transition: 'width 0.3s ease-in-out'

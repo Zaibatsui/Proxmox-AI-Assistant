@@ -1170,49 +1170,70 @@ async def test_proxmox_connection(current_user: dict = Depends(get_current_user)
             api_error = str(e)
             logger.error(f"API connection test failed: {str(e)}")
         
-        # Test SSH connection
+        # Test SSH connection using SSH configs
         ssh_status = "failed"
         ssh_error = None
-        try:
-            ssh_client = paramiko.SSHClient()
-            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
-            # Extract hostname
-            host = config['host']
-            if '://' in host:
-                host = host.split('://', 1)[1]
-            host = host.split(':')[0].rstrip('/')
-            
-            ssh_username = config.get('ssh_username', 'root')
-            ssh_password = config.get('ssh_password')
-            
-            if ssh_password:
-                ssh_client.connect(
-                    host,
-                    username=ssh_username,
-                    password=ssh_password,
-                    timeout=15,  # Increased timeout for public connections
-                    look_for_keys=False,
-                    allow_agent=False
-                )
-            else:
-                ssh_client.connect(
-                    host,
-                    username=ssh_username,
-                    timeout=15,  # Increased timeout for public connections
-                    look_for_keys=True,
-                    allow_agent=True
-                )
-            
-            # Test a simple command
-            stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
-            result = stdout.read().decode().strip()
-            if result == "test":
-                ssh_status = "success"
-            ssh_client.close()
-        except Exception as e:
-            ssh_error = str(e)
-            logger.error(f"SSH connection test failed: {str(e)}")
+        
+        # Try to get SSH config for testing
+        ssh_username, ssh_password, ssh_private_key, ssh_host, ssh_port = await get_ssh_credentials(current_user["user_id"])
+        
+        if ssh_host:
+            try:
+                ssh_client = paramiko.SSHClient()
+                ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                
+                if ssh_private_key:
+                    # Use private key
+                    key_file = io.StringIO(ssh_private_key)
+                    try:
+                        private_key = paramiko.RSAKey.from_private_key(key_file)
+                    except:
+                        try:
+                            key_file.seek(0)
+                            private_key = paramiko.Ed25519Key.from_private_key(key_file)
+                        except:
+                            key_file.seek(0)
+                            private_key = paramiko.ECDSAKey.from_private_key(key_file)
+                    
+                    ssh_client.connect(
+                        ssh_host,
+                        port=ssh_port,
+                        username=ssh_username,
+                        pkey=private_key,
+                        timeout=10
+                    )
+                elif ssh_password:
+                    ssh_client.connect(
+                        ssh_host,
+                        port=ssh_port,
+                        username=ssh_username,
+                        password=ssh_password,
+                        timeout=10,
+                        look_for_keys=False,
+                        allow_agent=False
+                    )
+                else:
+                    # Try with default SSH keys
+                    ssh_client.connect(
+                        ssh_host,
+                        port=ssh_port,
+                        username=ssh_username,
+                        timeout=10,
+                        look_for_keys=True,
+                        allow_agent=True
+                    )
+                
+                # Test a simple command
+                stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
+                result = stdout.read().decode().strip()
+                if result == "test":
+                    ssh_status = "success"
+                ssh_client.close()
+            except Exception as e:
+                ssh_error = str(e)
+                logger.error(f"SSH connection test failed: {str(e)}")
+        else:
+            ssh_error = "No SSH configuration found. Please create an SSH config in Settings."
         
         return {
             "api": {

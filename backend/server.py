@@ -2514,6 +2514,94 @@ ai_tools = [
                 "required": ["action", "reason"]
             }
         }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "docker_list_containers",
+            "description": "List all Docker containers (running and stopped) on the specified location. Use this instead of 'docker ps' command for better output formatting.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    },
+                    "all": {
+                        "type": "boolean",
+                        "description": "If true, show all containers (including stopped). If false, only running containers. Default is true."
+                    }
+                },
+                "required": []
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "docker_container_logs",
+            "description": "Get logs from a specific Docker container. Useful for debugging and monitoring.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    },
+                    "tail": {
+                        "type": "integer",
+                        "description": "Number of lines to show from the end of logs. Default is 100."
+                    }
+                },
+                "required": ["container_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "docker_container_inspect",
+            "description": "Get detailed information about a Docker container including config, network, volumes, and status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "container_id": {
+                        "type": "string",
+                        "description": "Docker container ID or name"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where Docker is running: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    }
+                },
+                "required": ["container_id"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "docker_compose_services",
+            "description": "List services defined in a docker-compose file and their status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "compose_file_path": {
+                        "type": "string",
+                        "description": "Path to docker-compose.yml file (e.g., /root/docker-compose.yml)"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where the docker-compose file is: 'host', 'lxc:CTID', or 'vm:VMID'. Default is 'host'."
+                    }
+                },
+                "required": ["compose_file_path"]
+            }
+        }
     }
 ]
 

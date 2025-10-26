@@ -265,7 +265,7 @@ function FilePane({
       {/* Toolbar */}
       <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800/50">
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          {!isExpanded && (
+          {style?.width !== '5%' && (
             <>
               <button
                 onClick={navigateUp}
@@ -291,12 +291,20 @@ function FilePane({
             </>
           )}
           
+          {style?.width === '5%' && (
+            <div className="flex-1 flex items-center justify-center">
+              <span className="text-xs text-slate-400 font-medium transform -rotate-90 whitespace-nowrap">
+                {paneId === 'left' ? 'Left Pane' : 'Right Pane'}
+              </span>
+            </div>
+          )}
+          
           <button
             onClick={onToggleExpand}
-            className="p-1.5 hover:bg-slate-700 rounded ml-auto"
-            title={isExpanded ? "Restore" : "Maximize"}
+            className="p-1.5 hover:bg-slate-700 rounded"
+            title={style?.width === '95%' ? "Restore" : "Maximize"}
           >
-            {isExpanded ? (
+            {style?.width === '95%' ? (
               <Minimize2 className="w-4 h-4 text-amber-400" />
             ) : (
               <Maximize2 className="w-4 h-4 text-slate-400" />

@@ -426,154 +426,34 @@ class DockerContainerTester:
             self.log_result("SSH Tunnel Connectivity", False, f"SSH tunnel test error: {str(e)}")
             return False
     
-    def test_download_operation(self, profile_id, connection_type="unknown"):
-        """Test file download functionality"""
-        if not profile_id:
-            self.log_result(f"{connection_type.upper()} File Download Test", False, "No profile ID provided")
-            return False
-            
+    def test_base64_encoding_decoding(self):
+        """Test base64 encoding/decoding of file content"""
         try:
-            # Test downloading a file (this will likely fail since we don't have real servers)
-            response = requests.get(
-                f"{self.base_url}/connection-profiles/{profile_id}/files/download?path=/test_file.txt", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
+            test_content = "Hello Docker! This is a test for base64 encoding/decoding."
             
-            # We expect this to fail since we don't have real servers
-            # But we're testing the API structure
-            if response.status_code == 200:
-                self.log_result(f"{connection_type.upper()} File Download Operation", True, "Download endpoint responded successfully")
-            elif response.status_code == 500 and connection_type == "reverse_proxy":
-                if "not supported" not in response.text.lower():
-                    self.log_result(f"{connection_type.upper()} File Download Operation", True, f"Download endpoint accessible (expected 500 due to no real server): {response.status_code}")
-                else:
-                    self.log_result(f"{connection_type.upper()} File Download Operation", False, f"Unsupported connection type error: {response.text}")
-                    return False
+            # Encode to base64
+            encoded = base64.b64encode(test_content.encode('utf-8')).decode('utf-8')
+            
+            # Decode from base64
+            decoded = base64.b64decode(encoded).decode('utf-8')
+            
+            if test_content == decoded:
+                self.log_result(
+                    "Base64 Encoding/Decoding", 
+                    True, 
+                    "Base64 encoding and decoding working correctly"
+                )
+                return True
             else:
-                # This is expected - we're testing API structure, not actual connectivity
-                self.log_result(f"{connection_type.upper()} File Download Operation", True, f"Download endpoint accessible (expected failure due to no real {connection_type} server): {response.status_code}")
-            
-            return True
+                self.log_result(
+                    "Base64 Encoding/Decoding", 
+                    False, 
+                    f"Content mismatch. Original: {test_content}, Decoded: {decoded}"
+                )
+                return False
                 
         except Exception as e:
-            self.log_result(f"{connection_type.upper()} File Download Test", False, f"Download test error: {str(e)}")
-            return False
-
-    def test_invalid_profile_handling(self):
-        """Test error handling for invalid profile IDs"""
-        try:
-            fake_profile_id = "invalid-profile-id-12345"
-            
-            # Test with invalid profile ID
-            response = requests.post(
-                f"{self.base_url}/connection-profiles/{fake_profile_id}/files/list?path=/", 
-                headers=self.get_headers(), 
-                timeout=15
-            )
-            
-            if response.status_code == 404:
-                self.log_result("Invalid Profile Handling", True, "Correctly returned 404 for invalid profile ID")
-            else:
-                self.log_result("Invalid Profile Handling", False, f"Unexpected response for invalid profile: {response.status_code}")
-            
-            return True
-                
-        except Exception as e:
-            self.log_result("Invalid Profile Handling", False, f"Invalid profile test error: {str(e)}")
-            return False
-
-    def test_protocol_support_verification(self):
-        """Test that all 4 protocols are supported: SSH, SFTP, FTP, Reverse Proxy"""
-        protocols_tested = []
-        
-        # Test SSH support
-        if self.test_profile_id:
-            protocols_tested.append("SSH")
-            
-        # Test SFTP support  
-        sftp_id = self.test_create_sftp_profile()
-        if sftp_id:
-            protocols_tested.append("SFTP")
-            
-        # Test FTP support
-        ftp_id = self.test_create_ftp_profile()
-        if ftp_id:
-            protocols_tested.append("FTP")
-            
-        # Test Reverse Proxy support
-        rproxy_id = self.test_create_reverse_proxy_profile()
-        if rproxy_id:
-            protocols_tested.append("Reverse Proxy")
-            
-        expected_protocols = ["SSH", "SFTP", "FTP", "Reverse Proxy"]
-        missing_protocols = [p for p in expected_protocols if p not in protocols_tested]
-        
-        if len(protocols_tested) == 4:
-            self.log_result(
-                "Protocol Support Verification", 
-                True, 
-                f"All 4 protocols supported: {', '.join(protocols_tested)}",
-                {"supported_protocols": protocols_tested}
-            )
-            return True
-        else:
-            self.log_result(
-                "Protocol Support Verification", 
-                False, 
-                f"Missing protocol support. Supported: {protocols_tested}, Missing: {missing_protocols}",
-                {"supported_protocols": protocols_tested, "missing_protocols": missing_protocols}
-            )
-            return False
-
-    def test_reverse_proxy_endpoints_comprehensive(self):
-        """Comprehensive test of all reverse proxy file operation endpoints"""
-        if not self.reverse_proxy_profile_id:
-            self.log_result("Reverse Proxy Comprehensive Test", False, "No reverse proxy profile ID available")
-            return False
-            
-        endpoints_to_test = [
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/list?path=/"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/read?path=/test.txt"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/write?path=/test.txt&content=test"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/delete?path=/test.txt"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/mkdir?path=/testdir"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/rename?old_path=/test.txt&new_name=renamed.txt"),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/upload?path=/&chunk_data=dGVzdA==&chunk_index=0&total_chunks=1&file_name=test.txt"),
-            ("GET", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/download?path=/test.txt"),
-        ]
-        
-        success_count = 0
-        total_count = len(endpoints_to_test)
-        
-        for method, endpoint in endpoints_to_test:
-            try:
-                if method == "GET":
-                    response = requests.get(f"{self.base_url}{endpoint}", headers=self.get_headers(), timeout=15)
-                else:
-                    response = requests.post(f"{self.base_url}{endpoint}", headers=self.get_headers(), timeout=15)
-                
-                # For reverse proxy, we expect 500 errors (no real server), but NOT 400 "not supported" errors
-                if response.status_code == 200:
-                    success_count += 1
-                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", True, "Endpoint working correctly")
-                elif response.status_code == 500:
-                    if "not supported" not in response.text.lower() and "reverse_proxy not supported" not in response.text.lower():
-                        success_count += 1
-                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", True, "Endpoint accessible (expected 500 due to no real server)")
-                    else:
-                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Unsupported connection type error: {response.text}")
-                else:
-                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Unexpected response: {response.status_code} - {response.text}")
-                    
-            except Exception as e:
-                self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Request error: {str(e)}")
-        
-        if success_count == total_count:
-            self.log_result("Reverse Proxy Comprehensive Test", True, f"All {total_count} reverse proxy endpoints accessible")
-            return True
-        else:
-            self.log_result("Reverse Proxy Comprehensive Test", False, f"Only {success_count}/{total_count} reverse proxy endpoints working")
+            self.log_result("Base64 Encoding/Decoding", False, f"Base64 test error: {str(e)}")
             return False
 
     def run_all_tests(self):

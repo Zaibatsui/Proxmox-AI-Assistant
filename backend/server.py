@@ -573,6 +573,39 @@ async def get_proxmox_connection(user_id: str):
         logger.error(f"Proxmox connection error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to connect to Proxmox: {str(e)}")
 
+async def get_ssh_credentials(user_id: str, ssh_config_id: Optional[str] = None):
+    """
+    Get SSH credentials for a user.
+    If ssh_config_id is provided, fetch from ssh_configs.
+    Otherwise, try to get default SSH config or use fallback.
+    Returns: (username, password, private_key, host, port)
+    """
+    if ssh_config_id:
+        # Get specific SSH config
+        ssh_config = await db.ssh_configs.find_one({"id": ssh_config_id, "user_id": user_id})
+        if ssh_config:
+            return (
+                ssh_config.get('username', 'root'),
+                ssh_config.get('password'),
+                ssh_config.get('private_key'),
+                ssh_config.get('host'),
+                ssh_config.get('port', 22)
+            )
+    
+    # Try to get a default SSH config (first one in the list)
+    ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+    if ssh_config:
+        return (
+            ssh_config.get('username', 'root'),
+            ssh_config.get('password'),
+            ssh_config.get('private_key'),
+            ssh_config.get('host'),
+            ssh_config.get('port', 22)
+        )
+    
+    # Fallback to root with no password
+    return ('root', None, None, None, 22)
+
 def parse_lspci_output(lspci_output: str) -> List[PCIDevice]:
     """Parse lspci -nnk output into PCIDevice objects"""
     devices = []

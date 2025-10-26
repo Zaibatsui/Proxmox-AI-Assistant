@@ -14,6 +14,7 @@ import FileBrowser from "./pages/FileBrowserNew";
 import BackupManager from "./pages/BackupManager";
 import { Toaster } from "./components/ui/sonner";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { ConnectionProvider } from "./contexts/ConnectionContext";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;

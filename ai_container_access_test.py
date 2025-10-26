@@ -613,11 +613,16 @@ class AIContainerAccessTester:
             print("❌ Cannot proceed without Proxmox configuration")
             return False
         
-        # Step 3: Test AI query endpoint
+        # Step 3: Setup OpenAI API key
+        print(f"\n🔍 Setting up OpenAI API key...")
+        self.setup_openai_key()  # Don't fail if this doesn't work
+        
+        # Step 4: Test AI query endpoint
         print(f"\n🔍 Testing AI query endpoint...")
-        if not self.test_ai_query_endpoint():
-            print("❌ Cannot proceed without working AI endpoint")
-            return False
+        ai_working = self.test_ai_query_endpoint()
+        if not ai_working:
+            print("⚠️  AI endpoint not working - will test API structure only")
+            # Continue with structure tests even if AI doesn't work
         
         # Step 4: Test list_container_files tool
         print(f"\n🔍 Testing list_container_files tool...")

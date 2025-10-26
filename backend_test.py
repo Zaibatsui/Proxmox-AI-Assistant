@@ -188,13 +188,9 @@ class DockerContainerTester:
                 "path": file_path
             }
             
-            # FileLocation query parameter
-            location_params = {
             # FileLocation query parameters
             location_params = {
                 "type": "host"
-                # id is optional and defaults to None
-            }
             }
             
             response = requests.post(
@@ -243,13 +239,9 @@ class DockerContainerTester:
                 "content": content_b64
             }
             
-            # FileLocation query parameter
-            location_params = {
             # FileLocation query parameters
             location_params = {
                 "type": "host"
-                # id is optional and defaults to None
-            }
             }
             
             response = requests.post(
@@ -291,13 +283,9 @@ class DockerContainerTester:
                 "content": content_b64
             }
             
-            # FileLocation query parameter
-            location_params = {
             # FileLocation query parameters
             location_params = {
                 "type": "host"
-                # id is optional and defaults to None
-            }
             }
             
             response = requests.post(

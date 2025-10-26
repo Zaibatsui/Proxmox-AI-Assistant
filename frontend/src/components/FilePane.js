@@ -393,19 +393,12 @@ function FilePane({
                 <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
-              {/* View Containers button - only show for VM/CT connections */}
-              {connection && (
+              {/* View Containers button - show for Proxmox locations with vmid */}
+              {connection && connection.vmid && connection.source === 'proxmox' && onShowContainers && (
                 <button
-                  onClick={() => {
-                    console.log('Connection type:', connection.type, 'Full connection:', connection);
-                    if ((connection.type === 'vm' || connection.type === 'lxc' || connection.type === 'qemu') && onShowContainers) {
-                      onShowContainers();
-                    } else {
-                      toast.info(`Debug: Connection type is "${connection.type}", vmid: ${connection.vmid}, source: ${connection.source}`);
-                    }
-                  }}
+                  onClick={onShowContainers}
                   className="px-2 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-xs text-white flex items-center gap-1"
-                  title="View Docker containers"
+                  title="View Docker containers in this VM/CT"
                 >
                   <Box className="w-3 h-3" />
                   Containers

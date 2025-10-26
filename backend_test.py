@@ -180,6 +180,86 @@ class ConnectionProfileTester:
         except Exception as e:
             self.log_result("Create SFTP Profile", False, f"SFTP profile creation error: {str(e)}")
             return None
+
+    def test_create_ftp_profile(self):
+        """Test creating an FTP connection profile"""
+        try:
+            profile_data = {
+                "name": "Test FTP Profile",
+                "connection_type": "ftp",
+                "host": "ftp.example.com",
+                "port": 21,
+                "username": "ftpuser",
+                "password": "ftppass",
+                "base_path": "/public",
+                "notes": "Test FTP profile for file operations testing"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/connection-profiles", 
+                json=profile_data, 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                ftp_profile_id = result.get('id')
+                self.ftp_profile_id = ftp_profile_id
+                self.log_result(
+                    "Create FTP Profile", 
+                    True, 
+                    f"Successfully created FTP profile with ID: {ftp_profile_id}",
+                    {"profile_id": ftp_profile_id, "name": profile_data["name"]}
+                )
+                return ftp_profile_id
+            else:
+                self.log_result("Create FTP Profile", False, f"Failed to create FTP profile: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            self.log_result("Create FTP Profile", False, f"FTP profile creation error: {str(e)}")
+            return None
+
+    def test_create_reverse_proxy_profile(self):
+        """Test creating a Reverse Proxy connection profile"""
+        try:
+            profile_data = {
+                "name": "Test Reverse Proxy Profile",
+                "connection_type": "reverse_proxy",
+                "host": "https://api.example.com",
+                "port": 443,
+                "username": "apiuser",
+                "password": "apipass",
+                "base_path": "/files",
+                "notes": "Test reverse proxy profile for file operations testing"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/connection-profiles", 
+                json=profile_data, 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                rproxy_profile_id = result.get('id')
+                self.reverse_proxy_profile_id = rproxy_profile_id
+                self.log_result(
+                    "Create Reverse Proxy Profile", 
+                    True, 
+                    f"Successfully created Reverse Proxy profile with ID: {rproxy_profile_id}",
+                    {"profile_id": rproxy_profile_id, "name": profile_data["name"]}
+                )
+                return rproxy_profile_id
+            else:
+                self.log_result("Create Reverse Proxy Profile", False, f"Failed to create Reverse Proxy profile: {response.status_code} - {response.text}")
+                return None
+                
+        except Exception as e:
+            self.log_result("Create Reverse Proxy Profile", False, f"Reverse Proxy profile creation error: {str(e)}")
+            return None
     
     def test_profile_connection(self, profile_id):
         """Test connection profile connectivity"""

@@ -5764,29 +5764,66 @@ async def create_directory(request: DirectoryCreateRequest, current_user: dict =
 async def list_containers_endpoint(request: ContainerListRequest, current_user: dict = Depends(get_current_user)):
     """
     List all Docker containers on a Proxmox location (host/VM/LXC).
-    Uses Portainer Agent to communicate with Docker.
+    Tries Portainer Agent first, falls back to direct Docker commands via SSH.
     """
     try:
-        # Get Proxmox configuration
-        proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
-        if not proxmox_config:
-            raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+        # Get SSH connection to the location
+        location = FileLocation(
+            type=request.location_type,
+            id=request.location_id if request.location_type != "host" else None
+        )
         
-        host = None
-        username = request.ssh_username or proxmox_config.get("ssh_username", "root")
-        password = request.ssh_password or proxmox_config.get("ssh_password")
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
         
-        # Determine the host based on location type
-        if request.location_type == "host":
-            # Use Proxmox host directly - extract hostname from URL
-            host = proxmox_config["host"]
-            # Parse the host URL to extract hostname/IP
-            if '://' in host:
-                host = host.split('://', 1)[1]
-            # Remove port if present
-            if ':' in host:
-                host = host.split(':')[0]
-        elif request.location_type in ["vm", "lxc"] and request.location_id:
+        try:
+            # Method 1: Try using direct Docker commands (works with unix socket)
+            logger.info(f"Listing containers on {request.location_type} {request.location_id} using direct Docker commands")
+            
+            result = await docker_list_containers_func(ssh_client, location, request.all_containers)
+            
+            if result.get("error"):
+                raise Exception(result["error"])
+            
+            # Convert Docker ps JSON format to our format
+            containers = []
+            for container_data in result.get("containers", []):
+                containers.append({
+                    "id": container_data.get("ID", "")[:12],
+                    "name": container_data.get("Names", "").lstrip("/"),
+                    "image": container_data.get("Image", ""),
+                    "status": container_data.get("Status", ""),
+                    "state": container_data.get("State", "")
+                })
+            
+            return {
+                "containers": containers,
+                "location": {
+                    "type": request.location_type,
+                    "id": request.location_id,
+                    "method": "direct_docker"
+                }
+            }
+            
+        except Exception as e:
+            logger.warning(f"Direct Docker method failed: {str(e)}, falling back to Portainer Agent")
+            
+            # Method 2: Fallback to Portainer Agent (requires finding host IP)
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            
+            host = None
+            username = request.ssh_username or proxmox_config.get("ssh_username", "root")
+            password = request.ssh_password or proxmox_config.get("ssh_password")
+            
+            # Determine the host based on location type
+            if request.location_type == "host":
+                host = proxmox_config["host"]
+                if '://' in host:
+                    host = host.split('://', 1)[1]
+                if ':' in host:
+                    host = host.split(':')[0]
+            elif request.location_type in ["vm", "lxc"] and request.location_id:
             # For VM/LXC, try to get IP from Proxmox (simplified - use location_id as IP if numeric)
             # In production, you'd query Proxmox API for the VM's IP
             # For now, assume location_id is the VM ID and we need to look it up

@@ -919,6 +919,203 @@ async def delete_proxmox_config(current_user: dict = Depends(get_current_user)):
     await log_audit(current_user["user_id"], "proxmox_config_deleted", {})
     return {"message": "Config deleted"}
 
+@api_router.put("/proxmox/config", response_model=ProxmoxConfigResponse)
+async def update_proxmox_config(config: ProxmoxConfigUpdate, current_user: dict = Depends(get_current_user)):
+    """Update existing Proxmox configuration"""
+    existing_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+    if not existing_config:
+        raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+    
+    # Update only provided fields
+    update_data = {k: v for k, v in config.model_dump().items() if v is not None}
+    
+    if update_data:
+        await db.proxmox_configs.update_one(
+            {"user_id": current_user["user_id"]},
+            {"$set": update_data}
+        )
+        await log_audit(current_user["user_id"], "proxmox_config_updated", update_data)
+    
+    # Fetch updated config
+    updated_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+    if isinstance(updated_config.get('created_at'), str):
+        updated_config['created_at'] = datetime.fromisoformat(updated_config['created_at'])
+    
+    return ProxmoxConfigResponse(
+        id=updated_config['id'],
+        host=updated_config['host'],
+        api_token_name=updated_config['api_token_name'],
+        verify_ssl=updated_config['verify_ssl'],
+        created_at=updated_config['created_at']
+    )
+
+# ==================== SSH CONFIG ROUTES ====================
+
+@api_router.post("/ssh/configs", response_model=SSHConfigResponse)
+async def create_ssh_config(config: SSHConfigCreate, current_user: dict = Depends(get_current_user)):
+    """Create a new SSH configuration"""
+    ssh_config = SSHConfig(
+        user_id=current_user["user_id"],
+        **config.model_dump()
+    )
+    doc = ssh_config.model_dump()
+    doc['created_at'] = doc['created_at'].isoformat()
+    doc['updated_at'] = doc['updated_at'].isoformat()
+    await db.ssh_configs.insert_one(doc)
+    
+    await log_audit(current_user["user_id"], "ssh_config_created", {"name": config.name, "host": config.host})
+    
+    # Remove sensitive data from response
+    return SSHConfigResponse(
+        id=ssh_config.id,
+        name=ssh_config.name,
+        host=ssh_config.host,
+        port=ssh_config.port,
+        username=ssh_config.username,
+        created_at=ssh_config.created_at,
+        updated_at=ssh_config.updated_at
+    )
+
+@api_router.get("/ssh/configs", response_model=List[SSHConfigResponse])
+async def list_ssh_configs(current_user: dict = Depends(get_current_user)):
+    """List all SSH configurations for current user"""
+    cursor = db.ssh_configs.find({"user_id": current_user["user_id"]})
+    configs = await cursor.to_list(length=None)
+    
+    result = []
+    for config_doc in configs:
+        if isinstance(config_doc.get('created_at'), str):
+            config_doc['created_at'] = datetime.fromisoformat(config_doc['created_at'])
+        if isinstance(config_doc.get('updated_at'), str):
+            config_doc['updated_at'] = datetime.fromisoformat(config_doc['updated_at'])
+        
+        result.append(SSHConfigResponse(
+            id=config_doc['id'],
+            name=config_doc['name'],
+            host=config_doc['host'],
+            port=config_doc.get('port', 22),
+            username=config_doc['username'],
+            created_at=config_doc['created_at'],
+            updated_at=config_doc['updated_at']
+        ))
+    
+    return result
+
+@api_router.get("/ssh/configs/{config_id}", response_model=SSHConfigResponse)
+async def get_ssh_config(config_id: str, current_user: dict = Depends(get_current_user)):
+    """Get a specific SSH configuration"""
+    config_doc = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
+    if not config_doc:
+        raise HTTPException(status_code=404, detail="SSH configuration not found")
+    
+    if isinstance(config_doc.get('created_at'), str):
+        config_doc['created_at'] = datetime.fromisoformat(config_doc['created_at'])
+    if isinstance(config_doc.get('updated_at'), str):
+        config_doc['updated_at'] = datetime.fromisoformat(config_doc['updated_at'])
+    
+    return SSHConfigResponse(
+        id=config_doc['id'],
+        name=config_doc['name'],
+        host=config_doc['host'],
+        port=config_doc.get('port', 22),
+        username=config_doc['username'],
+        created_at=config_doc['created_at'],
+        updated_at=config_doc['updated_at']
+    )
+
+@api_router.put("/ssh/configs/{config_id}", response_model=SSHConfigResponse)
+async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_user: dict = Depends(get_current_user)):
+    """Update an existing SSH configuration"""
+    existing_config = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
+    if not existing_config:
+        raise HTTPException(status_code=404, detail="SSH configuration not found")
+    
+    # Update only provided fields
+    update_data = {k: v for k, v in config.model_dump().items() if v is not None}
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+    
+    if update_data:
+        await db.ssh_configs.update_one(
+            {"id": config_id, "user_id": current_user["user_id"]},
+            {"$set": update_data}
+        )
+        await log_audit(current_user["user_id"], "ssh_config_updated", {"config_id": config_id})
+    
+    # Fetch updated config
+    updated_config = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
+    if isinstance(updated_config.get('created_at'), str):
+        updated_config['created_at'] = datetime.fromisoformat(updated_config['created_at'])
+    if isinstance(updated_config.get('updated_at'), str):
+        updated_config['updated_at'] = datetime.fromisoformat(updated_config['updated_at'])
+    
+    return SSHConfigResponse(
+        id=updated_config['id'],
+        name=updated_config['name'],
+        host=updated_config['host'],
+        port=updated_config.get('port', 22),
+        username=updated_config['username'],
+        created_at=updated_config['created_at'],
+        updated_at=updated_config['updated_at']
+    )
+
+@api_router.delete("/ssh/configs/{config_id}")
+async def delete_ssh_config(config_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete an SSH configuration"""
+    result = await db.ssh_configs.delete_one({"id": config_id, "user_id": current_user["user_id"]})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="SSH configuration not found")
+    
+    await log_audit(current_user["user_id"], "ssh_config_deleted", {"config_id": config_id})
+    return {"message": "SSH configuration deleted"}
+
+@api_router.post("/ssh/configs/{config_id}/test")
+async def test_ssh_config(config_id: str, current_user: dict = Depends(get_current_user)):
+    """Test an SSH configuration"""
+    config_doc = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
+    if not config_doc:
+        raise HTTPException(status_code=404, detail="SSH configuration not found")
+    
+    try:
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        
+        # Connect with password or private key
+        if config_doc.get('private_key'):
+            key_file = io.StringIO(config_doc['private_key'])
+            private_key = paramiko.RSAKey.from_private_key(key_file)
+            ssh_client.connect(
+                hostname=config_doc['host'],
+                port=config_doc.get('port', 22),
+                username=config_doc['username'],
+                pkey=private_key,
+                timeout=10
+            )
+        else:
+            ssh_client.connect(
+                hostname=config_doc['host'],
+                port=config_doc.get('port', 22),
+                username=config_doc['username'],
+                password=config_doc.get('password'),
+                timeout=10
+            )
+        
+        # Test command
+        stdin, stdout, stderr = ssh_client.exec_command('whoami')
+        output = stdout.read().decode().strip()
+        
+        ssh_client.close()
+        
+        return {
+            "status": "success",
+            "message": f"SSH connection successful. Connected as: {output}"
+        }
+    
+    except Exception as e:
+        return {
+            "status": "failed",
+            "message": f"SSH connection failed: {str(e)}"
+        }
+
 
 @api_router.post("/proxmox/test-connection")
 async def test_proxmox_connection(current_user: dict = Depends(get_current_user)):

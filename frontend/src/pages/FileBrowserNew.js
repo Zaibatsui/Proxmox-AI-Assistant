@@ -102,6 +102,18 @@ function FileBrowserNew({ onLogout }) {
     }
   };
 
+  const handleSelectContainer = (containerConnection) => {
+    if (containerBrowserFor === 'left') {
+      setLeftConnection(containerConnection);
+      setSelectedContainer(containerConnection.containerId);
+      toast.success(`Left pane: ${containerConnection.name}`);
+    } else if (containerBrowserFor === 'right') {
+      setRightConnection(containerConnection);
+      setSelectedContainer(containerConnection.containerId);
+      toast.success(`Right pane: ${containerConnection.name}`);
+    }
+  };
+
   const handleTransferFile = async (file, sourcePath, fromPane) => {
     const targetConnection = fromPane === 'left' ? rightConnection : leftConnection;
     const sourceConnection = fromPane === 'left' ? leftConnection : rightConnection;

@@ -4386,10 +4386,31 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                     look_for_keys=False
                 )
                 logger.info(f"Connected to Proxmox host {hostname} with provided credentials for LXC {location.id}")
+                # Don't set direct_ssh=True here since we'll use pct exec
                 return ssh_client
             except Exception as e:
-                logger.error(f"SSH connection failed with provided credentials: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}")
+                logger.error(f"SSH connection failed with provided credentials to Proxmox host: {str(e)}")
+                
+                # Final fallback: Try connecting directly to CT using the location_id as hostname
+                # This handles cases where CT 104 might be accessible directly
+                try:
+                    # Try using the location_id as a hostname/IP
+                    ssh_client = paramiko.SSHClient()
+                    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                    ssh_client.connect(
+                        f"ct{location.id}.local",  # Try common naming patterns
+                        username=location.ssh_username,
+                        password=location.ssh_password,
+                        timeout=10,
+                        allow_agent=False,
+                        look_for_keys=False
+                    )
+                    logger.info(f"Connected directly to CT {location.id} via ct{location.id}.local")
+                    location.direct_ssh = True
+                    return ssh_client
+                except Exception as e2:
+                    logger.error(f"Direct SSH to CT also failed: {str(e2)}")
+                    raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}. Also tried direct connection: {str(e2)}")
         else:
             # Use user's configured SSH credentials for pct exec
             return await get_ssh_client(user_id)

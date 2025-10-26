@@ -460,6 +460,8 @@ function FilePane({
           </div>
         </div>
       )}
+      </>
+      )}
     </div>
   );
 }

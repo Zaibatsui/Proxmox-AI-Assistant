@@ -3948,8 +3948,7 @@ async def exec_in_location(ssh_client, command: str, location: Optional[FileLoca
     
     elif location.type == "vm" or location.type == "qemu":
         # For VMs, use qm guest exec with proper argument passing
-        # The command needs to be passed as a single argument after --
-        # We'll use bash -c to execute the full command
+        # This REQUIRES qemu-guest-agent to be installed and running in the VM
         import shlex
         
         # Escape the command for safe passing
@@ -3958,7 +3957,23 @@ async def exec_in_location(ssh_client, command: str, location: Optional[FileLoca
         # Use -- separator and pass the full command to bash -c
         qemu_command = f'qm guest exec {location.id} -- bash -c "{escaped_command}"'
         
-        return await ssh_exec_command(ssh_client, qemu_command)
+        exit_code, stdout, stderr = await ssh_exec_command(ssh_client, qemu_command)
+        
+        # Check for guest agent errors and provide helpful message
+        if "guest agent" in stderr.lower() or "not running" in stderr.lower():
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"QEMU Guest Agent not available on VM {location.id}. "
+                    "To access VM files, install and enable the guest agent:\n\n"
+                    "Inside the VM, run:\n"
+                    "• Debian/Ubuntu: apt-get install qemu-guest-agent && systemctl enable --now qemu-guest-agent\n"
+                    "• RHEL/CentOS: yum install qemu-guest-agent && systemctl enable --now qemu-guest-agent\n\n"
+                    "Then enable it in Proxmox VM settings (Options > QEMU Guest Agent > Enable)"
+                )
+            )
+        
+        return exit_code, stdout, stderr
     
     else:
         raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")

@@ -95,6 +95,18 @@ backend:
         agent: "testing"
         comment: "COMPREHENSIVE REVERSE PROXY TESTING COMPLETED: All reverse proxy file operations working correctly. ✅ Protocol Support - All 4 protocols (SSH, SFTP, FTP, Reverse Proxy) fully supported for connection profiles. ✅ Reverse Proxy Helper Functions - All 8 rproxy helper functions implemented and accessible: rproxy_list_directory, rproxy_read_file, rproxy_write_file, rproxy_delete_file, rproxy_create_directory, rproxy_rename_file, rproxy_upload_file, rproxy_download_file. ✅ File Operations API - All 8 reverse proxy endpoints working: POST /files/list, POST /files/read, POST /files/write, POST /files/delete, POST /files/mkdir, POST /files/rename, POST /files/upload, GET /files/download. ✅ No 'not supported' errors - All endpoints reach reverse proxy helper functions correctly (expected 500 errors due to no real reverse proxy server). ✅ Connection Profile Creation - Reverse proxy profiles created successfully with proper validation. ✅ Parameter Handling - All query parameters processed correctly. 33/43 tests passed (10 expected failures due to no real servers) - reverse proxy implementation fully functional and ready for production use."
 
+  - task: "Docker Container File Browser via Portainer Agent"
+    implemented: true
+    working: "pending_test"
+    file: "server.py, portainer_tunnel_manager.py, portainer_agent_client.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "Implemented Docker container file browser integration using Portainer Agent API. Added sshtunnel package. Created portainer_tunnel_manager.py for SSH tunnel management with connection pooling. Created portainer_agent_client.py for async HTTP client to communicate with Portainer Agent through SSH tunnels. Added Docker container models: DockerContainer, ContainerListRequest, ContainerFileListRequest, ContainerFileReadRequest, ContainerFileWriteRequest, ContainerFileUploadRequest. Implemented 5 new API endpoints: POST /api/containers/list (list all containers on a location), POST /api/containers/files/list (list files inside container), POST /api/containers/files/read (read file from container), POST /api/containers/files/write (write file to container), POST /api/containers/files/upload (upload file to container). All endpoints support Proxmox locations (host/VM/LXC) and use VM119 for testing. Backend started successfully. Ready for testing with VM119 (Portainer Agent on port 9001)."
+
 frontend:
   - task: "File Browser UI Integration"
     implemented: true

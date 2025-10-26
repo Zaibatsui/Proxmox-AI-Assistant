@@ -106,6 +106,19 @@ function Layout({ children, onLogout, currentPage }) {
 
       {/* Main Content */}
       <main className="flex-1 overflow-auto">
+        {/* Header with Connection Selector */}
+        <div className="sticky top-0 z-10 border-b backdrop-blur-sm" style={{
+          backgroundColor: 'rgba(var(--bg-primary-rgb, 2, 6, 23), 0.9)',
+          borderColor: 'var(--bg-border)'
+        }}>
+          <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-slate-200">
+              {navItems.find(item => item.key === currentPage)?.name || 'Dashboard'}
+            </h2>
+            <ConnectionSelector showInHeader={true} />
+          </div>
+        </div>
+        
         <div className="max-w-7xl mx-auto" style={{ 
           padding: 'calc(2rem * var(--layout-density))'
         }}>{children}</div>

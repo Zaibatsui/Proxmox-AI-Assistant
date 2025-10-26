@@ -149,14 +149,37 @@ function Settings({ onLogout }) {
   };
 
   const handleSave = async () => {
-    if (!formData.host || !formData.api_token_name || !formData.api_token_secret) {
+    // For new config, all fields required
+    // For existing config (update), api_token_secret is optional
+    const isUpdate = config !== null;
+    
+    if (!formData.host || !formData.api_token_name) {
       toast.error("Please fill in all required fields");
+      return;
+    }
+    
+    // Only require api_token_secret for new configs
+    if (!isUpdate && !formData.api_token_secret) {
+      toast.error("API Token Secret is required for new configuration");
       return;
     }
 
     setSaving(true);
     try {
-      await axios.post(`${API}/proxmox/config`, formData);
+      // If updating and no secret provided, don't send it
+      const dataToSend = { ...formData };
+      if (isUpdate && !formData.api_token_secret) {
+        delete dataToSend.api_token_secret;
+      }
+      
+      if (isUpdate) {
+        // Use PUT for updates
+        await axios.put(`${API}/proxmox/config`, dataToSend);
+      } else {
+        // Use POST for new configs
+        await axios.post(`${API}/proxmox/config`, dataToSend);
+      }
+      
       toast.success("Configuration saved successfully");
       await fetchConfig();
       // Test connection after saving

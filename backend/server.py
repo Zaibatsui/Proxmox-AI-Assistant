@@ -4765,6 +4765,114 @@ async def rproxy_rename_file(profile: dict, old_path: str, new_path: str):
     response = await rproxy_request(profile, 'POST', '/api/files/rename', json={'old_path': old_path, 'new_path': new_path})
     return response.json()
 
+# ==================== DOCKER HELPER FUNCTIONS ====================
+
+async def execute_command_on_location(ssh_client, command: str, location: Optional[FileLocation] = None):
+    """Execute a shell command on host, LXC, or VM"""
+    if not location or location.type == 'host':
+        # Execute on Proxmox host
+        stdin, stdout, stderr = ssh_client.exec_command(command)
+        exit_code = stdout.channel.recv_exit_status()
+        output = stdout.read().decode('utf-8')
+        error = stderr.read().decode('utf-8')
+        
+        return {
+            "exit_code": exit_code,
+            "output": output,
+            "error": error,
+            "success": exit_code == 0
+        }
+    elif location.type == 'lxc':
+        # Execute in LXC container using pct exec
+        lxc_command = f"pct exec {location.id} -- {command}"
+        stdin, stdout, stderr = ssh_client.exec_command(lxc_command)
+        exit_code = stdout.channel.recv_exit_status()
+        output = stdout.read().decode('utf-8')
+        error = stderr.read().decode('utf-8')
+        
+        return {
+            "exit_code": exit_code,
+            "output": output,
+            "error": error,
+            "success": exit_code == 0
+        }
+    elif location.type == 'vm':
+        # Execute in VM via nested SSH
+        # This would require VM SSH credentials - for now, return error
+        raise HTTPException(
+            status_code=400,
+            detail="Direct command execution in VMs requires SSH credentials. Use propose_command_execution instead."
+        )
+
+async def docker_list_containers_func(ssh_client, location: Optional[FileLocation] = None, show_all: bool = True):
+    """List Docker containers"""
+    command = "docker ps -a --format '{{json .}}'" if show_all else "docker ps --format '{{json .}}'"
+    result = await execute_command_on_location(ssh_client, command, location)
+    
+    if not result["success"]:
+        return {"error": result["error"], "containers": []}
+    
+    # Parse JSON output
+    containers = []
+    for line in result["output"].strip().split('\n'):
+        if line:
+            try:
+                containers.append(json.loads(line))
+            except:
+                pass
+    
+    return {"containers": containers, "total": len(containers)}
+
+async def docker_container_logs_func(ssh_client, container_id: str, location: Optional[FileLocation] = None, tail: int = 100):
+    """Get Docker container logs"""
+    command = f"docker logs --tail {tail} {container_id} 2>&1"
+    result = await execute_command_on_location(ssh_client, command, location)
+    
+    return {
+        "container_id": container_id,
+        "logs": result["output"],
+        "success": result["success"],
+        "error": result["error"] if not result["success"] else None
+    }
+
+async def docker_container_inspect_func(ssh_client, container_id: str, location: Optional[FileLocation] = None):
+    """Inspect Docker container"""
+    command = f"docker inspect {container_id}"
+    result = await execute_command_on_location(ssh_client, command, location)
+    
+    if not result["success"]:
+        return {"error": result["error"]}
+    
+    try:
+        inspect_data = json.loads(result["output"])
+        return {"container": inspect_data[0] if inspect_data else {}}
+    except:
+        return {"error": "Failed to parse container data"}
+
+async def docker_compose_services_func(ssh_client, compose_file_path: str, location: Optional[FileLocation] = None):
+    """List docker-compose services"""
+    # Get the directory of the compose file
+    import os
+    compose_dir = os.path.dirname(compose_file_path)
+    compose_file = os.path.basename(compose_file_path)
+    
+    command = f"cd {compose_dir} && docker-compose -f {compose_file} ps --format json"
+    result = await execute_command_on_location(ssh_client, command, location)
+    
+    if not result["success"]:
+        return {"error": result["error"], "services": []}
+    
+    # Parse JSON output
+    services = []
+    for line in result["output"].strip().split('\n'):
+        if line:
+            try:
+                services.append(json.loads(line))
+            except:
+                pass
+    
+    return {"services": services, "total": len(services)}
+
 # ==================== ENHANCED FILE OPERATIONS ====================
 
 @api_router.post("/files/upload")

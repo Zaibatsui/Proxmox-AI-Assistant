@@ -78,28 +78,44 @@ class DockerContainerTester:
         """Get headers with auth token"""
         return {"Authorization": f"Bearer {self.token}"}
     
-    def test_connection_profiles_list(self):
-        """Test GET /api/connection-profiles"""
+    def test_list_containers(self):
+        """Test POST /api/containers/list - List all Docker containers on VM119"""
         try:
-            response = requests.get(f"{self.base_url}/connection-profiles", headers=self.get_headers(), timeout=15)
+            request_data = {
+                "location_type": "vm",
+                "location_id": "119",
+                "all_containers": True
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/containers/list", 
+                json=request_data,
+                headers=self.get_headers(), 
+                timeout=30
+            )
             
             if response.status_code == 200:
                 data = response.json()
-                profiles = data.get('profiles', [])
+                containers = data.get('containers', [])
+                self.test_containers = containers
+                
+                if containers:
+                    # Store first container for file operations testing
+                    self.test_container_id = containers[0]['id']
                 
                 self.log_result(
-                    "Connection Profiles List", 
+                    "Docker Container List", 
                     True, 
-                    f"Successfully retrieved {len(profiles)} connection profiles",
-                    {"profile_count": len(profiles)}
+                    f"Successfully retrieved {len(containers)} containers from VM119",
+                    {"container_count": len(containers), "containers": [c['name'] for c in containers[:3]]}
                 )
-                return profiles
+                return containers
             else:
-                self.log_result("Connection Profiles List", False, f"Failed to get profiles: {response.status_code} - {response.text}")
+                self.log_result("Docker Container List", False, f"Failed to list containers: {response.status_code} - {response.text}")
                 return []
                 
         except Exception as e:
-            self.log_result("Connection Profiles List", False, f"Error getting profiles: {str(e)}")
+            self.log_result("Docker Container List", False, f"Error listing containers: {str(e)}")
             return []
     
     def test_create_ssh_profile(self):

@@ -4408,9 +4408,14 @@ async def exec_in_location(ssh_client, command: str, location: Optional[FileLoca
         return await ssh_exec_command(ssh_client, command)
     
     elif location.type == "lxc":
-        # Execute in LXC container using pct exec
-        lxc_command = f"pct exec {location.id} -- {command}"
-        return await ssh_exec_command(ssh_client, lxc_command)
+        # Check if we're connected directly to the LXC container or via Proxmox host
+        if getattr(location, 'direct_ssh', False):
+            # Direct execution in LXC container (SSH client is connected directly to container)
+            return await ssh_exec_command(ssh_client, command)
+        else:
+            # Execute in LXC container using pct exec (SSH client is connected to Proxmox host)
+            lxc_command = f"pct exec {location.id} -- {command}"
+            return await ssh_exec_command(ssh_client, lxc_command)
     
     elif location.type == "vm" or location.type == "qemu":
         # For VMs, use qm guest exec with proper argument passing

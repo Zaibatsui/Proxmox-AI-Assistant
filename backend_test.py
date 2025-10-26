@@ -82,8 +82,8 @@ class DockerContainerTester:
         """Test POST /api/containers/list - List all Docker containers on VM119"""
         try:
             request_data = {
-                "location_type": "vm",
-                "location_id": "119.119.119.119",  # Use IP format to bypass Proxmox API lookup
+                "location_type": "host",
+                "location_id": None,  # Use Proxmox host directly
                 "all_containers": True
             }
             

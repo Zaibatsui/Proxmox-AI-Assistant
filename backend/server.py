@@ -233,6 +233,8 @@ class VMConfig(BaseModel):
 class AIQuery(BaseModel):
     question: str
     context: Optional[Dict[str, Any]] = None
+    conversation_history: Optional[List[Dict[str, str]]] = []  # List of {role: "user"/"assistant", content: "..."}
+    session_id: Optional[str] = None  # Track conversation sessions
 
 class AIResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -242,6 +244,16 @@ class AIResponse(BaseModel):
     answer: str
     suggested_commands: List[str] = []
     timestamp: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    session_id: Optional[str] = None  # Return session ID for tracking
+
+class ConversationSession(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    messages: List[Dict[str, str]] = []  # {role, content, timestamp}
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    pending_action: Optional[Dict[str, Any]] = None  # Store pending actions for confirmation
 
 # ==================== ACTION MODELS ====================
 

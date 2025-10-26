@@ -3928,6 +3928,10 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
         # For LXC, we'll use pct exec via host SSH
         return await get_ssh_client(user_id)
     
+    elif location.type == "qemu":
+        # For QEMU VMs, we use qm guest exec via host SSH (no direct VM SSH needed)
+        return await get_ssh_client(user_id)
+    
     else:
         raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
 

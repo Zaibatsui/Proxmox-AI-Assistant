@@ -3326,6 +3326,131 @@ async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user
                 await db.ai_queries.insert_one(ai_response_obj)
                 
                 return AIResponse(**ai_response_obj)
+            
+            elif pending.get("type") == "container_file_edit_proposal":
+                # Execute container file edit
+                try:
+                    container_id = pending.get("container_id")
+                    file_path = pending.get("file_path")
+                    new_content = pending.get("new_content")
+                    location_str = pending.get("location", "host")
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    
+                    # Use docker exec to write file (via echo and redirection)
+                    import base64
+                    encoded_content = base64.b64encode(new_content.encode()).decode()
+                    command = f"echo '{encoded_content}' | base64 -d | docker exec -i {container_id} tee {file_path} > /dev/null"
+                    result = await execute_command_on_location(ssh_client, command, location)
+                    ssh_client.close()
+                    
+                    if result["success"]:
+                        response_text = f"✅ **Container file edit executed successfully!**\n\nFile `{file_path}` has been updated in container `{container_id}` on {location_str}."
+                    else:
+                        response_text = f"❌ **Failed to execute container file edit:** {result['error']}"
+                except Exception as e:
+                    response_text = f"❌ **Failed to execute container file edit:** {str(e)}"
+                
+                # Clear pending action and update session
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"pending_action": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                session["messages"].append({
+                    "role": "user",
+                    "content": query.question,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                session["messages"].append({
+                    "role": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"messages": session["messages"]}}
+                )
+                
+                ai_response_obj = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": current_user["user_id"],
+                    "question": query.question,
+                    "answer": response_text,
+                    "suggested_commands": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "session_id": session_id
+                }
+                await db.ai_queries.insert_one(ai_response_obj)
+                
+                return AIResponse(**ai_response_obj)
+            
+            elif pending.get("type") == "container_command_execution_proposal":
+                # Execute command inside container
+                try:
+                    container_id = pending.get("container_id")
+                    command = pending.get("command")
+                    location_str = pending.get("location", "host")
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    
+                    # Execute command in container
+                    docker_command = f"docker exec {container_id} {command}"
+                    result = await execute_command_on_location(ssh_client, docker_command, location)
+                    ssh_client.close()
+                    
+                    if result["success"]:
+                        response_text = f"✅ **Container command executed successfully!**\n\nCommand: `{command}`\nContainer: `{container_id}`\nLocation: {location_str}\n\n**Output:**\n```\n{result['output'][:2000]}\n```"
+                    else:
+                        response_text = f"❌ **Failed to execute container command:** {result['error']}\n\n**Command:** `{command}`"
+                except Exception as e:
+                    response_text = f"❌ **Failed to execute container command:** {str(e)}"
+                
+                # Clear pending action and update session
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"pending_action": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                session["messages"].append({
+                    "role": "user",
+                    "content": query.question,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                session["messages"].append({
+                    "role": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"messages": session["messages"]}}
+                )
+                
+                ai_response_obj = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": current_user["user_id"],
+                    "question": query.question,
+                    "answer": response_text,
+                    "suggested_commands": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "session_id": session_id
+                }
+                await db.ai_queries.insert_one(ai_response_obj)
+                
+                return AIResponse(**ai_response_obj)
                 
         # Get user's API key first, fallback to environment variable
         keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})

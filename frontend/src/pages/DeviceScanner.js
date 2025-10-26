@@ -199,25 +199,36 @@ function DeviceScanner({ onLogout }) {
     
     const IconComponent = icon;
     
+    // Get color based on colorClass
+    const getGroupColor = () => {
+      if (colorClass.includes('cyan')) return { bg: 'bg-cyan-500/10', border: 'border-cyan-500/20', text: 'text-cyan-400' };
+      if (colorClass.includes('blue')) return { bg: 'bg-blue-500/10', border: 'border-blue-500/20', text: 'text-blue-400' };
+      if (colorClass.includes('green')) return { bg: 'bg-green-500/10', border: 'border-green-500/20', text: 'text-green-400' };
+      if (colorClass.includes('purple')) return { bg: 'bg-purple-500/10', border: 'border-purple-500/20', text: 'text-purple-400' };
+      return { bg: 'bg-slate-500/10', border: 'border-slate-500/20', text: 'text-slate-400' };
+    };
+    
+    const colors = getGroupColor();
+    
     return (
       <Collapsible open={isOpen} onOpenChange={setOpen}>
-        <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm ${colorClass}`}>
+        <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all ${colorClass} shadow-lg`}>
           <CollapsibleTrigger className="w-full">
-            <CardHeader>
+            <CardHeader className="hover:bg-slate-800/30 transition-colors">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-cyan-500/10 rounded-lg">
-                    <IconComponent className="w-5 h-5 text-cyan-400" />
+                  <div className={`p-2.5 ${colors.bg} rounded-xl ring-1 ${colors.border}`}>
+                    <IconComponent className={`w-5 h-5 ${colors.text}`} />
                   </div>
                   <div className="text-left">
-                    <CardTitle className="text-slate-100">{title}</CardTitle>
-                    <CardDescription className="text-slate-400">
+                    <CardTitle className="text-slate-100 text-lg">{title}</CardTitle>
+                    <CardDescription className="text-slate-400 text-sm">
                       {filteredDevices.length} device{filteredDevices.length !== 1 ? 's' : ''} detected
                     </CardDescription>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Badge className="bg-slate-800 text-slate-300 border-slate-700">
+                  <Badge className={`${colors.bg} ${colors.text} border ${colors.border} font-semibold`}>
                     {filteredDevices.length}
                   </Badge>
                   <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`} />
@@ -226,11 +237,14 @@ function DeviceScanner({ onLogout }) {
             </CardHeader>
           </CollapsibleTrigger>
           <CollapsibleContent>
-            <CardContent>
+            <CardContent className="pt-0">
               {filteredDevices.length === 0 ? (
-                <p className="text-center text-slate-500 py-8">No devices in this category</p>
+                <div className="text-center py-12">
+                  <IconComponent className={`w-12 h-12 mx-auto mb-3 ${colors.text} opacity-30`} />
+                  <p className="text-slate-500">No devices in this category</p>
+                </div>
               ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
                   {filteredDevices.map((device, idx) => renderDeviceCard(device, `${title}-${idx}`))}
                 </div>
               )}

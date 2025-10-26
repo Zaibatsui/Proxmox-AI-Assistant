@@ -5447,8 +5447,14 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
         
         # Determine the host based on location type
         if request.location_type == "host":
-            # Use Proxmox host directly
+            # Use Proxmox host directly - extract hostname from URL
             host = proxmox_config["host"]
+            # Parse the host URL to extract hostname/IP
+            if '://' in host:
+                host = host.split('://', 1)[1]
+            # Remove port if present
+            if ':' in host:
+                host = host.split(':')[0]
         elif request.location_type in ["vm", "lxc"] and request.location_id:
             # For VM/LXC, try to get IP from Proxmox (simplified - use location_id as IP if numeric)
             # In production, you'd query Proxmox API for the VM's IP

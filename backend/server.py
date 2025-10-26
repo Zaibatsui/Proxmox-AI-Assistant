@@ -1556,6 +1556,9 @@ async def delete_file_by_profile(profile_id: str, path: str, current_user: dict 
                 raise HTTPException(status_code=500, detail="Failed to delete file")
             
             return {"success": True, "message": "File deleted successfully"}
+        elif profile['connection_type'] == 'ftp':
+            await ftp_delete_file(profile, path)
+            return {"success": True, "message": "File deleted successfully"}
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

@@ -97,6 +97,9 @@ function FilePane({
       
       setFiles(response.data.files || response.data || []);
       setCurrentPath(path);
+      
+      // Debug logging
+      console.log(`Loaded ${(response.data.files || response.data || []).length} files from path: ${path}`, response.data);
     } catch (error) {
       console.error('Failed to load directory:', error);
       setFiles([]); // Ensure files are cleared on error

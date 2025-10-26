@@ -51,13 +51,6 @@ function AIAssistant({ onLogout }) {
       // Ignore error
     }
   };
-    try {
-      const response = await axios.get(`${API}/vms`);
-      setAvailableLocations(response.data);
-    } catch (error) {
-      console.error('Failed to fetch locations:', error);
-    }
-  };
 
   const handleAsk = async () => {
     if (!question.trim()) return;

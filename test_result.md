@@ -153,6 +153,18 @@ frontend:
         agent: "testing"
         comment: "COMPREHENSIVE TESTING COMPLETED: Proxmox configuration validation fix is working correctly. ✅ UI Updates - API Token Secret field correctly shows '(Optional for updates)' label when existing config is present. ✅ Contextual Help Text - Shows 'Leave empty to keep the existing secret' for updates and 'The secret value provided when creating the token' for new configs. ✅ Placeholder Text - Correctly shows 'Leave empty to keep existing secret' for updates and 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' for new configs. ✅ New Configuration Validation - Still requires API token secret with proper error message 'API Token Secret is required for new configuration'. ✅ Update Validation Logic - Frontend validation logic (lines 154-165) correctly allows updates without re-entering secret by checking isUpdate flag and only requiring secret for new configs. ✅ Backend Integration - Configuration saves successfully to backend as confirmed by backend logs showing updated configuration being used. All success criteria from review request have been met - users can now update existing Proxmox configuration without re-entering API token secret while new configurations still require the secret field."
 
+  - task: "Docker Container Listing Fallback for Direct Docker Socket (CT 104)"
+    implemented: true
+    working: "pending_test"
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "Implemented fallback mechanism in /api/containers/list endpoint. When Portainer Agent connection fails or host IP cannot be determined (e.g., missing guest agent), the system now tries direct Docker commands via SSH using docker_list_containers_func. This should resolve the 404 error for CT 104 (Proxmox-1 Docker CT) which uses direct Docker socket access (unix:///var/run/docker.sock) instead of Portainer Agent. Need to test with CT 104 using provided credentials (username: zaibatsui, password: 10065609Xx!)."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"
@@ -160,7 +172,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus: []
+  current_focus: ["Docker Container Listing Fallback for Direct Docker Socket (CT 104)"]
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

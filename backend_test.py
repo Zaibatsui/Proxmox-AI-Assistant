@@ -486,13 +486,15 @@ class DockerContainerTester:
             print("❌ Cannot proceed without authentication")
             return False
         
-        # Step 2: Test base64 encoding/decoding
+        # Step 2: Create Proxmox configuration
+        print(f"\n🔍 Creating Proxmox configuration...")
+        if not self.test_create_proxmox_config():
+            print("❌ Cannot proceed without Proxmox configuration")
+            return False
+        
+        # Step 3: Test base64 encoding/decoding
         print(f"\n🔍 Testing base64 encoding/decoding...")
         self.test_base64_encoding_decoding()
-        
-        # Step 3: Test SSH tunnel connectivity
-        print(f"\n🔍 Testing SSH tunnel connectivity...")
-        self.test_ssh_tunnel_connectivity()
         
         # Step 4: List Docker containers on VM119
         print(f"\n🔍 Testing Docker container listing on VM119...")

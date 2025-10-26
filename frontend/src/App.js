@@ -171,6 +171,7 @@ function App() {
           </Routes>
         </BrowserRouter>
       </div>
+      </ConnectionProvider>
     </ThemeProvider>
   );
 }

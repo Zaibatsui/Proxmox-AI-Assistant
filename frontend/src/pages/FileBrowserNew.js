@@ -453,6 +453,18 @@ function FileBrowserNew({ onLogout }) {
             </div>
           </div>
         )}
+
+        {/* Container Browser Modal */}
+        {showContainerBrowser && (
+          <ContainerBrowser
+            connection={containerBrowserFor === 'left' ? leftConnection : rightConnection}
+            onSelectContainer={handleSelectContainer}
+            onClose={() => {
+              setShowContainerBrowser(false);
+              setContainerBrowserFor(null);
+            }}
+          />
+        )}
       </div>
     </Layout>
   );

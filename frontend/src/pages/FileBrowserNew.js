@@ -240,30 +240,62 @@ function FileBrowserNew({ onLogout }) {
           </button>
 
           <div className="flex-1 bg-slate-900/80 backdrop-blur-sm rounded-lg p-2 border border-slate-700">
-            <div className="text-xs text-slate-500 mb-1">Right Pane:</div>
-            {rightConnection ? (
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-200">{rightConnection.name}</span>
+            <div className="flex items-center justify-between mb-1">
+              <div className="text-xs text-slate-500">Right Pane:</div>
+              <div className="flex gap-1">
+                <button
+                  onClick={() => setRightPaneMode('files')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    rightPaneMode === 'files'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-slate-800 text-slate-400 hover:text-amber-400'
+                  }`}
+                  title="File Browser"
+                >
+                  <Monitor className="w-3 h-3" />
+                </button>
+                <button
+                  onClick={() => setRightPaneMode('terminal')}
+                  className={`px-2 py-1 rounded text-xs transition-colors ${
+                    rightPaneMode === 'terminal'
+                      ? 'bg-amber-600 text-white'
+                      : 'bg-slate-800 text-slate-400 hover:text-amber-400'
+                  }`}
+                  title="Terminal"
+                >
+                  <TerminalIcon className="w-3 h-3" />
+                </button>
+              </div>
+            </div>
+            {rightPaneMode === 'files' ? (
+              rightConnection ? (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-slate-200">{rightConnection.name}</span>
+                  <button
+                    onClick={() => {
+                      setSelectingForPane('right');
+                      setShowConnectionManager(true);
+                    }}
+                    className="text-xs text-amber-400 hover:text-amber-300"
+                  >
+                    Change
+                  </button>
+                </div>
+              ) : (
                 <button
                   onClick={() => {
                     setSelectingForPane('right');
                     setShowConnectionManager(true);
                   }}
-                  className="text-xs text-amber-400 hover:text-amber-300"
+                  className="text-sm text-slate-400 hover:text-amber-400"
                 >
-                  Change
+                  Select Connection...
                 </button>
-              </div>
+              )
             ) : (
-              <button
-                onClick={() => {
-                  setSelectingForPane('right');
-                  setShowConnectionManager(true);
-                }}
-                className="text-sm text-slate-400 hover:text-amber-400"
-              >
-                Select Connection...
-              </button>
+              <div className="text-sm text-slate-200">
+                {leftConnection ? `Terminal: ${leftConnection.name}` : 'No connection'}
+              </div>
             )}
           </div>
         </div>

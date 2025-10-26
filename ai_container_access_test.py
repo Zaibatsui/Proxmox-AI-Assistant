@@ -144,6 +144,36 @@ class AIContainerAccessTester:
             self.log_result("Proxmox Configuration", False, f"Proxmox config error: {str(e)}")
             return False
     
+    def setup_openai_key(self):
+        """Setup OpenAI API key for testing"""
+        try:
+            # Set a test OpenAI API key (this will fail but allows us to test the structure)
+            api_keys_data = {
+                "openai_api_key": "sk-test-key-for-structure-testing-only"
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/api-keys", 
+                json=api_keys_data,
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200:
+                self.log_result(
+                    "OpenAI API Key Setup", 
+                    True, 
+                    "OpenAI API key configured for testing (test key)"
+                )
+                return True
+            else:
+                self.log_result("OpenAI API Key Setup", False, f"Failed to set API key: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log_result("OpenAI API Key Setup", False, f"API key setup error: {str(e)}")
+            return False
+
     def test_ai_query_endpoint(self):
         """Test that AI query endpoint accepts queries and returns responses"""
         try:
@@ -171,6 +201,12 @@ class AIContainerAccessTester:
                     {"session_id": self.session_id, "response_length": len(data.get("answer", ""))}
                 )
                 return True
+            elif response.status_code == 400 and "API key not configured" in response.text:
+                self.log_result("AI Query Endpoint", False, "OpenAI API key not configured - this is expected in test environment")
+                return False
+            elif response.status_code == 500 and ("Failed to get environment data" in response.text or "Proxmox" in response.text):
+                self.log_result("AI Query Endpoint", False, "Proxmox connection failed - this is expected with test credentials")
+                return False
             else:
                 self.log_result("AI Query Endpoint", False, f"AI query failed: {response.status_code} - {response.text}")
                 return False

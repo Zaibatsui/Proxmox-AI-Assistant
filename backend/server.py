@@ -4290,25 +4290,89 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
             raise HTTPException(status_code=500, detail=f"Failed to connect to VM via SSH: {str(e)}")
     
     elif location.type == "lxc":
-        # For LXC, we'll use pct exec via host SSH
-        # If SSH credentials are provided in location, use them; otherwise use user's config
+        # For LXC, we have two scenarios:
+        # 1. SSH credentials provided - connect directly to the LXC container
+        # 2. No SSH credentials - use pct exec via Proxmox host SSH
         if location.ssh_username and location.ssh_password:
-            # Use provided SSH credentials to connect to the LXC host
-            config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
-            if not config_doc:
-                raise HTTPException(status_code=400, detail="Proxmox configuration not found")
-            
-            # Parse host to get hostname/IP
-            host = config_doc['host']
-            if '://' in host:
-                _, host = host.split('://', 1)
-            host = host.rstrip('/')
-            if ':' in host:
-                hostname, _ = host.rsplit(':', 1)
-            else:
-                hostname = host
-            
+            # Connect directly to the LXC container using provided SSH credentials
+            # First, try to get the LXC container's IP address from Proxmox
             try:
+                config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
+                if config_doc:
+                    # Try to get LXC IP from Proxmox API
+                    proxmox = ProxmoxAPI(
+                        config_doc["host"].split("://")[-1].split(":")[0],
+                        user=config_doc["api_token_name"].split("!")[0],
+                        token_name=config_doc["api_token_name"].split("!")[1],
+                        token_value=config_doc["api_token_secret"],
+                        verify_ssl=config_doc.get("verify_ssl", False)
+                    )
+                    
+                    # Search for LXC container across all nodes
+                    lxc_ip = None
+                    for node in proxmox.nodes.get():
+                        node_name = node['node']
+                        try:
+                            lxc_containers = proxmox.nodes(node_name).lxc.get()
+                            for container in lxc_containers:
+                                if str(container['vmid']) == location.id:
+                                    # Try to get IP from container config
+                                    try:
+                                        container_config = proxmox.nodes(node_name).lxc(location.id).config.get()
+                                        # Look for network configuration
+                                        for key, value in container_config.items():
+                                            if key.startswith('net') and 'ip=' in str(value):
+                                                # Extract IP from network config (e.g., "ip=192.168.1.100/24")
+                                                import re
+                                                ip_match = re.search(r'ip=([0-9.]+)', str(value))
+                                                if ip_match:
+                                                    lxc_ip = ip_match.group(1)
+                                                    break
+                                    except:
+                                        pass
+                                    break
+                        except:
+                            pass
+                        if lxc_ip:
+                            break
+                    
+                    # If we found an IP, try to connect directly to the LXC container
+                    if lxc_ip:
+                        try:
+                            ssh_client = paramiko.SSHClient()
+                            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                            ssh_client.connect(
+                                lxc_ip,
+                                username=location.ssh_username,
+                                password=location.ssh_password,
+                                timeout=10,
+                                allow_agent=False,
+                                look_for_keys=False
+                            )
+                            logger.info(f"Successfully connected directly to LXC {location.id} at {lxc_ip}")
+                            return ssh_client
+                        except Exception as e:
+                            logger.warning(f"Direct SSH to LXC IP {lxc_ip} failed: {str(e)}")
+            except Exception as e:
+                logger.warning(f"Could not get LXC IP from Proxmox API: {str(e)}")
+            
+            # Fallback: Try connecting to the Proxmox host with provided credentials
+            # This handles cases where the LXC container is accessible via the Proxmox host IP
+            try:
+                config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
+                if not config_doc:
+                    raise HTTPException(status_code=400, detail="Proxmox configuration not found")
+                
+                # Parse host to get hostname/IP
+                host = config_doc['host']
+                if '://' in host:
+                    _, host = host.split('://', 1)
+                host = host.rstrip('/')
+                if ':' in host:
+                    hostname, _ = host.rsplit(':', 1)
+                else:
+                    hostname = host
+                
                 ssh_client = paramiko.SSHClient()
                 ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                 ssh_client.connect(
@@ -4319,12 +4383,13 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                     allow_agent=False,
                     look_for_keys=False
                 )
+                logger.info(f"Connected to Proxmox host {hostname} with provided credentials for LXC {location.id}")
                 return ssh_client
             except Exception as e:
                 logger.error(f"SSH connection failed with provided credentials: {str(e)}")
                 raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}")
         else:
-            # Use user's configured SSH credentials
+            # Use user's configured SSH credentials for pct exec
             return await get_ssh_client(user_id)
     
     elif location.type == "qemu":

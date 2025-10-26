@@ -96,10 +96,10 @@ function Terminal({ connection, containerId = null, isExpanded, onRestore }) {
                 host: connection.host
               }
             : {
-                type: connection.connection_type || connection.type,
-                id: connection.id,
-                ssh_username: connection.username,
-                ssh_password: connection.password
+                type: connection.type || 'host',
+                id: connection.vmid || connection.id,
+                ssh_username: connection.ssh_username || connection.username,
+                ssh_password: connection.ssh_password || connection.password
               }
         }
       );

@@ -23,6 +23,8 @@ function FileBrowserNew({ onLogout }) {
   const [leftConnection, setLeftConnection] = useState(null);
   const [rightConnection, setRightConnection] = useState(null);
   const [draggedFile, setDraggedFile] = useState(null);
+  const [leftPaneExpanded, setLeftPaneExpanded] = useState(false);
+  const [rightPaneExpanded, setRightPaneExpanded] = useState(false);
 
   const handleDragStart = (file, connection, currentPath) => {
     setDraggedFile({ file, connection, currentPath });

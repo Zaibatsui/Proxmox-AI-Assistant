@@ -2,33 +2,33 @@
   {
     "test": "Authentication",
     "success": true,
-    "message": "Registered and logged in successfully",
+    "message": "Logged in with existing user successfully",
     "details": {},
-    "timestamp": "2025-10-26T22:56:42.456385"
+    "timestamp": "2025-10-26T22:58:09.387701"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
-    "message": "Successfully created Proxmox configuration for testing",
+    "message": "Using existing Proxmox configuration",
     "details": {},
-    "timestamp": "2025-10-26T22:56:42.568580"
+    "timestamp": "2025-10-26T22:58:09.428089"
   },
   {
     "test": "CT 104 Fallback (all_containers=true)",
     "success": false,
-    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: No authentication methods available\"}",
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: Authentication failed.\"}",
     "details": {
       "status_code": 500
     },
-    "timestamp": "2025-10-26T22:56:43.120617"
+    "timestamp": "2025-10-26T22:58:13.120624"
   },
   {
     "test": "CT 104 Fallback (all_containers=false)",
     "success": false,
-    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: No authentication methods available\"}",
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: Authentication failed.\"}",
     "details": {
       "status_code": 500
     },
-    "timestamp": "2025-10-26T22:56:43.606947"
+    "timestamp": "2025-10-26T22:58:16.771754"
   }
 ]

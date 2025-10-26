@@ -4,27 +4,27 @@
     "success": true,
     "message": "Logged in successfully",
     "details": {},
-    "timestamp": "2025-10-26T17:26:40.385575"
+    "timestamp": "2025-10-26T17:27:40.191827"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Successfully created Proxmox configuration for testing",
     "details": {},
-    "timestamp": "2025-10-26T17:26:40.459051"
+    "timestamp": "2025-10-26T17:27:40.236570"
   },
   {
     "test": "Base64 Encoding/Decoding",
     "success": true,
     "message": "Base64 encoding and decoding working correctly",
     "details": {},
-    "timestamp": "2025-10-26T17:26:40.459815"
+    "timestamp": "2025-10-26T17:27:40.237321"
   },
   {
     "test": "Docker Container List",
     "success": false,
-    "message": "Failed to list containers: 500 - {\"detail\":\"404: Could not determine host for vm 119. Please ensure VM has guest agent enabled or provide IP directly.\"}",
+    "message": "Failed to list containers: 500 - {\"detail\":\"module 'paramiko' has no attribute 'DSSKey'\"}",
     "details": {},
-    "timestamp": "2025-10-26T17:26:43.870307"
+    "timestamp": "2025-10-26T17:27:40.555569"
   }
 ]

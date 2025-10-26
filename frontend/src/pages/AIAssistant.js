@@ -55,8 +55,8 @@ function AIAssistant({ onLogout }) {
   const handleAsk = async () => {
     if (!question.trim()) return;
 
-    // Check if we need VM credentials
-    if (currentLocation.type === 'vm' && !sessionCredentials[currentLocation.id]) {
+    // Check if we need VM credentials (only for VM type connections)
+    if (currentConnection?.type === 'vm' && !sessionCredentials[currentConnection.id]) {
       setShowVMCredentials(true);
       return;
     }

@@ -142,15 +142,12 @@ function FilePane({
         
         await axios.post(
           `${API}/api/connection-profiles/${connection.id}/files/upload`,
-          null,
           {
-            params: {
-              path: uploadPath,
-              chunk_data: chunkData,
-              chunk_index: i,
-              total_chunks: totalChunks,
-              file_name: file.name
-            }
+            path: uploadPath,
+            chunk_data: chunkData,
+            chunk_index: i,
+            total_chunks: totalChunks,
+            file_name: file.name
           }
         );
         

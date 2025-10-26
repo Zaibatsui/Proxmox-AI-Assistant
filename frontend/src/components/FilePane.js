@@ -42,16 +42,28 @@ function FilePane({
   const fileInputRef = useRef(null);
 
   useEffect(() => {
+    // Reset state when connection changes
+    setFiles([]);
+    setSelectedFile(null);
+    setEditingFile(null);
+    setFileContent('');
+    setLoading(false);
+    
     if (connection) {
       setCurrentPath(connection.base_path || '/');
       loadDirectory(connection.base_path || '/');
     }
-  }, [connection]);
+  }, [connection?.id]); // Track by ID to ensure proper updates
 
   const loadDirectory = async (path) => {
-    if (!connection) return;
+    if (!connection) {
+      setFiles([]);
+      return;
+    }
     
     setLoading(true);
+    setFiles([]); // Clear old files immediately
+    
     try {
       const response = await axios.post(
         `${API}/api/connection-profiles/${connection.id}/files/list`,

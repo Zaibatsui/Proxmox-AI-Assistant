@@ -2,29 +2,29 @@
   {
     "test": "Authentication",
     "success": true,
-    "message": "Registered and logged in successfully",
+    "message": "Logged in successfully",
     "details": {},
-    "timestamp": "2025-10-26T17:26:07.678159"
+    "timestamp": "2025-10-26T17:26:40.385575"
+  },
+  {
+    "test": "Proxmox Configuration",
+    "success": true,
+    "message": "Successfully created Proxmox configuration for testing",
+    "details": {},
+    "timestamp": "2025-10-26T17:26:40.459051"
   },
   {
     "test": "Base64 Encoding/Decoding",
     "success": true,
     "message": "Base64 encoding and decoding working correctly",
     "details": {},
-    "timestamp": "2025-10-26T17:26:07.678806"
-  },
-  {
-    "test": "SSH Tunnel Connectivity",
-    "success": true,
-    "message": "SSH tunnel connectivity will be tested through container operations",
-    "details": {},
-    "timestamp": "2025-10-26T17:26:07.678818"
+    "timestamp": "2025-10-26T17:26:40.459815"
   },
   {
     "test": "Docker Container List",
     "success": false,
-    "message": "Failed to list containers: 500 - {\"detail\":\"404: Proxmox configuration not found\"}",
+    "message": "Failed to list containers: 500 - {\"detail\":\"404: Could not determine host for vm 119. Please ensure VM has guest agent enabled or provide IP directly.\"}",
     "details": {},
-    "timestamp": "2025-10-26T17:26:07.724220"
+    "timestamp": "2025-10-26T17:26:43.870307"
   }
 ]

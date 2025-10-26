@@ -5828,42 +5828,42 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
                 # In production, you'd query Proxmox API for the VM's IP
                 # For now, assume location_id is the VM ID and we need to look it up
                 try:
-                proxmox = ProxmoxAPI(
-                    proxmox_config["host"],
-                    user=proxmox_config["api_token_name"].split("!")[0],
-                    token_name=proxmox_config["api_token_name"].split("!")[1],
-                    token_value=proxmox_config["api_token_secret"],
-                    verify_ssl=proxmox_config.get("verify_ssl", False)
-                )
-                
-                # Search for VM/LXC across all nodes
-                for node in proxmox.nodes.get():
-                    node_name = node['node']
+                    proxmox = ProxmoxAPI(
+                        proxmox_config["host"],
+                        user=proxmox_config["api_token_name"].split("!")[0],
+                        token_name=proxmox_config["api_token_name"].split("!")[1],
+                        token_value=proxmox_config["api_token_secret"],
+                        verify_ssl=proxmox_config.get("verify_ssl", False)
+                    )
                     
-                    if request.location_type == "vm":
-                        try:
-                            # Get VM config
-                            vm_config = proxmox.nodes(node_name).qemu(request.location_id).agent('network-get-interfaces').get()
-                            # Extract IP from agent data
-                            for interface in vm_config.get('result', []):
-                                if interface.get('name') not in ['lo']:
-                                    for ip_addr in interface.get('ip-addresses', []):
-                                        if ip_addr.get('ip-address-type') == 'ipv4':
-                                            host = ip_addr['ip-address']
-                                            break
-                                if host:
-                                    break
-                        except:
-                            # If agent not available, try to use the vmid as hint
-                            pass
-                    
-                    if host:
-                        break
-            except Exception as e:
-                logger.warning(f"Could not get IP from Proxmox API: {str(e)}")
-                # Fallback: try using location_id as direct IP/hostname
-                if "." in request.location_id:
-                    host = request.location_id
+                    # Search for VM/LXC across all nodes
+                    for node in proxmox.nodes.get():
+                        node_name = node['node']
+                        
+                        if request.location_type == "vm":
+                            try:
+                                # Get VM config
+                                vm_config = proxmox.nodes(node_name).qemu(request.location_id).agent('network-get-interfaces').get()
+                                # Extract IP from agent data
+                                for interface in vm_config.get('result', []):
+                                    if interface.get('name') not in ['lo']:
+                                        for ip_addr in interface.get('ip-addresses', []):
+                                            if ip_addr.get('ip-address-type') == 'ipv4':
+                                                host = ip_addr['ip-address']
+                                                break
+                                    if host:
+                                        break
+                            except:
+                                # If agent not available, try to use the vmid as hint
+                                pass
+                        
+                        if host:
+                            break
+                except Exception as e:
+                    logger.warning(f"Could not get IP from Proxmox API: {str(e)}")
+                    # Fallback: try using location_id as direct IP/hostname
+                    if "." in request.location_id:
+                        host = request.location_id
         
         if not host:
             raise HTTPException(

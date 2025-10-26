@@ -84,6 +84,17 @@ function Terminal({ connection, containerId = null, isExpanded, onRestore }) {
       }
 
       // Execute command via API
+      // Determine proper location type
+      let locationType = connection.type || 'host';
+      let locationId = connection.vmid || connection.id;
+      
+      // Map connection profile types to location types
+      if (connection.source === 'profile') {
+        // Connection profiles (SSH, SFTP, etc.) should use 'host' type
+        locationType = 'host';
+        locationId = null; // Host doesn't need an ID
+      }
+      
       const response = await axios.post(
         `${API}/api/execute-command`,
         {
@@ -96,8 +107,8 @@ function Terminal({ connection, containerId = null, isExpanded, onRestore }) {
                 host: connection.host
               }
             : {
-                type: connection.type || 'host',
-                id: connection.vmid || connection.id,
+                type: locationType,
+                id: locationId,
                 ssh_username: connection.ssh_username || connection.username,
                 ssh_password: connection.ssh_password || connection.password
               }

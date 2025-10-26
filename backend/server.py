@@ -5427,6 +5427,317 @@ async def create_directory(request: DirectoryCreateRequest, current_user: dict =
     finally:
         ssh_client.close()
 
+# ==================== DOCKER CONTAINER ENDPOINTS ====================
+
+@api_router.post("/containers/list")
+async def list_containers_endpoint(request: ContainerListRequest, current_user: dict = Depends(get_current_user)):
+    """
+    List all Docker containers on a Proxmox location (host/VM/LXC).
+    Uses Portainer Agent to communicate with Docker.
+    """
+    try:
+        # Get SSH credentials
+        ssh_client = await get_location_ssh_client(current_user["user_id"], 
+                                                   FileLocation(
+                                                       type=request.location_type,
+                                                       id=request.location_id,
+                                                       ssh_username=request.ssh_username,
+                                                       ssh_password=request.ssh_password
+                                                   ))
+        
+        # Get host and credentials from SSH client
+        # For Proxmox locations, we need to get the VM's IP
+        host = None
+        username = request.ssh_username or "root"
+        password = request.ssh_password
+        
+        # Determine the host based on location type
+        if request.location_type == "host":
+            # Use Proxmox host
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            host = proxmox_config["host"]
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+        elif request.location_type in ["vm", "lxc"]:
+            # Get VM/LXC IP from Proxmox API
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            
+            try:
+                proxmox = ProxmoxAPI(
+                    proxmox_config["host"],
+                    user=proxmox_config["api_token_name"].split("!")[0],
+                    token_name=proxmox_config["api_token_name"].split("!")[1],
+                    token_value=proxmox_config["api_token_secret"],
+                    verify_ssl=proxmox_config.get("verify_ssl", False)
+                )
+                
+                # Get node and VM/LXC details
+                for node in proxmox.nodes.get():
+                    node_name = node['node']
+                    
+                    if request.location_type == "vm":
+                        vms = proxmox.nodes(node_name).qemu.get()
+                        for vm in vms:
+                            if str(vm['vmid']) == request.location_id:
+                                # Get VM network interfaces to find IP
+                                config = proxmox.nodes(node_name).qemu(vm['vmid']).agent.get('network-get-interfaces')
+                                for interface in config.get('result', []):
+                                    if interface.get('name') not in ['lo']:
+                                        for ip_addr in interface.get('ip-addresses', []):
+                                            if ip_addr.get('ip-address-type') == 'ipv4':
+                                                host = ip_addr['ip-address']
+                                                break
+                                    if host:
+                                        break
+                                break
+                    else:  # lxc
+                        lxcs = proxmox.nodes(node_name).lxc.get()
+                        for lxc in lxcs:
+                            if str(lxc['vmid']) == request.location_id:
+                                # LXC network info
+                                config = proxmox.nodes(node_name).lxc(lxc['vmid']).config.get()
+                                # Try to get IP from status
+                                status = proxmox.nodes(node_name).lxc(lxc['vmid']).status.current.get()
+                                # Parse network info - this is simplified, may need adjustment
+                                if 'network' in status:
+                                    # Try to extract IP from network info
+                                    pass
+                                break
+                    
+                    if host:
+                        break
+            except Exception as e:
+                logger.error(f"Failed to get location IP from Proxmox: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"Failed to get location IP: {str(e)}")
+        
+        if not host:
+            raise HTTPException(status_code=404, detail=f"Could not determine host for {request.location_type} {request.location_id}")
+        
+        # Create Portainer Agent client
+        async with PortainerAgentClient(
+            remote_host=host,
+            ssh_username=username,
+            ssh_password=password
+        ) as portainer_client:
+            containers = await portainer_client.list_containers(request.all_containers)
+            
+            return {
+                "containers": [
+                    {
+                        "id": c.id,
+                        "name": c.name,
+                        "image": c.image,
+                        "status": c.status,
+                        "state": c.state
+                    }
+                    for c in containers
+                ]
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to list containers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/containers/files/list")
+async def list_container_files(request: ContainerFileListRequest, location: FileLocation, current_user: dict = Depends(get_current_user)):
+    """
+    List files inside a Docker container.
+    """
+    try:
+        # Get SSH client and derive host/credentials (similar to list_containers_endpoint)
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        
+        # Get host based on location
+        host = None
+        username = location.ssh_username or "root"
+        password = location.ssh_password
+        
+        if location.type == "host":
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            host = proxmox_config["host"]
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+        # Add VM/LXC IP resolution logic similar to above if needed
+        
+        if not host:
+            raise HTTPException(status_code=404, detail="Could not determine host")
+        
+        async with PortainerAgentClient(
+            remote_host=host,
+            ssh_username=username,
+            ssh_password=password
+        ) as portainer_client:
+            files = await portainer_client.list_container_directory(
+                request.container_id,
+                request.path
+            )
+            
+            return {"files": files}
+    
+    except Exception as e:
+        logger.error(f"Failed to list container files: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/containers/files/read")
+async def read_container_file(request: ContainerFileReadRequest, location: FileLocation, current_user: dict = Depends(get_current_user)):
+    """
+    Read a file from a Docker container.
+    """
+    try:
+        # Get SSH client and derive host/credentials
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        
+        # Get host based on location
+        host = None
+        username = location.ssh_username or "root"
+        password = location.ssh_password
+        
+        if location.type == "host":
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            host = proxmox_config["host"]
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+        
+        if not host:
+            raise HTTPException(status_code=404, detail="Could not determine host")
+        
+        async with PortainerAgentClient(
+            remote_host=host,
+            ssh_username=username,
+            ssh_password=password
+        ) as portainer_client:
+            content = await portainer_client.read_container_file(
+                request.container_id,
+                request.path
+            )
+            
+            # Return base64 encoded content
+            content_b64 = base64.b64encode(content).decode('utf-8')
+            
+            return {
+                "content": content_b64,
+                "path": request.path
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to read container file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/containers/files/write")
+async def write_container_file(request: ContainerFileWriteRequest, location: FileLocation, current_user: dict = Depends(get_current_user)):
+    """
+    Write a file to a Docker container.
+    """
+    try:
+        # Get SSH client and derive host/credentials
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        
+        # Get host based on location
+        host = None
+        username = location.ssh_username or "root"
+        password = location.ssh_password
+        
+        if location.type == "host":
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            host = proxmox_config["host"]
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+        
+        if not host:
+            raise HTTPException(status_code=404, detail="Could not determine host")
+        
+        async with PortainerAgentClient(
+            remote_host=host,
+            ssh_username=username,
+            ssh_password=password
+        ) as portainer_client:
+            # Decode content if base64, otherwise use as-is
+            try:
+                content_bytes = base64.b64decode(request.content)
+            except:
+                content_bytes = request.content.encode('utf-8')
+            
+            # Extract filename and directory from path
+            import os
+            directory = os.path.dirname(request.path)
+            filename = os.path.basename(request.path)
+            
+            result = await portainer_client.put_file_in_container(
+                request.container_id,
+                directory,
+                content_bytes,
+                filename
+            )
+            
+            return {
+                "success": True,
+                "message": "File written successfully",
+                "path": request.path
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to write container file: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.post("/containers/files/upload")
+async def upload_container_file(request: ContainerFileUploadRequest, location: FileLocation, current_user: dict = Depends(get_current_user)):
+    """
+    Upload a file to a Docker container.
+    """
+    try:
+        # Get SSH client and derive host/credentials
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        
+        # Get host based on location
+        host = None
+        username = location.ssh_username or "root"
+        password = location.ssh_password
+        
+        if location.type == "host":
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            host = proxmox_config["host"]
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+        
+        if not host:
+            raise HTTPException(status_code=404, detail="Could not determine host")
+        
+        async with PortainerAgentClient(
+            remote_host=host,
+            ssh_username=username,
+            ssh_password=password
+        ) as portainer_client:
+            # Decode base64 content
+            content_bytes = base64.b64decode(request.content)
+            
+            result = await portainer_client.put_file_in_container(
+                request.container_id,
+                request.destination_path,
+                content_bytes,
+                request.filename
+            )
+            
+            return {
+                "success": True,
+                "message": f"File {request.filename} uploaded successfully"
+            }
+    
+    except Exception as e:
+        logger.error(f"Failed to upload file to container: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 

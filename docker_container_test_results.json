@@ -2,29 +2,29 @@
   {
     "test": "Authentication",
     "success": true,
-    "message": "Logged in successfully",
+    "message": "Logged in with existing user successfully",
     "details": {},
-    "timestamp": "2025-10-26T17:27:40.191827"
+    "timestamp": "2025-10-26T17:29:13.487662"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Successfully created Proxmox configuration for testing",
     "details": {},
-    "timestamp": "2025-10-26T17:27:40.236570"
+    "timestamp": "2025-10-26T17:29:13.574662"
   },
   {
     "test": "Base64 Encoding/Decoding",
     "success": true,
     "message": "Base64 encoding and decoding working correctly",
     "details": {},
-    "timestamp": "2025-10-26T17:27:40.237321"
+    "timestamp": "2025-10-26T17:29:13.575338"
   },
   {
     "test": "Docker Container List",
     "success": false,
     "message": "Failed to list containers: 500 - {\"detail\":\"module 'paramiko' has no attribute 'DSSKey'\"}",
     "details": {},
-    "timestamp": "2025-10-26T17:27:40.555569"
+    "timestamp": "2025-10-26T17:29:13.613722"
   }
 ]

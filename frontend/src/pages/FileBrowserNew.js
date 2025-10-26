@@ -181,6 +181,19 @@ function FileBrowserNew({ onLogout }) {
             draggedFile={draggedFile}
             onDragStart={handleDragStart}
             onDrop={handleDrop}
+            isExpanded={leftPaneExpanded}
+            onToggleExpand={() => {
+              if (leftPaneExpanded) {
+                setLeftPaneExpanded(false);
+              } else {
+                setLeftPaneExpanded(true);
+                setRightPaneExpanded(false);
+              }
+            }}
+            style={{
+              width: leftPaneExpanded ? '95%' : (rightPaneExpanded ? '5%' : '50%'),
+              transition: 'width 0.3s ease-in-out'
+            }}
           />
 
           <FilePane
@@ -189,6 +202,19 @@ function FileBrowserNew({ onLogout }) {
             draggedFile={draggedFile}
             onDragStart={handleDragStart}
             onDrop={handleDrop}
+            isExpanded={rightPaneExpanded}
+            onToggleExpand={() => {
+              if (rightPaneExpanded) {
+                setRightPaneExpanded(false);
+              } else {
+                setRightPaneExpanded(true);
+                setLeftPaneExpanded(false);
+              }
+            }}
+            style={{
+              width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
+              transition: 'width 0.3s ease-in-out'
+            }}
           />
         </div>
 

@@ -18,10 +18,12 @@ axios.interceptors.request.use(
 
 function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const [profiles, setProfiles] = useState([]);
+  const [proxmoxLocations, setProxmoxLocations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [testingConnection, setTestingConnection] = useState(null);
+  const [showProxmoxTab, setShowProxmoxTab] = useState(true);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -37,6 +39,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
 
   useEffect(() => {
     loadProfiles();
+    loadProxmoxLocations();
   }, []);
 
   const loadProfiles = async () => {
@@ -48,6 +51,31 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
       console.error('Failed to load profiles:', error);
       toast.error('Failed to load connection profiles');
     } finally {
+      setLoading(false);
+    }
+  };
+  
+  const loadProxmoxLocations = async () => {
+    try {
+      const response = await axios.get(`${API}/api/proxmox-locations`);
+      setProxmoxLocations(response.data.locations || []);
+    } catch (error) {
+      console.error('Failed to load Proxmox locations:', error);
+    }
+  };
+  
+  const handleQuickConnect = async (location) => {
+    try {
+      const response = await axios.post(`${API}/api/proxmox-locations/${location.id}/quick-connect`);
+      if (response.data.success && onSelectConnection) {
+        onSelectConnection(response.data.profile);
+        toast.success(`Connected to ${location.name}`);
+      }
+    } catch (error) {
+      console.error('Quick connect failed:', error);
+      toast.error(error.response?.data?.detail || 'Failed to connect');
+    }
+  };
       setLoading(false);
     }
   };

@@ -211,45 +211,51 @@ class DockerContainerTester:
             self.log_result("Container File Read", False, f"Error reading container file: {str(e)}")
             return None
 
-    def test_create_ftp_profile(self):
-        """Test creating an FTP connection profile"""
+    def test_write_container_file(self, container_id, file_path, content):
+        """Test POST /api/containers/files/write - Write a file to container"""
         try:
-            profile_data = {
-                "name": "Test FTP Profile",
-                "connection_type": "ftp",
-                "host": "ftp.example.com",
-                "port": 21,
-                "username": "ftpuser",
-                "password": "ftppass",
-                "base_path": "/public",
-                "notes": "Test FTP profile for file operations testing"
+            # Encode content as base64
+            content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+            
+            request_data = {
+                "container_id": container_id,
+                "path": file_path,
+                "content": content_b64
+            }
+            
+            # FileLocation query parameter
+            location_params = {
+                "location": json.dumps({
+                    "type": "vm",
+                    "id": "119"
+                })
             }
             
             response = requests.post(
-                f"{self.base_url}/connection-profiles", 
-                json=profile_data, 
+                f"{self.base_url}/containers/files/write", 
+                json=request_data,
+                params=location_params,
                 headers=self.get_headers(), 
-                timeout=15
+                timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                ftp_profile_id = result.get('id')
-                self.ftp_profile_id = ftp_profile_id
+                data = response.json()
+                
                 self.log_result(
-                    "Create FTP Profile", 
+                    "Container File Write", 
                     True, 
-                    f"Successfully created FTP profile with ID: {ftp_profile_id}",
-                    {"profile_id": ftp_profile_id, "name": profile_data["name"]}
+                    f"Successfully wrote file {file_path} to container {container_id[:12]}",
+                    {"container_id": container_id[:12], "file_path": file_path, "content_length": len(content)}
                 )
-                return ftp_profile_id
+                return True
             else:
-                self.log_result("Create FTP Profile", False, f"Failed to create FTP profile: {response.status_code} - {response.text}")
-                return None
+                self.log_result("Container File Write", False, f"Failed to write file: {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_result("Create FTP Profile", False, f"FTP profile creation error: {str(e)}")
-            return None
+            self.log_result("Container File Write", False, f"Error writing container file: {str(e)}")
+            return False
 
     def test_create_reverse_proxy_profile(self):
         """Test creating a Reverse Proxy connection profile"""

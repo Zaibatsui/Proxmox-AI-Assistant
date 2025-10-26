@@ -495,32 +495,38 @@ class ConnectionProfileTester:
             self.log_result(f"{connection_type.upper()} Chunked Upload Test", False, f"Chunked upload error: {str(e)}")
             return False
     
-    def test_download_operation(self, profile_id):
+    def test_download_operation(self, profile_id, connection_type="unknown"):
         """Test file download functionality"""
         if not profile_id:
-            self.log_result("File Download Test", False, "No profile ID provided")
+            self.log_result(f"{connection_type.upper()} File Download Test", False, "No profile ID provided")
             return False
             
         try:
-            # Test downloading a file (this will likely fail since we don't have real SFTP server)
+            # Test downloading a file (this will likely fail since we don't have real servers)
             response = requests.get(
                 f"{self.base_url}/connection-profiles/{profile_id}/files/download?path=/test_file.txt", 
                 headers=self.get_headers(), 
                 timeout=15
             )
             
-            # We expect this to fail since we don't have a real SFTP server
+            # We expect this to fail since we don't have real servers
             # But we're testing the API structure
             if response.status_code == 200:
-                self.log_result("File Download Operation", True, "Download endpoint responded successfully")
+                self.log_result(f"{connection_type.upper()} File Download Operation", True, "Download endpoint responded successfully")
+            elif response.status_code == 500 and connection_type == "reverse_proxy":
+                if "not supported" not in response.text.lower():
+                    self.log_result(f"{connection_type.upper()} File Download Operation", True, f"Download endpoint accessible (expected 500 due to no real server): {response.status_code}")
+                else:
+                    self.log_result(f"{connection_type.upper()} File Download Operation", False, f"Unsupported connection type error: {response.text}")
+                    return False
             else:
-                # This is expected - we're testing API structure, not actual SFTP connectivity
-                self.log_result("File Download Operation", True, f"Download endpoint accessible (expected failure due to no real SFTP server): {response.status_code}")
+                # This is expected - we're testing API structure, not actual connectivity
+                self.log_result(f"{connection_type.upper()} File Download Operation", True, f"Download endpoint accessible (expected failure due to no real {connection_type} server): {response.status_code}")
             
             return True
                 
         except Exception as e:
-            self.log_result("File Download Test", False, f"Download test error: {str(e)}")
+            self.log_result(f"{connection_type.upper()} File Download Test", False, f"Download test error: {str(e)}")
             return False
 
     def test_invalid_profile_handling(self):

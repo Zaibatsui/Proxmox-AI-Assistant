@@ -4362,12 +4362,22 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
     )
     
     if exit_code != 0:
+        logger.error(f"Failed to list directory {path}: exit_code={exit_code}, stderr={stderr}")
         raise HTTPException(status_code=400, detail=f"Failed to list directory: {stderr}")
     
-    logger.info(f"Listing directory {path}: got {len(stdout.strip().split(chr(10)))} lines of output")
+    # Check if directory is empty (ls returns empty or just "total 0")
+    output_lines = stdout.strip().split('\n')
+    logger.info(f"Listing directory {path}: got {len(output_lines)} lines of output")
+    
+    # If only "total 0" or empty, directory is empty
+    if not stdout.strip() or (len(output_lines) == 1 and output_lines[0].startswith('total')):
+        logger.info(f"Directory {path} is empty")
+        return []
     
     files = []
-    for line in stdout.strip().split('\n'):
+    skipped_lines = 0
+    
+    for line in output_lines:
         if not line or line.startswith('total'):
             continue
         

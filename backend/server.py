@@ -4364,6 +4364,8 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
     if exit_code != 0:
         raise HTTPException(status_code=400, detail=f"Failed to list directory: {stderr}")
     
+    logger.info(f"Listing directory {path}: got {len(stdout.strip().split(chr(10)))} lines of output")
+    
     files = []
     for line in stdout.strip().split('\n'):
         if not line or line.startswith('total'):
@@ -4408,6 +4410,7 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
             permissions=permissions
         ))
     
+    logger.info(f"Parsed {len(files)} files from directory {path}")
     return files
 
 async def location_read_file(ssh_client, path: str, location: Optional[FileLocation] = None) -> FileContent:

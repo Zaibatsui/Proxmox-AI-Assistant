@@ -291,15 +291,30 @@ function FileBrowserNew({ onLogout }) {
               rightConnection ? (
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-slate-200">{rightConnection.name}</span>
-                  <button
-                    onClick={() => {
-                      setSelectingForPane('right');
-                      setShowConnectionManager(true);
-                    }}
-                    className="text-xs text-amber-400 hover:text-amber-300"
-                  >
-                    Change
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {(rightConnection.type === 'vm' || rightConnection.type === 'lxc' || rightConnection.type === 'qemu') && (
+                      <button
+                        onClick={() => {
+                          setContainerBrowserFor('right');
+                          setShowContainerBrowser(true);
+                        }}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                        title="View Docker containers"
+                      >
+                        <Box className="w-3 h-3" />
+                        Containers
+                      </button>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectingForPane('right');
+                        setShowConnectionManager(true);
+                      }}
+                      className="text-xs text-amber-400 hover:text-amber-300"
+                    >
+                      Change
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <button

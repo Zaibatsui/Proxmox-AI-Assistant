@@ -3017,12 +3017,56 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
             user_id=current_user["user_id"],
             question=query.question,
             answer=response_text,
-            suggested_commands=suggested_commands
+            suggested_commands=suggested_commands,
+            session_id=session_id
         )
         
         doc = ai_response.model_dump()
         doc['timestamp'] = doc['timestamp'].isoformat()
         await db.ai_conversations.insert_one(doc)
+        
+        # Update conversation session with new messages
+        session["messages"].append({
+            "role": "user",
+            "content": query.question,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        session["messages"].append({
+            "role": "assistant",
+            "content": response_text,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        # Check if response contains a pending action (file_edit_proposal, command_execution_proposal, etc.)
+        pending_action = None
+        if "file_edit_proposal" in response_text:
+            try:
+                # Extract the proposal JSON from response
+                import re
+                match = re.search(r'\{[^}]*"type":\s*"file_edit_proposal"[^}]*\}', response_text)
+                if match:
+                    pending_action = json.loads(match.group())
+            except:
+                pass
+        elif "command_execution_proposal" in response_text:
+            try:
+                match = re.search(r'\{[^}]*"type":\s*"command_execution_proposal"[^}]*\}', response_text)
+                if match:
+                    pending_action = json.loads(match.group())
+            except:
+                pass
+        
+        # Update session with pending action and messages
+        await db.conversation_sessions.update_one(
+            {"id": session_id},
+            {
+                "$set": {
+                    "messages": session["messages"],
+                    "pending_action": pending_action,
+                    "updated_at": datetime.now(timezone.utc).isoformat()
+                }
+            }
+        )
         
         await log_audit(current_user["user_id"], "ai_query", {"question_length": len(query.question)})
         

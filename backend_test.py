@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Backend API Testing for File Browser Connection Profile Operations
-Testing all connection types: SSH, SFTP, FTP, and Reverse Proxy file operations.
-Focus on new Reverse Proxy functionality and protocol support verification.
+Backend API Testing for Docker Container File Browser via Portainer Agent
+Testing Docker container file operations through Portainer Agent API.
+Focus on VM119 with Portainer Agent on port 9001.
 """
 
 import requests

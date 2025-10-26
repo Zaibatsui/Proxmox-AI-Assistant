@@ -5658,21 +5658,14 @@ async def upload_container_file(request: ContainerFileUploadRequest, location: F
     Upload a file to a Docker container.
     """
     try:
-        # Get SSH client and derive host/credentials
-        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        # Get Proxmox config
+        proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+        if not proxmox_config:
+            raise HTTPException(status_code=404, detail="Proxmox configuration not found")
         
-        # Get host based on location
-        host = None
-        username = location.ssh_username or "root"
-        password = location.ssh_password
-        
-        if location.type == "host":
-            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
-            if not proxmox_config:
-                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
-            host = proxmox_config["host"]
-            username = proxmox_config.get("ssh_username", "root")
-            password = proxmox_config.get("ssh_password")
+        host = proxmox_config["host"] if location.type == "host" else location.id
+        username = location.ssh_username or proxmox_config.get("ssh_username", "root")
+        password = location.ssh_password or proxmox_config.get("ssh_password")
         
         if not host:
             raise HTTPException(status_code=404, detail="Could not determine host")
@@ -5685,7 +5678,7 @@ async def upload_container_file(request: ContainerFileUploadRequest, location: F
             # Decode base64 content
             content_bytes = base64.b64decode(request.content)
             
-            result = await portainer_client.put_file_in_container(
+            await portainer_client.put_file_in_container(
                 request.container_id,
                 request.destination_path,
                 content_bytes,

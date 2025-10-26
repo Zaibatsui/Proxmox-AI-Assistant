@@ -5533,22 +5533,14 @@ async def list_container_files(request: ContainerFileListRequest, location: File
     List files inside a Docker container.
     """
     try:
-        # Get SSH client and derive host/credentials (similar to list_containers_endpoint)
-        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        # Get Proxmox config
+        proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+        if not proxmox_config:
+            raise HTTPException(status_code=404, detail="Proxmox configuration not found")
         
-        # Get host based on location
-        host = None
-        username = location.ssh_username or "root"
-        password = location.ssh_password
-        
-        if location.type == "host":
-            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
-            if not proxmox_config:
-                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
-            host = proxmox_config["host"]
-            username = proxmox_config.get("ssh_username", "root")
-            password = proxmox_config.get("ssh_password")
-        # Add VM/LXC IP resolution logic similar to above if needed
+        host = proxmox_config["host"] if location.type == "host" else location.id
+        username = location.ssh_username or proxmox_config.get("ssh_username", "root")
+        password = location.ssh_password or proxmox_config.get("ssh_password")
         
         if not host:
             raise HTTPException(status_code=404, detail="Could not determine host")

@@ -76,9 +76,6 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
       toast.error(error.response?.data?.detail || 'Failed to connect');
     }
   };
-      setLoading(false);
-    }
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();

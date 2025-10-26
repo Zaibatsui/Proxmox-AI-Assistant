@@ -4351,6 +4351,7 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                                 look_for_keys=False
                             )
                             logger.info(f"Successfully connected directly to LXC {location.id} at {lxc_ip}")
+                            location.direct_ssh = True
                             return ssh_client
                         except Exception as e:
                             logger.warning(f"Direct SSH to LXC IP {lxc_ip} failed: {str(e)}")

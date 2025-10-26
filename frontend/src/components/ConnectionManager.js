@@ -180,7 +180,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   return (
     <div>
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-semibold text-slate-200">Connection Profiles</h3>
+        <h3 className="text-sm font-semibold text-slate-200">Connections</h3>
         <button
           onClick={() => {
             resetForm();
@@ -193,11 +193,81 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
         </button>
       </div>
 
-      {loading ? (
-        <div className="text-center py-4">
-          <Loader2 className="w-5 h-5 animate-spin text-amber-400 mx-auto" />
-        </div>
-      ) : profiles.length === 0 ? (
+      {/* Tabs */}
+      <div className="flex gap-2 mb-3">
+        <button
+          onClick={() => setShowProxmoxTab(true)}
+          className={`flex-1 px-3 py-2 text-xs font-medium rounded transition-colors ${
+            showProxmoxTab
+              ? 'bg-amber-600 text-white'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+          }`}
+        >
+          Proxmox ({proxmoxLocations.length})
+        </button>
+        <button
+          onClick={() => setShowProxmoxTab(false)}
+          className={`flex-1 px-3 py-2 text-xs font-medium rounded transition-colors ${
+            !showProxmoxTab
+              ? 'bg-amber-600 text-white'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-700'
+          }`}
+        >
+          Profiles ({profiles.length})
+        </button>
+      </div>
+
+      {showProxmoxTab ? (
+        // Proxmox Locations
+        proxmoxLocations.length === 0 ? (
+          <div className="text-center py-4 text-slate-500 text-sm">
+            No Proxmox locations. Configure Proxmox in Settings.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {proxmoxLocations.map((location) => (
+              <div
+                key={location.id}
+                className={`p-3 rounded-lg border transition-all cursor-pointer ${
+                  selectedConnection?.id?.includes(location.id)
+                    ? 'bg-amber-500/10 border-amber-500/30'
+                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
+                }`}
+                onClick={() => handleQuickConnect(location)}
+              >
+                <div className="flex items-start gap-2">
+                  <Server className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium text-slate-200 truncate">
+                      {location.name}
+                    </div>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs text-slate-400">
+                        {location.type.toUpperCase()}
+                      </span>
+                      {location.status && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded ${
+                          location.status === 'running' || location.status === 'available'
+                            ? 'bg-green-500/20 text-green-400'
+                            : 'bg-slate-600/20 text-slate-400'
+                        }`}>
+                          {location.status}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      ) : (
+        // Connection Profiles
+        loading ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-amber-400 mx-auto" />
+          </div>
+        ) : profiles.length === 0 ? (
         <div className="text-center py-4 text-slate-500 text-sm">
           No connection profiles yet. Click + to add one.
         </div>

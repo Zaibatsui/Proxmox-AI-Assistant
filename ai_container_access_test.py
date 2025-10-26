@@ -114,6 +114,7 @@ class AIContainerAccessTester:
                 return True
             
             # Create Proxmox configuration for CT 104 testing
+            # Note: Using test credentials that won't actually connect but will allow API structure testing
             config_data = {
                 "host": "proxmox.zaibatsui.co.uk:8006",
                 "api_token_name": "root@pam!testing",
@@ -132,7 +133,7 @@ class AIContainerAccessTester:
                 self.log_result(
                     "Proxmox Configuration", 
                     True, 
-                    "Successfully created Proxmox configuration for CT 104 testing"
+                    "Successfully created Proxmox configuration for CT 104 testing (test credentials)"
                 )
                 return True
             else:

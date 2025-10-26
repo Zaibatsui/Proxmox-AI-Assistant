@@ -1436,6 +1436,15 @@ async def read_file_by_profile(profile_id: str, path: str, current_user: dict = 
                 "size": file_size,
                 "modified": modified
             }
+        elif profile['connection_type'] == 'ftp':
+            content = await ftp_read_file(profile, path)
+            
+            return {
+                "path": path,
+                "content": content,
+                "size": len(content.encode('utf-8')),
+                "modified": None
+            }
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

@@ -382,6 +382,7 @@ class FileLocation(BaseModel):
     id: Optional[str] = None  # Container/VM ID
     ssh_username: Optional[str] = None  # For VM SSH
     ssh_password: Optional[str] = None  # For VM SSH
+    direct_ssh: Optional[bool] = False  # True if SSH client is connected directly to the container/VM
 
 class FileListRequest(BaseModel):
     path: str = "/"

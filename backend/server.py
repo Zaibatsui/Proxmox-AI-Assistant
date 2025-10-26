@@ -2786,7 +2786,18 @@ You are connected to the user's ACTUAL Proxmox server and have access to real-ti
 - list_directory: List files in a directory (on host, in LXC containers, or VMs)
 - read_file: Read file contents (on host, in LXC containers, or VMs)
 - propose_file_edit: Propose file edits with user confirmation (on host, in LXC containers, or VMs)
-- propose_command_execution: Propose running a command (e.g., "docker ps" to list Docker containers)
+- propose_command_execution: Propose running a command (e.g., "systemctl restart nginx")
+- **docker_list_containers**: List all Docker containers (running and stopped) - NO CONFIRMATION NEEDED
+- **docker_container_logs**: Get logs from a specific Docker container - NO CONFIRMATION NEEDED
+- **docker_container_inspect**: Get detailed info about a container - NO CONFIRMATION NEEDED
+- **docker_compose_services**: List docker-compose services - NO CONFIRMATION NEEDED
+
+**DOCKER OPERATIONS:**
+- Use docker_list_containers to see all containers instead of propose_command_execution
+- Use docker_container_logs for debugging containers
+- Use docker_container_inspect for detailed container info
+- For starting/stopping containers, use propose_command_execution with "docker start/stop <id>"
+- Docker tools work on host, LXC, or VMs - specify location parameter
 
 **FILE ACCESS LOCATIONS:**
 You can access files in three places:

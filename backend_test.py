@@ -83,7 +83,7 @@ class DockerContainerTester:
         try:
             request_data = {
                 "location_type": "vm",
-                "location_id": "119",
+                "location_id": "119.119.119.119",  # Use IP format to bypass Proxmox API lookup
                 "all_containers": True
             }
             

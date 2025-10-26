@@ -780,9 +780,9 @@ if __name__ == "__main__":
     success = tester.run_all_tests()
     
     # Save detailed results
-    with open('/app/sftp_connection_profile_test_results.json', 'w') as f:
+    with open('/app/file_browser_connection_profile_test_results.json', 'w') as f:
         json.dump(tester.test_results, f, indent=2)
     
-    print(f"\n📄 Detailed results saved to: /app/sftp_connection_profile_test_results.json")
+    print(f"\n📄 Detailed results saved to: /app/file_browser_connection_profile_test_results.json")
     
     sys.exit(0 if success else 1)

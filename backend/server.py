@@ -5770,7 +5770,9 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
         # Get SSH connection to the location
         location = FileLocation(
             type=request.location_type,
-            id=request.location_id if request.location_type != "host" else None
+            id=request.location_id if request.location_type != "host" else None,
+            ssh_username=request.ssh_username,
+            ssh_password=request.ssh_password
         )
         
         ssh_client = await get_location_ssh_client(current_user["user_id"], location)

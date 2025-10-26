@@ -394,6 +394,19 @@ function FilePane({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
+                        if (onTransferFile) {
+                          onTransferFile(file, currentPath);
+                        }
+                      }}
+                      className="p-1 hover:bg-amber-700 rounded"
+                      title={`Transfer to ${paneId === 'left' ? 'right' : 'left'} pane`}
+                      disabled={!onTransferFile}
+                    >
+                      <ArrowRight className={`w-3 h-3 text-amber-400 ${paneId === 'right' ? 'rotate-180' : ''}`} />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setEditingFile(file);
                         setSelectedFile(file);
                         loadFileContent(file);

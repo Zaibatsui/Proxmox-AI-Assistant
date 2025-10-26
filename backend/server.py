@@ -1351,6 +1351,20 @@ async def list_files_by_profile(profile_id: str, path: str = "/", current_user: 
                 })
             
             return files
+        elif profile['connection_type'] == 'ftp':
+            # For FTP, use ftplib
+            files_data = await ftp_list_directory(profile, path)
+            result = []
+            for file in files_data:
+                result.append({
+                    "name": file['name'],
+                    "path": f"{path.rstrip('/')}/{file['name']}",
+                    "type": file['type'],
+                    "size": int(file['size']) if file['type'] == 'file' and file['size'].isdigit() else None,
+                    "modified": None,
+                    "permissions": file.get('permissions')
+                })
+            return result
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported for file operations")
     except HTTPException:

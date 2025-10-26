@@ -20,7 +20,8 @@ def test_port(host, port, timeout=5):
 
 def main():
     host = "145.40.178.205"
-    ports = [22, 2222, 8022, 22222, 8006, 443, 80]
+    # Test more SSH ports and other common ports
+    ports = [22, 2222, 8022, 22222, 2022, 8006, 443, 80, 8080, 9001, 9000]
     
     print(f"Testing connectivity to {host}...")
     

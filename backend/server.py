@@ -3045,6 +3045,90 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         "risk_factors": risk_factors,
                         "requires_confirmation": True
                     }
+                elif function_name == "docker_list_containers":
+                    # List Docker containers - no confirmation needed (read-only)
+                    location_str = function_args.get("location", "host")
+                    show_all = function_args.get("all", True)
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    result = await docker_list_containers_func(ssh_client, location, show_all)
+                    ssh_client.close()
+                    
+                    function_response = {
+                        "type": "docker_containers_list",
+                        "containers": result.get("containers", []),
+                        "total": result.get("total", 0),
+                        "location": location_str,
+                        "error": result.get("error")
+                    }
+                elif function_name == "docker_container_logs":
+                    # Get container logs - no confirmation needed (read-only)
+                    container_id = function_args.get("container_id")
+                    location_str = function_args.get("location", "host")
+                    tail = function_args.get("tail", 100)
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    result = await docker_container_logs_func(ssh_client, container_id, location, tail)
+                    ssh_client.close()
+                    
+                    function_response = {
+                        "type": "docker_container_logs",
+                        "container_id": container_id,
+                        "logs": result.get("logs", ""),
+                        "success": result.get("success", False),
+                        "error": result.get("error")
+                    }
+                elif function_name == "docker_container_inspect":
+                    # Inspect container - no confirmation needed (read-only)
+                    container_id = function_args.get("container_id")
+                    location_str = function_args.get("location", "host")
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    result = await docker_container_inspect_func(ssh_client, container_id, location)
+                    ssh_client.close()
+                    
+                    function_response = {
+                        "type": "docker_container_inspect",
+                        "container_id": container_id,
+                        "container": result.get("container", {}),
+                        "error": result.get("error")
+                    }
+                elif function_name == "docker_compose_services":
+                    # List docker-compose services - no confirmation needed (read-only)
+                    compose_file_path = function_args.get("compose_file_path")
+                    location_str = function_args.get("location", "host")
+                    
+                    location = None
+                    if location_str != "host" and ":" in location_str:
+                        loc_type, loc_id = location_str.split(":", 1)
+                        location = FileLocation(type=loc_type, id=loc_id)
+                    
+                    ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                    result = await docker_compose_services_func(ssh_client, compose_file_path, location)
+                    ssh_client.close()
+                    
+                    function_response = {
+                        "type": "docker_compose_services",
+                        "compose_file": compose_file_path,
+                        "services": result.get("services", []),
+                        "total": result.get("total", 0),
+                        "error": result.get("error")
+                    }
                 
                 # Add tool response
                 messages.append({

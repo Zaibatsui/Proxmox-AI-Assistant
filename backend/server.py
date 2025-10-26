@@ -1209,37 +1209,39 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
 async def quick_connect_proxmox_location(location_id: str, current_user: dict = Depends(get_current_user)):
     """Quick connect to a Proxmox location without creating a permanent connection profile"""
     try:
-        # Parse location_id
-        location_type = "host"
-        vmid = None
-        container_id = None
+        # First, get the location details from the locations list
+        locations_response = await get_proxmox_locations(current_user)
+        locations = locations_response.get("locations", [])
         
-        if location_id.startswith("vm_"):
-            location_type = "vm"
-            vmid = location_id.replace("vm_", "")
-        elif location_id.startswith("lxc_"):
-            location_type = "lxc"
-            vmid = location_id.replace("lxc_", "")
-        elif location_id.startswith("docker_"):
-            location_type = "docker"
-            container_id = location_id.replace("docker_", "")
+        # Find the matching location
+        location_data = next((loc for loc in locations if loc["id"] == location_id), None)
+        
+        if not location_data:
+            raise HTTPException(status_code=404, detail="Location not found")
+        
+        # Parse location_id
+        location_type = location_data["type"]
+        vmid = location_data.get("vmid")
+        container_id = location_data.get("container_id")
         
         # Create temporary connection profile for this session
         temp_profile = {
             "id": f"temp_{location_id}_{current_user['user_id']}",
-            "name": location_id,
-            "connection_type": "ssh",  # Use SSH for Proxmox connections
+            "name": location_data["name"],  # Use actual name from location data
+            "connection_type": "ssh",
             "location_type": location_type,
             "vmid": vmid,
             "container_id": container_id,
             "user_id": current_user["user_id"],
-            "is_temporary": True
+            "is_temporary": True,
+            "status": location_data.get("status"),
+            "icon": location_data.get("icon")
         }
         
         return {
             "success": True,
             "profile": temp_profile,
-            "message": f"Connected to {location_id}"
+            "message": f"Connected to {location_data['name']}"
         }
         
     except Exception as e:

@@ -3942,9 +3942,11 @@ async def exec_in_location(ssh_client, command: str, location: Optional[FileLoca
         lxc_command = f"pct exec {location.id} -- {command}"
         return await ssh_exec_command(ssh_client, lxc_command)
     
-    elif location.type == "vm":
-        # Direct execution (ssh_client is already connected to VM)
-        return await ssh_exec_command(ssh_client, command)
+    elif location.type == "vm" or location.type == "qemu":
+        # For VMs, we need to use qm exec
+        # Note: This requires the VM to have qemu-guest-agent installed
+        qemu_command = f"qm guest exec {location.id} -- {command}"
+        return await ssh_exec_command(ssh_client, qemu_command)
     
     else:
         raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")

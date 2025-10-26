@@ -346,9 +346,39 @@ function FilePane({
                 <ChevronRight className="w-4 h-4 text-slate-400 rotate-180" />
               </button>
               
-              <div className="flex-1 px-2 py-1 bg-slate-800 rounded text-xs text-slate-300 truncate">
-                {currentPath}
-              </div>
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const input = e.target.elements.pathInput;
+                  if (input.value) {
+                    loadDirectory(input.value);
+                  }
+                }}
+                className="flex-1 flex items-center gap-1"
+              >
+                <input
+                  name="pathInput"
+                  type="text"
+                  value={currentPath}
+                  onChange={(e) => setCurrentPath(e.target.value)}
+                  placeholder="/path/to/directory"
+                  className="flex-1 px-2 py-1 bg-slate-800 border border-slate-600 rounded text-xs text-slate-300 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      loadDirectory(e.target.value);
+                    }
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="px-2 py-1 bg-amber-600 hover:bg-amber-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded text-xs text-white"
+                  title="Go to path"
+                >
+                  Go
+                </button>
+              </form>
               
               <button
                 onClick={() => loadDirectory(currentPath)}

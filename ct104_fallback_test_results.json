@@ -4,31 +4,31 @@
     "success": true,
     "message": "Logged in with existing user successfully",
     "details": {},
-    "timestamp": "2025-10-26T22:58:09.387701"
+    "timestamp": "2025-10-26T22:59:51.999128"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Using existing Proxmox configuration",
     "details": {},
-    "timestamp": "2025-10-26T22:58:09.428089"
+    "timestamp": "2025-10-26T22:59:52.079852"
   },
   {
     "test": "CT 104 Fallback (all_containers=true)",
     "success": false,
-    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: Authentication failed.\"}",
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: [Errno None] Unable to connect to port 22 on 145.40.178.205\"}",
     "details": {
       "status_code": 500
     },
-    "timestamp": "2025-10-26T22:58:13.120624"
+    "timestamp": "2025-10-26T22:59:55.612930"
   },
   {
     "test": "CT 104 Fallback (all_containers=false)",
     "success": false,
-    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: Authentication failed.\"}",
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: [Errno None] Unable to connect to port 22 on 145.40.178.205\"}",
     "details": {
       "status_code": 500
     },
-    "timestamp": "2025-10-26T22:58:16.771754"
+    "timestamp": "2025-10-26T22:59:59.108348"
   }
 ]

@@ -26,7 +26,10 @@ function FilePane({
   onRequestCopy,
   draggedFile,
   onDragStart,
-  onDrop
+  onDrop,
+  isExpanded,
+  onToggleExpand,
+  style
 }) {
   const [currentPath, setCurrentPath] = useState('/');
   const [files, setFiles] = useState([]);

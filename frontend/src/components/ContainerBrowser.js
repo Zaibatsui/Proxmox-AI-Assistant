@@ -20,10 +20,27 @@ function ContainerBrowser({ connection, onSelectContainer, onClose }) {
 
     setLoading(true);
     try {
+      // Determine location_type from connection
+      // For Proxmox locations, default to 'lxc' if type is undefined
+      let locationType = connection.type || 'lxc';
+      
+      // If connection has specific indicators, use those
+      if (connection.name && connection.name.toLowerCase().includes('vm')) {
+        locationType = 'vm';
+      } else if (connection.name && connection.name.toLowerCase().includes('ct')) {
+        locationType = 'lxc';
+      }
+
+      console.log('Fetching containers with:', {
+        location_type: locationType,
+        location_id: String(connection.vmid || connection.id),
+        connection: connection
+      });
+
       const response = await axios.post(
         `${API}/api/containers/list`,
         {
-          location_type: connection.type,
+          location_type: locationType,
           location_id: String(connection.vmid || connection.id),
           all_containers: true
         }
@@ -32,7 +49,19 @@ function ContainerBrowser({ connection, onSelectContainer, onClose }) {
       setContainers(response.data.containers || []);
     } catch (error) {
       console.error('Failed to fetch containers:', error);
-      toast.error(error.response?.data?.detail || 'Failed to load containers. Ensure Docker is running and Portainer Agent is installed on port 9001.');
+      
+      // Handle Pydantic validation errors properly
+      let errorMessage = 'Failed to load containers. Ensure Docker is running and Portainer Agent is installed on port 9001.';
+      if (error.response?.data?.detail) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          // Pydantic validation errors
+          errorMessage = error.response.data.detail.map(err => `${err.loc?.join('.')}: ${err.msg}`).join(', ');
+        }
+      }
+      
+      toast.error(errorMessage);
       setContainers([]);
     } finally {
       setLoading(false);

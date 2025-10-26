@@ -4378,7 +4378,14 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
         permissions = parts[0]
         size_str = parts[4]
         modified = f"{parts[5]} {parts[6]}"
-        name = parts[8]
+        name_and_target = parts[8]
+        
+        # Handle symlinks: "linkname -> target"
+        if ' -> ' in name_and_target:
+            name = name_and_target.split(' -> ')[0]
+            # Still treat as the type indicated by permissions
+        else:
+            name = name_and_target
         
         if name in ['.', '..']:
             continue

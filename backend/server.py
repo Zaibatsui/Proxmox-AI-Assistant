@@ -1705,6 +1705,9 @@ async def rename_file_by_profile(profile_id: str, old_path: str, new_name: str, 
         elif profile['connection_type'] == 'ftp':
             await ftp_rename_file(profile, old_path, new_path)
             return {"success": True, "message": "File renamed successfully", "new_path": new_path}
+        elif profile['connection_type'] == 'reverse_proxy':
+            await rproxy_rename_file(profile, old_path, new_path)
+            return {"success": True, "message": "File renamed successfully", "new_path": new_path}
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

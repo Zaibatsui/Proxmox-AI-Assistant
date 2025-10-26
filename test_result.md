@@ -141,6 +141,18 @@ frontend:
         agent: "main"
         comment: "Successfully implemented advanced appearance options including: custom color pickers (primary, secondary, sidebar bg, header bg), layout density (compact/comfortable/spacious), border radius (sharp/rounded/very-rounded), shadow intensity (none/subtle/medium/strong), and sidebar width slider. All options provide live preview and are persisted to backend."
 
+  - task: "Proxmox Configuration Validation Fix"
+    implemented: true
+    working: true
+    file: "Settings.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "COMPREHENSIVE TESTING COMPLETED: Proxmox configuration validation fix is working correctly. ✅ UI Updates - API Token Secret field correctly shows '(Optional for updates)' label when existing config is present. ✅ Contextual Help Text - Shows 'Leave empty to keep the existing secret' for updates and 'The secret value provided when creating the token' for new configs. ✅ Placeholder Text - Correctly shows 'Leave empty to keep existing secret' for updates and 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx' for new configs. ✅ New Configuration Validation - Still requires API token secret with proper error message 'API Token Secret is required for new configuration'. ✅ Update Validation Logic - Frontend validation logic (lines 154-165) correctly allows updates without re-entering secret by checking isUpdate flag and only requiring secret for new configs. ✅ Backend Integration - Configuration saves successfully to backend as confirmed by backend logs showing updated configuration being used. All success criteria from review request have been met - users can now update existing Proxmox configuration without re-entering API token secret while new configurations still require the secret field."
+
 metadata:
   created_by: "testing_agent"
   version: "1.0"

@@ -305,46 +305,49 @@ function FilePane({
         </div>
       </div>
 
-      {/* Action Bar */}
-      <div className="flex items-center gap-1 p-2 border-b border-slate-700 bg-slate-800/30">
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={handleUpload}
-          className="hidden"
-        />
-        <button
-          onClick={() => fileInputRef.current?.click()}
-          className="px-2 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded flex items-center gap-1"
-          title="Upload File"
-        >
-          <Upload className="w-3 h-3" />
-          Upload
-        </button>
-        <button
-          onClick={handleCreateFolder}
-          className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
-          title="New Folder"
-        >
-          <FolderPlus className="w-3 h-3" />
-          Folder
-        </button>
-      </div>
-
-      {/* Upload Progress */}
-      {uploadProgress && (
-        <div className="p-2 bg-amber-500/10 border-b border-amber-500/30">
-          <div className="text-xs text-amber-400 mb-1">
-            Uploading {uploadProgress.fileName}: {uploadProgress.current}/{uploadProgress.total} chunks
-          </div>
-          <div className="w-full bg-slate-800 rounded-full h-1.5">
-            <div 
-              className="bg-amber-500 h-1.5 rounded-full transition-all"
-              style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+      {/* Only show content when not minimized */}
+      {!isExpanded || (
+        <>
+          {/* Action Bar */}
+          <div className="flex items-center gap-1 p-2 border-b border-slate-700 bg-slate-800/30">
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={handleUpload}
+              className="hidden"
             />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-2 py-1 text-xs bg-amber-600 hover:bg-amber-700 text-white rounded flex items-center gap-1"
+              title="Upload File"
+            >
+              <Upload className="w-3 h-3" />
+              Upload
+            </button>
+            <button
+              onClick={handleCreateFolder}
+              className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 text-white rounded flex items-center gap-1"
+              title="New Folder"
+            >
+              <FolderPlus className="w-3 h-3" />
+              Folder
+            </button>
           </div>
-        </div>
-      )}
+
+          {/* Upload Progress */}
+          {uploadProgress && (
+            <div className="p-2 bg-amber-500/10 border-b border-amber-500/30">
+              <div className="text-xs text-amber-400 mb-1">
+                Uploading {uploadProgress.fileName}: {uploadProgress.current}/{uploadProgress.total} chunks
+              </div>
+              <div className="w-full bg-slate-800 rounded-full h-1.5">
+                <div 
+                  className="bg-amber-500 h-1.5 rounded-full transition-all"
+                  style={{ width: `${(uploadProgress.current / uploadProgress.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
 
       {/* File List */}
       <div className="flex-1 overflow-y-auto">

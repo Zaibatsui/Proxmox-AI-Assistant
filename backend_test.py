@@ -20,9 +20,8 @@ class DockerContainerTester:
         self.base_url = BACKEND_URL
         self.token = None
         self.test_results = []
-        self.test_profile_id = None
-        self.reverse_proxy_profile_id = None
-        self.ftp_profile_id = None
+        self.test_containers = []
+        self.test_container_id = None
         
     def log_result(self, test_name, success, message, details=None):
         """Log test result"""

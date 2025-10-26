@@ -1823,6 +1823,43 @@ async def upload_file_by_profile(
                     "message": f"Chunk {chunk_index + 1}/{total_chunks} uploaded",
                     "complete": False
                 }
+        elif profile['connection_type'] == 'ftp':
+            # For FTP, use local temp storage for chunks
+            import os
+            local_temp_dir = f"/tmp/upload_{current_user['user_id']}_{file_name.replace('/', '_')}"
+            os.makedirs(local_temp_dir, exist_ok=True)
+            
+            # Write chunk locally
+            with open(f"{local_temp_dir}/chunk_{chunk_index}", 'wb') as f:
+                f.write(chunk_bytes)
+            
+            # If last chunk, combine and upload
+            if chunk_index == total_chunks - 1:
+                # Combine all chunks
+                combined = b''
+                for i in range(total_chunks):
+                    with open(f"{local_temp_dir}/chunk_{i}", 'rb') as f:
+                        combined += f.read()
+                
+                # Upload to FTP
+                await ftp_upload_file(profile, path, combined)
+                
+                # Cleanup local temp files
+                import shutil
+                shutil.rmtree(local_temp_dir, ignore_errors=True)
+                
+                return {
+                    "success": True,
+                    "message": "File uploaded successfully",
+                    "path": path,
+                    "complete": True
+                }
+            else:
+                return {
+                    "success": True,
+                    "message": f"Chunk {chunk_index + 1}/{total_chunks} uploaded",
+                    "complete": False
+                }
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

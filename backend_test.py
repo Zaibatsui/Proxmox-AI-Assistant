@@ -118,44 +118,48 @@ class DockerContainerTester:
             self.log_result("Docker Container List", False, f"Error listing containers: {str(e)}")
             return []
     
-    def test_create_ssh_profile(self):
-        """Test creating an SSH connection profile"""
+    def test_list_container_files(self, container_id, path="/"):
+        """Test POST /api/containers/files/list - List files inside a container"""
         try:
-            profile_data = {
-                "name": "Test SSH Profile",
-                "connection_type": "ssh",
-                "host": "test.example.com",
-                "port": 22,
-                "username": "testuser",
-                "password": "testpass",
-                "base_path": "/home/testuser",
-                "notes": "Test SSH profile for SFTP operations testing"
+            request_data = {
+                "container_id": container_id,
+                "path": path
+            }
+            
+            # FileLocation query parameter
+            location_params = {
+                "location": json.dumps({
+                    "type": "vm",
+                    "id": "119"
+                })
             }
             
             response = requests.post(
-                f"{self.base_url}/connection-profiles", 
-                json=profile_data, 
+                f"{self.base_url}/containers/files/list", 
+                json=request_data,
+                params=location_params,
                 headers=self.get_headers(), 
-                timeout=15
+                timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                self.test_profile_id = result.get('id')
+                data = response.json()
+                files = data.get('files', [])
+                
                 self.log_result(
-                    "Create SSH Profile", 
+                    "Container File List", 
                     True, 
-                    f"Successfully created SSH profile with ID: {self.test_profile_id}",
-                    {"profile_id": self.test_profile_id, "name": profile_data["name"]}
+                    f"Successfully listed {len(files)} files in container {container_id[:12]} at path {path}",
+                    {"file_count": len(files), "container_id": container_id[:12], "path": path}
                 )
-                return True
+                return files
             else:
-                self.log_result("Create SSH Profile", False, f"Failed to create profile: {response.status_code} - {response.text}")
-                return False
+                self.log_result("Container File List", False, f"Failed to list files: {response.status_code} - {response.text}")
+                return []
                 
         except Exception as e:
-            self.log_result("Create SSH Profile", False, f"Profile creation error: {str(e)}")
-            return False
+            self.log_result("Container File List", False, f"Error listing container files: {str(e)}")
+            return []
     
     def test_create_sftp_profile(self):
         """Test creating an SFTP connection profile"""

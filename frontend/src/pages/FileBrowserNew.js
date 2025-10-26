@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import ConnectionManager from '../components/ConnectionManager';
 import FilePane from '../components/FilePane';
 import { ArrowRightLeft, X } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useConnections } from '../contexts/ConnectionContext';
 
 const API = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
@@ -20,12 +21,20 @@ axios.interceptors.request.use(
 );
 
 function FileBrowserNew({ onLogout }) {
+  const { currentConnection } = useConnections();
   const [leftConnection, setLeftConnection] = useState(null);
   const [rightConnection, setRightConnection] = useState(null);
   const [draggedFile, setDraggedFile] = useState(null);
   const [leftPaneExpanded, setLeftPaneExpanded] = useState(false);
   const [rightPaneExpanded, setRightPaneExpanded] = useState(false);
   const [transferring, setTransferring] = useState(false);
+
+  // Auto-set left pane when global connection changes
+  useEffect(() => {
+    if (currentConnection && !leftConnection) {
+      setLeftConnection(currentConnection);
+    }
+  }, [currentConnection]);
 
   const handleDragStart = (file, connection, currentPath) => {
     setDraggedFile({ file, connection, currentPath });

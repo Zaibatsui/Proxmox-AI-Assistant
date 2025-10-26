@@ -337,6 +337,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
             </div>
           ))}
         </div>
+        )
       )}
 
       {/* Add/Edit Modal */}

@@ -138,14 +138,14 @@ export const ConnectionProvider = ({ children }) => {
     return getAllConnections().find(c => c.id === connectionId);
   };
 
-  // Get formatted location string for API calls (e.g., "host", "lxc:100", "vm:200")
+  // Get formatted location string for API calls (e.g., "host", "lxc:100", "qemu:200")
   const getLocationString = (connection) => {
     if (!connection) return 'host';
     
     if (connection.source === 'proxmox') {
       if (connection.id === 'proxmox_host') return 'host';
       if (connection.type === 'lxc') return `lxc:${connection.vmid}`;
-      if (connection.type === 'vm') return `qemu:${connection.vmid}`;
+      if (connection.type === 'vm' || connection.type === 'qemu') return `qemu:${connection.vmid}`;
     }
     
     return 'host';

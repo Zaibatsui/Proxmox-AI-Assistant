@@ -1725,11 +1725,7 @@ async def rename_file_by_profile(profile_id: str, old_path: str, new_name: str, 
 @api_router.post("/connection-profiles/{profile_id}/files/upload")
 async def upload_file_by_profile(
     profile_id: str, 
-    path: str,
-    chunk_data: str,
-    chunk_index: int,
-    total_chunks: int,
-    file_name: str,
+    request: FileUploadChunk,
     current_user: dict = Depends(get_current_user)
 ):
     """Upload file in chunks using a connection profile"""
@@ -1739,6 +1735,13 @@ async def upload_file_by_profile(
     
     if not profile:
         raise HTTPException(status_code=404, detail="Connection profile not found")
+    
+    # Extract data from request body
+    path = request.path
+    chunk_data = request.chunk_data
+    chunk_index = request.chunk_index
+    total_chunks = request.total_chunks
+    file_name = request.file_name
     
     try:
         # Decode chunk data

@@ -5700,6 +5700,99 @@ async def upload_container_file(request: ContainerFileUploadRequest, location: F
         logger.error(f"Failed to upload file to container: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# ==================== COMMAND EXECUTION ENDPOINT ====================
+
+class CommandExecuteRequest(BaseModel):
+    """Request to execute a command on a location."""
+    command: str
+    working_directory: str = "/"
+    location: Dict[str, Any]  # Can be FileLocation or container location
+
+@api_router.post("/execute-command")
+async def execute_command_endpoint(request: CommandExecuteRequest, current_user: dict = Depends(get_current_user)):
+    """
+    Execute a command on a remote location (host/VM/LXC/container).
+    """
+    try:
+        location_data = request.location
+        location_type = location_data.get("type", "host")
+        
+        # Handle container execution
+        if location_type == "container":
+            container_id = location_data.get("container_id")
+            host = location_data.get("host")
+            
+            if not container_id or not host:
+                raise HTTPException(status_code=400, detail="Container ID and host required")
+            
+            # Get Proxmox config for credentials
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            
+            username = proxmox_config.get("ssh_username", "root")
+            password = proxmox_config.get("ssh_password")
+            
+            # Execute command in container via docker exec
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            try:
+                ssh_client.connect(
+                    hostname=host,
+                    username=username,
+                    password=password,
+                    timeout=10
+                )
+                
+                # Build docker exec command
+                docker_command = f"docker exec {container_id} sh -c 'cd {request.working_directory} && {request.command}'"
+                
+                stdin, stdout, stderr = ssh_client.exec_command(docker_command)
+                exit_code = stdout.channel.recv_exit_status()
+                
+                output = stdout.read().decode('utf-8', errors='replace')
+                error = stderr.read().decode('utf-8', errors='replace')
+                
+                return {
+                    "output": output,
+                    "error": error,
+                    "exit_code": exit_code,
+                    "success": exit_code == 0
+                }
+            finally:
+                ssh_client.close()
+        
+        # Handle regular location execution (host/VM/LXC)
+        else:
+            location = FileLocation(
+                type=location_type,
+                id=location_data.get("id"),
+                ssh_username=location_data.get("ssh_username"),
+                ssh_password=location_data.get("ssh_password")
+            )
+            
+            ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+            
+            try:
+                # Build command with working directory
+                full_command = f"cd {request.working_directory} && {request.command}"
+                
+                exit_code, stdout, stderr = await exec_in_location(ssh_client, full_command, location)
+                
+                return {
+                    "output": stdout,
+                    "error": stderr,
+                    "exit_code": exit_code,
+                    "success": exit_code == 0
+                }
+            finally:
+                ssh_client.close()
+    
+    except Exception as e:
+        logger.error(f"Failed to execute command: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 # Include the router in the main app
 app.include_router(api_router)
 

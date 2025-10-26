@@ -392,6 +392,18 @@ function FilePane({
               >
                 <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
               </button>
+
+              {/* View Containers button - only show for VM/CT connections */}
+              {connection && (connection.type === 'vm' || connection.type === 'lxc' || connection.type === 'qemu') && onShowContainers && (
+                <button
+                  onClick={onShowContainers}
+                  className="px-2 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-xs text-white flex items-center gap-1"
+                  title="View Docker containers"
+                >
+                  <Box className="w-3 h-3" />
+                  Containers
+                </button>
+              )}
             </>
           )}
           

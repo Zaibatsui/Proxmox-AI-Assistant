@@ -1157,6 +1157,8 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                     # Check if guest agent is enabled
                     has_agent = False
                     agent_status = "unknown"
+                    agent_warning = None
+                    
                     try:
                         vm_config = proxmox.nodes(node_name).qemu(vm['vmid']).config.get()
                         has_agent = vm_config.get('agent', '0') == '1' or vm_config.get('agent', '').startswith('1')
@@ -1168,29 +1170,26 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                                 agent_status = "available"
                             except:
                                 agent_status = "configured_not_running"
+                                agent_warning = "Guest Agent Not Running"
                         elif has_agent:
                             agent_status = "configured"
                         else:
                             agent_status = "not_configured"
+                            agent_warning = "No Guest Agent"
                     except:
                         pass
                     
-                    vm_name = f"VM {vm['vmid']}: {vm.get('name', 'Unnamed')}"
-                    if agent_status == "not_configured":
-                        vm_name += " ⚠️ (No Guest Agent)"
-                    elif agent_status == "configured_not_running":
-                        vm_name += " ⚠️ (Agent Not Running)"
-                    
                     locations.append({
                         "id": f"vm_{vm['vmid']}",
-                        "name": vm_name,
+                        "name": f"VM {vm['vmid']}: {vm.get('name', 'Unnamed')}",
                         "type": "vm",
                         "vmid": vm['vmid'],
                         "node": node_name,
                         "icon": "HardDrive",
                         "status": vm.get('status', 'unknown'),
                         "has_guest_agent": has_agent,
-                        "agent_status": agent_status
+                        "agent_status": agent_status,
+                        "agent_warning": agent_warning
                     })
             except:
                 pass

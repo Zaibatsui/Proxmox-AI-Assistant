@@ -1,41 +1,42 @@
 <analysis>
-The AI engineer's work, which I am now summarizing, focused on advancing an MVP Proxmox assistant. The trajectory begins with an existing analysis outlining the initial build, emphasizing AI-driven file operations within Proxmox VMs, UI/UX enhancements (especially advanced appearance customization), and a confirmation workflow for AI actions. My detailed analysis of the subsequent conversation reveals a systematic approach to fulfilling the remaining product requirements.
+The AI engineer's work, which I am summarizing, systematically addressed a series of feature enhancements and bug fixes for a Proxmox assistant. The trajectory began with an existing MVP outline, emphasizing AI-driven file operations, UI/UX, and AI action confirmation. Key efforts included a thorough backend and frontend codebase exploration to implement missing SFTP capabilities, resolving a critical MongoDB  serialization error, and rectifying numerous API routing issues (missing  prefix).
 
-Key efforts included:
-1. **Codebase Exploration:** Thorough examination of  (FastAPI), and frontend components (, , ) to understand existing structures for connection profiles, file operations (SSH, FTP, SFTP), and backup/restore.
-2. **SFTP Implementation (Backend):** Adding a missing  import, extending existing SFTP helper functions, and creating new connection-profile-aware API endpoints for SFTP file operations (list, upload, download, rename, create directory).
-3. **Frontend Integration:** Updating the  component to utilize the new backend SFTP capabilities, enabling the dual-pane File Browser to perform these operations.
-4. **Bug Fixing:** Identifying and resolving a MongoDB  serialization error in the  endpoint.
-5. **Testing & Validation:** Successfully testing SFTP connection, file listing, directory creation, renaming, and deletion. An attempted chunked upload resulted in an SSL error, attributed to a proxy timeout, but basic SFTP functions were confirmed.
-6. **Current Challenge:** The trajectory concludes with the user reporting a Failed to save connection profile error, prompting an immediate investigation into backend logs.
+Significant progress was made on:
+1.  **File Browser Enhancements**: Full SFTP, FTP, Reverse Proxy, and Proxmox (Host, VM, CT) file operation support, robust binary file transfer, and an expandable dual-pane UI.
+2.  **AI Assistant Improvements**: Conversation memory, action confirmation, and comprehensive Docker integration with dedicated tools.
+3.  **UI/UX Refinements**: Redesigned Device Scanner, a unified global connection context for consistent access across pages, and improved error feedback for Proxmox VMs (e.g., guest agent warnings).
+
+The work consistently involved identifying root causes (e.g., incorrect API prefixes,  with binary data,  syntax), implementing fixes in both backend (FastAPI) and frontend (React), and verifying changes through logs and screenshots, often with user feedback guiding the next iteration.
 </analysis>
 
 <product_requirements>
 The core objective is to deliver an AI-powered Proxmox assistant for hardware monitoring, misconfiguration detection, LLM-based fixes, and verified command execution via a web UI. This includes real Proxmox integration, AI actions via SSH, comprehensive UI/UX, and advanced app appearance customization.
 
 Explicit requirements, and their current implementation status, include:
-1.  **AI File Access**: AI must access files on the Proxmox host and *inside* VMs/containers. (Implemented via SSH/SFTP backend).
-2.  **AI Confirmation Workflow**: AI proposes actions, allows user edits, requires explicit confirmation. (Implemented with UI modals in AI Assistant).
+1.  **AI File Access**: AI must access files on the Proxmox host and *inside* VMs/containers. (Implemented via SSH/SFTP/FTP/Reverse Proxy backend, extended to Proxmox host/VMs/CTs/Docker).
+2.  **AI Confirmation Workflow**: AI proposes actions, allows user edits, requires explicit confirmation. (Implemented with UI modals in AI Assistant, conversation memory added).
 3.  **Backup/Restore System**: User-friendly labeled backups and restore. (Backend restore endpoint exists; frontend restore button functionality pending).
 4.  **UI/UX Improvements**:
     *   **Settings Page**: Collapsible cards, consistent styling, full-width cards, API token guide. (Implemented, including advanced appearance controls).
-    *   **File Browser**: Dual-pane interface, navigation, upload/download, reliable preview, AI-aware connections. (Redesigned with dual-pane, SFTP/SSH backend, basic file operations working. Upload/download tested with partial success due to proxy issue. Connection profiles are currently facing a user-reported saving issue).
-    *   **AI Assistant**: Location selection, responsive chat, visible input, scrollable history. (Implemented, including credential management).
+    *   **File Browser**: Dual-pane interface, navigation, upload/download, reliable preview, AI-aware connections. (Redesigned with dual-pane, SFTP/SSH/FTP/Reverse Proxy/Proxmox backend, file operations working,  serialization and API prefix issues fixed, binary transfer and large file uploads fixed. Expandable panes UI implemented. Proxmox locations and guest agent warnings implemented.)
+    *   **AI Assistant**: Location selection, responsive chat, visible input, scrollable history. (Implemented, including credential management, conversation memory and Docker support.)
     *   **SSH Connection Test**: Test VM/container SSH credentials *before* modal close. (Implemented).
     *   **Dashboard Redesign**: Compact, visually appealing, real-time connection status (Proxmox API, SSH, OpenAI). (Implemented with real-time health checks).
     *   **VM Management**: Individual systems on distinct cards. (Implemented).
+    *   **Device Scanner**: Redesigned for uniformity with VM Management.
 5.  **Advanced App Appearance**: Controls for color schemes, background/card styles, layout density, border radius, shadow intensity, sidebar width with live preview and persistence. (Fully implemented with backend persistence).
-6.  **Login/Credentials**: User registration, AI stores/uses VM SSH credentials. (Implemented, with connection profile storage for SSH/SFTP).
+6.  **Login/Credentials**: User registration, AI stores/uses VM SSH credentials. (Implemented, with connection profile storage for SSH/SFTP/FTP/Reverse Proxy. Global connection context introduced).
 </product_requirements>
 
 <key_technical_concepts>
-- **FastAPI**: Python backend for API endpoints.
-- **React**: JavaScript frontend for UI components.
-- **MongoDB**: NoSQL database for data persistence.
-- **Proxmoxer/Paramiko**: API for Proxmox and SSH for host/VM/LXC access.
-- **OpenAI SDK**: LLM integration and function calling.
+
+- **FastAPI**: Python backend for API endpoints, extended for file operations and AI tools.
+- **React**: JavaScript frontend for UI components, with state management via Context API.
+- **MongoDB**: NoSQL database for data persistence, with  serialization fixes.
+- **Proxmoxer/Paramiko/ftplib**: API for Proxmox, SSH, and FTP for host/VM/LXC access.
+- **OpenAI SDK**: LLM integration and function calling, now with conversation memory.
 - **Shadcn UI/Tailwind CSS**: Frontend styling and component library.
-- **Docker/Docker Compose**: Application containerization.
+- **Docker/Docker Compose**: Application containerization, Docker CLI integrated into AI tools.
 - **Environment Variables**: Configuration management.
 </key_technical_concepts>
 
@@ -45,48 +46,51 @@ The application utilizes a FastAPI backend, a React frontend, and MongoDB for da
 
 
 -   **/app/backend/server.py**: Core FastAPI backend.
-    -   **Importance**: Handles API endpoints, Proxmoxer/Paramiko, OpenAI, and now SFTP.
-    -   **Changes**: Extended models for advanced theme settings and connection profiles. Added ,  CRUD. Major updates for file operations: , , ,  now handle SSH and SFTP. New SFTP helper functions and a fix for  serialization in . Added .
--   **/app/frontend/src/App.js**: React routing.
-    -   **Changes**: Routes  to .
+    -   **Importance**: Handles API endpoints, Proxmoxer/Paramiko, OpenAI, SFTP, FTP, Reverse Proxy, and Docker.
+    -   **Changes**: Extended models (, , , ). Fixed  serialization in . Added , , and . Integrated FTP, Reverse Proxy, and Proxmox Host/VM/CT/Docker file operation helpers (, , , ,  functions). Updated all file operation endpoints (, , , etc.) to support these new connection types. Implemented AI conversation memory and Docker-specific AI tools. Added  endpoint and logic to return VM/CT names and guest agent status. Fixed  and  for  VMs.
+-   **/app/frontend/src/App.js**: React routing and global context provider.
+    -   **Changes**: Routes  to . Wrapped application routes with  to provide global connection state.
+-   **/app/frontend/src/App.css**: Global CSS files.
+    -   **Changes**: Added  class for minimized UI elements.
 -   **/app/frontend/src/components/Layout.js**: Global layout.
-    -   **Changes**: Utilizes CSS variables for theme application (sidebar/header background, width, main padding), improved responsiveness.
+    -   **Changes**: Integrated  into the header for global connection management.
+-   **/app/frontend/src/components/ConnectionManager.js**: Component for managing connection profiles and Proxmox locations.
+    -   **Importance**: Allows users to create, edit, delete, and test connection profiles, and now view available Proxmox hosts/VMs/CTs.
+    -   **Changes**: Fixed API calls to include  prefix. Restructured UI to include Proxmox Locations tab and Profiles tab. Added logic to fetch Proxmox locations and display guest agent warnings. Fixed a syntax error (duplicate lines).
 -   **/app/frontend/src/components/FilePane.js**: Core component for the dual-pane file browser.
     -   **Importance**: Displays file system contents and handles file operations.
-    -   **Changes**: Updated to integrate with the new connection-profile-aware backend endpoints for file listing, upload, download, rename, and directory creation.
--   **/app/frontend/src/contexts/ThemeContext.js**: Manages global theme state.
-    -   **Changes**: Expanded to include states for custom colors, background/card styles, layout density, border radius, shadow intensity, and sidebar width.
--   **/app/frontend/src/pages/FileBrowserNew.js**: The redesigned dual-pane file browser.
-    -   **Importance**: The main view for file system interaction.
-    -   **Changes**: New page component replacing , integrates , and had layout issues fixed.
--   **/app/frontend/src/pages/BackupManager.js**: Backup management page.
-    -   **Changes**: Styling updated to consistent theme.
+    -   **Changes**: Updated API calls to include  prefix. Implemented expandable/collapsible panes with , ,  props. Added  action for file copy/move between panes. Improved error handling and state cleanup when switching connections.
+-   **/app/frontend/src/components/ConnectionSelector.js (NEW)**: Component for selecting the active global connection.
+    -   **Importance**: Provides a unified dropdown in the header to select connections used across the app.
+    -   **Changes**: New component created to display available connections (including online Proxmox locations) and manage the globally selected connection. Updated to display VM/CT names and guest agent warnings on separate lines.
+-   **/app/frontend/src/contexts/ConnectionContext.js (NEW)**: React Context for global connection state.
+    -   **Importance**: Centralizes connection management, allowing all components to access and update the active connection.
+    -   **Changes**: New context created to manage , , and . Includes functions to load connections, select them, and filter locations by  status.
 -   **/app/frontend/src/pages/AIAssistant.js**: AI chat interface.
-    -   **Changes**: Integrated credential management, UI modals for action confirmation, responsive layout fixes.
--   **/app/frontend/src/pages/Settings.js**: Configuration page.
-    -   **Changes**: UI expanded for advanced appearance options with live preview.
--   **/app/frontend/src/pages/Dashboard.js**: Dashboard component.
-    -   **Changes**: Redesigned for compact layout, includes real-time connection status for Proxmox API, SSH, and OpenAI.
--   **/app/frontend/src/App.css & /app/frontend/src/index.css**: Global CSS files.
-    -   **Changes**:  defines root CSS variables for theme elements;  applies global rules using these variables.
--   **/app/*.md**: Documentation.
-    -   **Changes**: Comprehensive guides (, , ) created.
+    -   **Changes**: Fixed  import. Updated to use  for  instead of local state. Removed old location selection UI. Sends  and conversation history with each query.
+-   **/app/frontend/src/pages/DeviceScanner.js**: Device management page.
+    -   **Changes**: Redesigned UI to match the style and layout of  for uniformity and clearer display of vendor/device IDs.
+-   **/app/frontend/src/pages/FileBrowserNew.js**: The redesigned dual-pane file browser.
+    -   **Changes**: Fixed  not being passed. Implemented  for inter-pane file operations using  and  for binary handling. Updated to use  for pane connections. Implemented click-to-restore 50/50 view for minimized panes.
 </code_architecture>
 
 <pending_tasks>
 - Implement restore button functionality in the Backup Manager frontend.
-- Fully complete the File Browser upgrade, specifically integrating robust chunked upload/download capabilities, and resolving the current Failed to save connection profile issue.
-- Ensure reverse proxy/subdomain testing capability for File Browser connections.
+- Fully complete the File Browser upgrade, specifically integrating robust chunked upload/download capabilities with thorough end-to-end testing for all connection types (SSH, SFTP, FTP, Reverse Proxy, Proxmox locations).
+- Ensure robust end-to-end testing for Reverse Proxy file browser connections.
+- Ensure the File Browser connection switching is robust and handles all error scenarios gracefully for all connection types.
 </pending_tasks>
 
 <current_work>
-Immediately before this summary, the AI engineer was engaged in finalizing and testing the **SFTP support within the File Browser**. The backend () now includes comprehensive  models (for SSH, FTP, SFTP) and their respective CRUD API endpoints. Crucially, new file operation endpoints (, , , ) have been extended to utilize SFTP when the connection type is specified. This involved adding a  import and refining SFTP helper functions.
+Immediately before this summary, the AI engineer was addressing a user request to improve the display of warnings in the File Browser's connection selection dropdown. Specifically, the user wanted the No QEMU guest agent configured warning to appear on a separate line underneath the VM name, rather than being appended to the name itself.
 
-On the frontend, the  component has been updated to interact with these new backend endpoints, allowing users to list files, create directories, rename, and delete files over SFTP. During testing, basic SFTP file operations (listing, creating, renaming, deleting) were confirmed successful. However, an attempt to test chunked upload resulted in an  (EOF occurred in violation of protocol), which was attributed to a potential proxy timeout. A critical bug involving MongoDB  serialization for the  endpoint was identified and fixed.
+To resolve this, the AI engineer made the following changes:
+1.  **Backend ():** Modified the  endpoint to return the  as a separate field in the location data, rather than embedded within the  field. This ensures cleaner data separation.
+2.  **Frontend ():** Updated the  component to read this new  field and display it distinctly on a new line, beneath the connection's name, as requested by the user.
 
-The latest development involves a user-reported issue: why does my test not work accompanied by an image, indicating a failure to save connection profiles. The AI engineer's immediate action is to check backend logs for messages like Failed to save connection profile to diagnose this new problem.
+This change is purely a UI/UX improvement to enhance readability of critical system information within the connection dropdown. The underlying functionality of detecting the guest agent status was previously implemented. The task immediately preceding this summary focused on the visual presentation of this warning in the UI.
 </current_work>
 
 <optional_next_step>
-Investigate the Failed to save connection profile error by analyzing backend logs.
+Test the ConnectionSelector to confirm the QEMU guest agent warning is displayed correctly on a separate line beneath the VM name.
 </optional_next_step>

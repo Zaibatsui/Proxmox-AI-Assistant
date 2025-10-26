@@ -8,7 +8,7 @@ import json
 import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 
-BACKEND_URL = "https://proxai-assistant.preview.emergentagent.com/api"
+BACKEND_URL = "https://proxwizard.preview.emergentagent.com/api"
 
 async def get_existing_config():
     """Get the existing Proxmox configuration from database"""

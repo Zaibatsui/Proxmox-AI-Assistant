@@ -534,13 +534,13 @@ class DockerContainerTester:
         return passed >= (total * 0.7)  # Allow 30% failure rate for network/connectivity issues
 
 if __name__ == "__main__":
-    tester = ConnectionProfileTester()
+    tester = DockerContainerTester()
     success = tester.run_all_tests()
     
     # Save detailed results
-    with open('/app/file_browser_connection_profile_test_results.json', 'w') as f:
+    with open('/app/docker_container_test_results.json', 'w') as f:
         json.dump(tester.test_results, f, indent=2)
     
-    print(f"\n📄 Detailed results saved to: /app/file_browser_connection_profile_test_results.json")
+    print(f"\n📄 Detailed results saved to: /app/docker_container_test_results.json")
     
     sys.exit(0 if success else 1)

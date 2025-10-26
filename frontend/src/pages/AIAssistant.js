@@ -824,7 +824,7 @@ function AIAssistant({ onLogout }) {
               <CardHeader>
                 <CardTitle className="text-white">VM SSH Credentials Required</CardTitle>
                 <p className="text-sm text-slate-400 mt-2">
-                  Enter SSH credentials to access VM {currentLocation.id} ({currentLocation.label})
+                  Enter SSH credentials to access {currentConnection?.name || 'VM'}
                 </p>
               </CardHeader>
               <CardContent className="space-y-4">

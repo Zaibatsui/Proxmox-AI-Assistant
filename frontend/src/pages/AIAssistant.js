@@ -14,9 +14,11 @@ import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useConnections } from "../contexts/ConnectionContext";
 
 function AIAssistant({ onLogout }) {
   const navigate = useNavigate();
+  const { currentConnection, getLocationString } = useConnections();
   const [question, setQuestion] = useState("");
   const [conversations, setConversations] = useState([]);
   const [loading, setLoading] = useState(false);

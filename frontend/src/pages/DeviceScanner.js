@@ -99,58 +99,95 @@ function DeviceScanner({ onLogout }) {
 
   const renderDeviceCard = (device, idx) => {
     const Icon = getDeviceIcon(device.device_type);
+    const hasDriver = device.current_driver;
+    const isVfio = hasDriver && device.current_driver.includes("vfio");
+    
     return (
       <Card
         key={idx}
-        className="border-slate-800 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/70 transition-all"
+        className={`border-slate-700 bg-gradient-to-br ${
+          isVfio
+            ? 'from-emerald-900/20 to-slate-900/80 hover:from-emerald-900/30' 
+            : hasDriver
+            ? 'from-blue-900/20 to-slate-900/80 hover:from-blue-900/30'
+            : 'from-slate-900/80 to-slate-800/50 hover:from-slate-800/90'
+        } backdrop-blur-sm hover:to-slate-700/50 transition-all relative overflow-hidden`}
+        data-testid={`device-card-${idx}`}
       >
-        <CardHeader className="pb-3">
-          <div className="flex items-start gap-3">
-            <div className="p-2 bg-cyan-500/10 rounded-lg flex-shrink-0">
-              <Icon className="w-5 h-5 text-cyan-400" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <CardTitle className="text-base text-slate-100 mb-1 break-words">
-                {device.device_name}
-              </CardTitle>
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <Badge variant="outline" className="bg-slate-800 text-slate-300 border-slate-700 text-xs">
-                  {device.device_type}
-                </Badge>
-                <span className="text-xs text-slate-500 font-mono">{device.pci_address}</span>
+        <div className={`absolute top-0 right-0 w-32 h-32 ${
+          isVfio ? 'bg-emerald-500/5' : hasDriver ? 'bg-blue-500/5' : 'bg-slate-500/5'
+        } rounded-full blur-3xl`} />
+        <CardHeader className="pb-3 relative">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3 flex-1">
+              <div className={`p-2.5 rounded-xl ${
+                isVfio
+                  ? 'bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 ring-1 ring-emerald-500/20' 
+                  : hasDriver
+                  ? 'bg-gradient-to-br from-blue-500/20 to-blue-600/10 ring-1 ring-blue-500/20'
+                  : 'bg-gradient-to-br from-amber-500/20 to-amber-600/10 ring-1 ring-amber-500/20'
+              } flex-shrink-0`}>
+                <Icon className={`w-5 h-5 ${
+                  isVfio ? 'text-emerald-400' : hasDriver ? 'text-blue-400' : 'text-amber-400'
+                }`} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <CardTitle className="text-lg text-slate-100 mb-1 leading-tight">
+                  {device.device_name}
+                </CardTitle>
+                <CardDescription className="text-slate-500 text-xs">
+                  PCI: {device.pci_address} • Type: {device.device_type}
+                </CardDescription>
               </div>
             </div>
+            <Badge
+              variant="outline"
+              className={getDriverBadgeColor(device.current_driver)}
+            >
+              {device.current_driver || "No Driver"}
+            </Badge>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-3 text-xs">
-            <div className="space-y-1">
-              <span className="text-slate-500">Vendor ID</span>
-              <p className="text-slate-300 font-mono bg-slate-950/50 px-2 py-1 rounded">{device.vendor_id}</p>
+          {/* Vendor and Device IDs Section - Improved */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-cyan-500"></div>
+                <span className="text-xs font-medium text-slate-400">Vendor ID</span>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-2">
+                <p className="text-sm font-mono text-cyan-400 font-semibold tracking-wide">{device.vendor_id}</p>
+              </div>
             </div>
-            <div className="space-y-1">
-              <span className="text-slate-500">Device ID</span>
-              <p className="text-slate-300 font-mono bg-slate-950/50 px-2 py-1 rounded">{device.device_id}</p>
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-purple-500"></div>
+                <span className="text-xs font-medium text-slate-400">Device ID</span>
+              </div>
+              <div className="bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-2">
+                <p className="text-sm font-mono text-purple-400 font-semibold tracking-wide">{device.device_id}</p>
+              </div>
             </div>
           </div>
           
-          <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">IOMMU Group</span>
-              <Badge variant="outline" className="bg-purple-500/20 text-purple-400 border-purple-500/30 text-xs">
-                {device.iommu_group || "N/A"}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-slate-500">Driver</span>
-              <Badge
-                variant="outline"
-                className={`${getDriverBadgeColor(device.current_driver)} text-xs`}
-              >
-                {device.current_driver || "None"}
-              </Badge>
-            </div>
+          {/* Additional Info */}
+          <div className="flex items-center justify-between text-sm pt-2 border-t border-slate-800">
+            <span className="text-slate-500">IOMMU Group:</span>
+            <Badge 
+              variant="outline" 
+              className="bg-slate-800 text-slate-300 border-slate-700"
+            >
+              {device.iommu_group || "N/A"}
+            </Badge>
           </div>
+          
+          {device.subsystem && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-500">Subsystem:</span>
+              <span className="text-slate-300 text-xs font-mono">{device.subsystem}</span>
+            </div>
+          )}
         </CardContent>
       </Card>
     );

@@ -43,7 +43,7 @@ class DockerContainerTester:
         try:
             # Try to register a new test user first
             register_data = {
-                "username": "sftp_tester", 
+                "username": "docker_tester", 
                 "password": "TestPass123!"
             }
             response = requests.post(f"{self.base_url}/auth/register", json=register_data, timeout=10)
@@ -55,7 +55,7 @@ class DockerContainerTester:
             elif response.status_code == 400 and "already exists" in response.text:
                 # User exists, try login
                 login_data = {
-                    "username": "sftp_tester", 
+                    "username": "docker_tester", 
                     "password": "TestPass123!"
                 }
                 response = requests.post(f"{self.base_url}/auth/login", json=login_data, timeout=10)

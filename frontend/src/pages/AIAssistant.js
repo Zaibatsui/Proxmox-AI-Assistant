@@ -358,17 +358,6 @@ function AIAssistant({ onLogout }) {
             </div>
           </CardContent>
         </Card>
-                      VM: {loc.vmid} ({loc.name})
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-            <p className="text-xs text-slate-500 mt-2">
-              💡 AI will know you're working on {currentLocation.label} and use the correct location for file operations
-            </p>
-          </CardContent>
-        </Card>
 
         <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 overflow-hidden" style={{ height: 'calc(100vh - 20rem)' }}>
           {/* Chat Area */}

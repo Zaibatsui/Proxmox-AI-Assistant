@@ -130,7 +130,7 @@ class DockerContainerTester:
             location_params = {
                 "location": json.dumps({
                     "type": "vm",
-                    "id": "119"
+                    "id": "119.119.119.119"
                 })
             }
             
@@ -173,7 +173,7 @@ class DockerContainerTester:
             location_params = {
                 "location": json.dumps({
                     "type": "vm",
-                    "id": "119"
+                    "id": "119.119.119.119"
                 })
             }
             
@@ -227,7 +227,7 @@ class DockerContainerTester:
             location_params = {
                 "location": json.dumps({
                     "type": "vm",
-                    "id": "119"
+                    "id": "119.119.119.119"
                 })
             }
             
@@ -274,7 +274,7 @@ class DockerContainerTester:
             location_params = {
                 "location": json.dumps({
                     "type": "vm",
-                    "id": "119"
+                    "id": "119.119.119.119"
                 })
             }
             
@@ -318,7 +318,7 @@ class DockerContainerTester:
             location_params = {
                 "location": json.dumps({
                     "type": "vm",
-                    "id": "119"
+                    "id": "119.119.119.119"
                 })
             }
             

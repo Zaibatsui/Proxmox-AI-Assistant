@@ -140,7 +140,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Reverse Proxy File Operations Support"
+    - "Docker Container File Browser via Portainer Agent"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

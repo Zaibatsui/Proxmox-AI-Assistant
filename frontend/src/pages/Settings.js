@@ -83,11 +83,11 @@ function Settings({ onLogout }) {
           api_token_name: response.data.api_token_name,
           api_token_secret: "", // Don't show secret
           verify_ssl: response.data.verify_ssl,
-          ssh_username: response.data.ssh_username || "root",
+          ssh_username: "root", // Default value, SSH config is now separate
           ssh_password: "" // Don't show password
         });
-        // Test connection automatically after loading config
-        testConnection();
+        // Don't auto-test connection on load - let user trigger it manually
+        // This prevents slow page loads due to connection timeouts
       }
     } catch (error) {
       // No config yet

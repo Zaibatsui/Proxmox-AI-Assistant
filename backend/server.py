@@ -4386,7 +4386,8 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
         parts = line.split(None, 8)
         if len(parts) < 8:
             # Skip lines that don't have enough parts
-            logger.warning(f"Skipping line with insufficient parts: {line}")
+            logger.warning(f"Skipping line with insufficient parts ({len(parts)}): {line}")
+            skipped_lines += 1
             continue
         
         permissions = parts[0]

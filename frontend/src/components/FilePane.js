@@ -293,24 +293,31 @@ function FilePane({
           )}
           
           {style?.width === '5%' && (
-            <div className="flex-1 flex items-center justify-center">
-              <span className="text-xs text-slate-400 font-medium transform -rotate-90 whitespace-nowrap">
-                {paneId === 'left' ? 'Left Pane' : 'Right Pane'}
+            <div 
+              className="flex-1 flex flex-col items-center justify-center cursor-pointer hover:bg-slate-700/50 py-4 rounded transition-colors"
+              onClick={onToggleExpand}
+              title="Click to restore"
+            >
+              <span className="text-xs text-slate-400 font-medium writing-mode-vertical mb-2">
+                {paneId === 'left' ? 'LEFT' : 'RIGHT'}
               </span>
+              <Maximize2 className="w-4 h-4 text-slate-500" />
             </div>
           )}
           
-          <button
-            onClick={onToggleExpand}
-            className="p-1.5 hover:bg-slate-700 rounded"
-            title={style?.width === '95%' ? "Restore" : "Maximize"}
-          >
-            {style?.width === '95%' ? (
-              <Minimize2 className="w-4 h-4 text-amber-400" />
-            ) : (
-              <Maximize2 className="w-4 h-4 text-slate-400" />
-            )}
-          </button>
+          {style?.width !== '5%' && (
+            <button
+              onClick={onToggleExpand}
+              className="p-1.5 hover:bg-slate-700 rounded"
+              title={style?.width === '95%' ? "Restore" : "Maximize"}
+            >
+              {style?.width === '95%' ? (
+                <Minimize2 className="w-4 h-4 text-amber-400" />
+              ) : (
+                <Maximize2 className="w-4 h-4 text-slate-400" />
+              )}
+            </button>
+          )}
         </div>
       </div>
 

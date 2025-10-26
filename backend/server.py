@@ -1133,19 +1133,8 @@ async def get_connection_profiles(current_user: dict = Depends(get_current_user)
 async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
     """Get available Proxmox locations: host, VMs, CTs, and Docker containers"""
     try:
-        proxmox_credentials = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
-        
-        if not proxmox_credentials or not proxmox_credentials.get('proxmox_host'):
-            return {"locations": [], "error": "Proxmox not configured"}
-        
-        # Connect to Proxmox
-        proxmox = ProxmoxAPI(
-            proxmox_credentials['proxmox_host'],
-            user=proxmox_credentials['proxmox_user'],
-            token_name=proxmox_credentials['proxmox_token_name'],
-            token_value=proxmox_credentials['proxmox_token_value'],
-            verify_ssl=False
-        )
+        # Use the existing get_proxmox_connection helper
+        proxmox, config = await get_proxmox_connection(current_user["user_id"])
         
         locations = []
         

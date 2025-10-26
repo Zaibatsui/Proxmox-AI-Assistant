@@ -1,9 +1,34 @@
 [
   {
     "test": "Authentication",
-    "success": false,
-    "message": "Registration failed: 502 - ",
+    "success": true,
+    "message": "Registered and logged in successfully",
     "details": {},
-    "timestamp": "2025-10-26T22:52:52.912025"
+    "timestamp": "2025-10-26T22:56:42.456385"
+  },
+  {
+    "test": "Proxmox Configuration",
+    "success": true,
+    "message": "Successfully created Proxmox configuration for testing",
+    "details": {},
+    "timestamp": "2025-10-26T22:56:42.568580"
+  },
+  {
+    "test": "CT 104 Fallback (all_containers=true)",
+    "success": false,
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: No authentication methods available\"}",
+    "details": {
+      "status_code": 500
+    },
+    "timestamp": "2025-10-26T22:56:43.120617"
+  },
+  {
+    "test": "CT 104 Fallback (all_containers=false)",
+    "success": false,
+    "message": "Unexpected error: 500 - {\"detail\":\"500: SSH connection failed: No authentication methods available\"}",
+    "details": {
+      "status_code": 500
+    },
+    "timestamp": "2025-10-26T22:56:43.606947"
   }
 ]

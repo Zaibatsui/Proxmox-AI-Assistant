@@ -292,16 +292,6 @@ function AIAssistant({ onLogout }) {
     }
   };
 
-  const handleLocationChange = (loc) => {
-    setCurrentLocation(loc);
-    toast.info(`Switched to: ${loc.label}`);
-    
-    // Check if we need credentials for this VM
-    if (loc.type === 'vm' && !sessionCredentials[loc.id]) {
-      setShowVMCredentials(true);
-    }
-  };
-
   const loadHistoryItem = (item) => {
     setConversations([
       { type: "user", content: item.question },

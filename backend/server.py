@@ -188,6 +188,13 @@ class ConnectionProfileUpdate(BaseModel):
     base_path: Optional[str] = None
     notes: Optional[str] = None
 
+class FileUploadChunk(BaseModel):
+    path: str
+    chunk_data: str
+    chunk_index: int
+    total_chunks: int
+    file_name: str
+
 # ==================== DEVICE MODELS ====================
 
 class PCIDevice(BaseModel):

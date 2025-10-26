@@ -29,7 +29,8 @@ function FilePane({
   onDrop,
   isExpanded,
   onToggleExpand,
-  style
+  style,
+  onTransferFile  // New prop for transfer functionality
 }) {
   const [currentPath, setCurrentPath] = useState('/');
   const [files, setFiles] = useState([]);

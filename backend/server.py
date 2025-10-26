@@ -5436,36 +5436,23 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
     Uses Portainer Agent to communicate with Docker.
     """
     try:
-        # Get SSH credentials
-        ssh_client = await get_location_ssh_client(current_user["user_id"], 
-                                                   FileLocation(
-                                                       type=request.location_type,
-                                                       id=request.location_id,
-                                                       ssh_username=request.ssh_username,
-                                                       ssh_password=request.ssh_password
-                                                   ))
+        # Get Proxmox configuration
+        proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+        if not proxmox_config:
+            raise HTTPException(status_code=404, detail="Proxmox configuration not found")
         
-        # Get host and credentials from SSH client
-        # For Proxmox locations, we need to get the VM's IP
         host = None
-        username = request.ssh_username or "root"
-        password = request.ssh_password
+        username = request.ssh_username or proxmox_config.get("ssh_username", "root")
+        password = request.ssh_password or proxmox_config.get("ssh_password")
         
         # Determine the host based on location type
         if request.location_type == "host":
-            # Use Proxmox host
-            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
-            if not proxmox_config:
-                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
+            # Use Proxmox host directly
             host = proxmox_config["host"]
-            username = proxmox_config.get("ssh_username", "root")
-            password = proxmox_config.get("ssh_password")
-        elif request.location_type in ["vm", "lxc"]:
-            # Get VM/LXC IP from Proxmox API
-            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
-            if not proxmox_config:
-                raise HTTPException(status_code=404, detail="Proxmox configuration not found")
-            
+        elif request.location_type in ["vm", "lxc"] and request.location_id:
+            # For VM/LXC, try to get IP from Proxmox (simplified - use location_id as IP if numeric)
+            # In production, you'd query Proxmox API for the VM's IP
+            # For now, assume location_id is the VM ID and we need to look it up
             try:
                 proxmox = ProxmoxAPI(
                     proxmox_config["host"],
@@ -5475,47 +5462,40 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
                     verify_ssl=proxmox_config.get("verify_ssl", False)
                 )
                 
-                # Get node and VM/LXC details
+                # Search for VM/LXC across all nodes
                 for node in proxmox.nodes.get():
                     node_name = node['node']
                     
                     if request.location_type == "vm":
-                        vms = proxmox.nodes(node_name).qemu.get()
-                        for vm in vms:
-                            if str(vm['vmid']) == request.location_id:
-                                # Get VM network interfaces to find IP
-                                config = proxmox.nodes(node_name).qemu(vm['vmid']).agent.get('network-get-interfaces')
-                                for interface in config.get('result', []):
-                                    if interface.get('name') not in ['lo']:
-                                        for ip_addr in interface.get('ip-addresses', []):
-                                            if ip_addr.get('ip-address-type') == 'ipv4':
-                                                host = ip_addr['ip-address']
-                                                break
-                                    if host:
-                                        break
-                                break
-                    else:  # lxc
-                        lxcs = proxmox.nodes(node_name).lxc.get()
-                        for lxc in lxcs:
-                            if str(lxc['vmid']) == request.location_id:
-                                # LXC network info
-                                config = proxmox.nodes(node_name).lxc(lxc['vmid']).config.get()
-                                # Try to get IP from status
-                                status = proxmox.nodes(node_name).lxc(lxc['vmid']).status.current.get()
-                                # Parse network info - this is simplified, may need adjustment
-                                if 'network' in status:
-                                    # Try to extract IP from network info
-                                    pass
-                                break
+                        try:
+                            # Get VM config
+                            vm_config = proxmox.nodes(node_name).qemu(request.location_id).agent('network-get-interfaces').get()
+                            # Extract IP from agent data
+                            for interface in vm_config.get('result', []):
+                                if interface.get('name') not in ['lo']:
+                                    for ip_addr in interface.get('ip-addresses', []):
+                                        if ip_addr.get('ip-address-type') == 'ipv4':
+                                            host = ip_addr['ip-address']
+                                            break
+                                if host:
+                                    break
+                        except:
+                            # If agent not available, try to use the vmid as hint
+                            pass
                     
                     if host:
                         break
             except Exception as e:
-                logger.error(f"Failed to get location IP from Proxmox: {str(e)}")
-                raise HTTPException(status_code=500, detail=f"Failed to get location IP: {str(e)}")
+                logger.warning(f"Could not get IP from Proxmox API: {str(e)}")
+                # Fallback: try using location_id as direct IP/hostname
+                if "." in request.location_id:
+                    host = request.location_id
         
         if not host:
-            raise HTTPException(status_code=404, detail=f"Could not determine host for {request.location_type} {request.location_id}")
+            raise HTTPException(
+                status_code=404, 
+                detail=f"Could not determine host for {request.location_type} {request.location_id}. Please ensure VM has guest agent enabled or provide IP directly."
+            )
         
         # Create Portainer Agent client
         async with PortainerAgentClient(
@@ -5535,7 +5515,12 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
                         "state": c.state
                     }
                     for c in containers
-                ]
+                ],
+                "location": {
+                    "type": request.location_type,
+                    "id": request.location_id,
+                    "host": host
+                }
             }
     
     except Exception as e:

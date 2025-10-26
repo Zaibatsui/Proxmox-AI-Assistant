@@ -866,8 +866,7 @@ function AIAssistant({ onLogout }) {
                   <Button
                     onClick={() => {
                       setShowVMCredentials(false);
-                      setCurrentLocation({ type: 'host', label: 'Proxmox Host' });
-                      toast.info("Switched back to Proxmox Host");
+                      toast.info("Cancelled - please select a different connection or provide credentials");
                     }}
                     variant="outline"
                     className="flex-1"

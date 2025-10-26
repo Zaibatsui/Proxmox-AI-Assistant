@@ -240,6 +240,66 @@ function Settings({ onLogout }) {
     }
   };
 
+  const fetchSSHConfigs = async () => {
+    try {
+      const response = await axios.get(`${API}/ssh/configs`);
+      setSshConfigs(response.data || []);
+      
+      // If there's at least one config, populate the form with it
+      if (response.data && response.data.length > 0) {
+        const firstConfig = response.data[0];
+        setSshFormData({
+          name: firstConfig.name,
+          host: firstConfig.host,
+          port: firstConfig.port,
+          username: firstConfig.username,
+          password: "" // Don't show password
+        });
+      }
+    } catch (error) {
+      // No configs yet
+    }
+  };
+
+  const handleSaveSSH = async () => {
+    if (!sshFormData.host || !sshFormData.username) {
+      toast.error("Please fill in host and username");
+      return;
+    }
+
+    setSavingSsh(true);
+    try {
+      // Check if we're updating an existing config or creating new one
+      if (sshConfigs.length > 0) {
+        // Update first config
+        const configId = sshConfigs[0].id;
+        const dataToSend = { ...sshFormData };
+        if (!dataToSend.password) {
+          delete dataToSend.password; // Don't send empty password on update
+        }
+        await axios.put(`${API}/ssh/configs/${configId}`, dataToSend);
+        toast.success("SSH configuration updated successfully");
+      } else {
+        // Create new config
+        if (!sshFormData.password) {
+          toast.error("Password is required for new SSH configuration");
+          setSavingSsh(false);
+          return;
+        }
+        await axios.post(`${API}/ssh/configs`, sshFormData);
+        toast.success("SSH configuration created successfully");
+      }
+      
+      await fetchSSHConfigs();
+      // Test SSH connection after saving
+      await testSshConnection();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || "Failed to save SSH configuration");
+    } finally {
+      setSavingSsh(false);
+    }
+  };
+
   const handleDelete = async () => {
     if (!window.confirm("Are you sure you want to delete the Proxmox configuration?")) {
       return;

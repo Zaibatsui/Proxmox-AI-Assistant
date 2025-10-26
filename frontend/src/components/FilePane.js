@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { 
   ChevronRight, File, Folder, Save, X, Upload, FolderPlus, 
-  Download, Edit2, Trash2, Copy, Loader2, RefreshCw, Maximize2, Minimize2, ArrowRight
+  Download, Edit2, Trash2, Copy, Loader2, RefreshCw, Maximize2, Minimize2, ArrowRight, Box
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -30,7 +30,8 @@ function FilePane({
   isExpanded,
   onToggleExpand,
   style,
-  onTransferFile  // New prop for transfer functionality
+  onTransferFile,  // New prop for transfer functionality
+  onShowContainers  // New prop to trigger container browser
 }) {
   const [currentPath, setCurrentPath] = useState('/');
   const [files, setFiles] = useState([]);

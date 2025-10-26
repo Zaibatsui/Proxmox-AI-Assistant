@@ -208,9 +208,11 @@ class DockerContainerTester:
             
             # Test 2: Container files list endpoint structure
             try:
-                request_data = {"container_id": "test", "path": "/"}
-                location_params = {"type": "host"}
-                response = requests.post(f"{self.base_url}/containers/files/list", json=request_data, params=location_params, headers=self.get_headers(), timeout=10)
+                request_data = {
+                    "request": {"container_id": "test", "path": "/"},
+                    "location": {"type": "host", "id": None}
+                }
+                response = requests.post(f"{self.base_url}/containers/files/list", json=request_data, headers=self.get_headers(), timeout=10)
                 endpoints_tested += 1
                 if response.status_code in [200, 500]:  # 500 is expected due to auth failure
                     endpoints_working += 1
@@ -219,9 +221,11 @@ class DockerContainerTester:
             
             # Test 3: Container files read endpoint structure
             try:
-                request_data = {"container_id": "test", "path": "/etc/hostname"}
-                location_params = {"type": "host"}
-                response = requests.post(f"{self.base_url}/containers/files/read", json=request_data, params=location_params, headers=self.get_headers(), timeout=10)
+                request_data = {
+                    "request": {"container_id": "test", "path": "/etc/hostname"},
+                    "location": {"type": "host", "id": None}
+                }
+                response = requests.post(f"{self.base_url}/containers/files/read", json=request_data, headers=self.get_headers(), timeout=10)
                 endpoints_tested += 1
                 if response.status_code in [200, 500]:  # 500 is expected due to auth failure
                     endpoints_working += 1
@@ -230,9 +234,11 @@ class DockerContainerTester:
             
             # Test 4: Container files write endpoint structure
             try:
-                request_data = {"container_id": "test", "path": "/tmp/test.txt", "content": "SGVsbG8gRG9ja2VyIQ=="}
-                location_params = {"type": "host"}
-                response = requests.post(f"{self.base_url}/containers/files/write", json=request_data, params=location_params, headers=self.get_headers(), timeout=10)
+                request_data = {
+                    "request": {"container_id": "test", "path": "/tmp/test.txt", "content": "SGVsbG8gRG9ja2VyIQ=="},
+                    "location": {"type": "host", "id": None}
+                }
+                response = requests.post(f"{self.base_url}/containers/files/write", json=request_data, headers=self.get_headers(), timeout=10)
                 endpoints_tested += 1
                 if response.status_code in [200, 500]:  # 500 is expected due to auth failure
                     endpoints_working += 1
@@ -241,9 +247,11 @@ class DockerContainerTester:
             
             # Test 5: Container files upload endpoint structure
             try:
-                request_data = {"container_id": "test", "destination_path": "/tmp", "filename": "uploaded.txt", "content": "VGVzdCBVcGxvYWQ="}
-                location_params = {"type": "host"}
-                response = requests.post(f"{self.base_url}/containers/files/upload", json=request_data, params=location_params, headers=self.get_headers(), timeout=10)
+                request_data = {
+                    "request": {"container_id": "test", "destination_path": "/tmp", "filename": "uploaded.txt", "content": "VGVzdCBVcGxvYWQ="},
+                    "location": {"type": "host", "id": None}
+                }
+                response = requests.post(f"{self.base_url}/containers/files/upload", json=request_data, headers=self.get_headers(), timeout=10)
                 endpoints_tested += 1
                 if response.status_code in [200, 500]:  # 500 is expected due to auth failure
                     endpoints_working += 1

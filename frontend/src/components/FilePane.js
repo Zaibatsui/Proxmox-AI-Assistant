@@ -257,33 +257,50 @@ function FilePane({
 
   return (
     <div 
-      className="flex-1 flex flex-col bg-slate-900/80 rounded-lg border border-slate-700 overflow-hidden"
+      className="flex flex-col bg-slate-900/80 rounded-lg border border-slate-700 overflow-hidden"
+      style={style}
       onDragOver={handleDragOver}
       onDrop={handleDropOnPane}
     >
       {/* Toolbar */}
       <div className="flex items-center justify-between p-2 border-b border-slate-700 bg-slate-800/50">
         <div className="flex items-center gap-1 flex-1 min-w-0">
-          <button
-            onClick={navigateUp}
-            disabled={currentPath === '/'}
-            className="p-1.5 hover:bg-slate-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
-            title="Up one level"
-          >
-            <ChevronRight className="w-4 h-4 text-slate-400 rotate-180" />
-          </button>
+          {!isExpanded && (
+            <>
+              <button
+                onClick={navigateUp}
+                disabled={currentPath === '/'}
+                className="p-1.5 hover:bg-slate-700 rounded disabled:opacity-30 disabled:cursor-not-allowed"
+                title="Up one level"
+              >
+                <ChevronRight className="w-4 h-4 text-slate-400 rotate-180" />
+              </button>
+              
+              <div className="flex-1 px-2 py-1 bg-slate-800 rounded text-xs text-slate-300 truncate">
+                {currentPath}
+              </div>
+              
+              <button
+                onClick={() => loadDirectory(currentPath)}
+                disabled={loading}
+                className="p-1.5 hover:bg-slate-700 rounded"
+                title="Refresh"
+              >
+                <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </>
+          )}
           
-          <div className="flex-1 px-2 py-1 bg-slate-800 rounded text-xs text-slate-300 truncate">
-            {currentPath}
-          </div>
-          
           <button
-            onClick={() => loadDirectory(currentPath)}
-            disabled={loading}
-            className="p-1.5 hover:bg-slate-700 rounded"
-            title="Refresh"
+            onClick={onToggleExpand}
+            className="p-1.5 hover:bg-slate-700 rounded ml-auto"
+            title={isExpanded ? "Restore" : "Maximize"}
           >
-            <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+            {isExpanded ? (
+              <Minimize2 className="w-4 h-4 text-amber-400" />
+            ) : (
+              <Maximize2 className="w-4 h-4 text-slate-400" />
+            )}
           </button>
         </div>
       </div>

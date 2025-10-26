@@ -100,6 +100,9 @@ function AIAssistant({ onLogout }) {
     setConversations(prev => [...prev, { type: "user", content: userQuestion }]);
 
     try {
+      // Include session_id in request
+      requestPayload.session_id = sessionId;
+      
       const response = await axios.post(`${API}/ai/query`, requestPayload);
       
       // Check for proposals in the response

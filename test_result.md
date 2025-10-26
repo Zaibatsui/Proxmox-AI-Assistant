@@ -148,8 +148,7 @@ metadata:
   run_ui: false
 
 test_plan:
-  current_focus:
-    - "Docker Container File Browser via Portainer Agent"
+  current_focus: []
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

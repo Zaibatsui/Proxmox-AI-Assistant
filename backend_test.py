@@ -602,47 +602,41 @@ class ConnectionProfileTester:
             return False
             
         endpoints_to_test = [
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/list", {"path": "/"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/read", {"path": "/test.txt"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/write", {"path": "/test.txt", "content": "test"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/delete", {"path": "/test.txt"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/mkdir", {"path": "/testdir"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/rename", {"old_path": "/test.txt", "new_name": "renamed.txt"}),
-            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/upload", {"path": "/", "chunk_data": "dGVzdA==", "chunk_index": 0, "total_chunks": 1, "file_name": "test.txt"}),
-            ("GET", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/download", {"path": "/test.txt"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/list?path=/"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/read?path=/test.txt"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/write?path=/test.txt&content=test"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/delete?path=/test.txt"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/mkdir?path=/testdir"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/rename?old_path=/test.txt&new_name=renamed.txt"),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/upload?path=/&chunk_data=dGVzdA==&chunk_index=0&total_chunks=1&file_name=test.txt"),
+            ("GET", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/download?path=/test.txt"),
         ]
         
         success_count = 0
         total_count = len(endpoints_to_test)
         
-        for method, endpoint, params in endpoints_to_test:
+        for method, endpoint in endpoints_to_test:
             try:
                 if method == "GET":
-                    response = requests.get(f"{self.base_url}{endpoint}", headers=self.get_headers(), params=params, timeout=15)
+                    response = requests.get(f"{self.base_url}{endpoint}", headers=self.get_headers(), timeout=15)
                 else:
-                    if "?" in endpoint:
-                        # Use query params
-                        param_str = "&".join([f"{k}={v}" for k, v in params.items()])
-                        response = requests.post(f"{self.base_url}{endpoint}&{param_str}", headers=self.get_headers(), timeout=15)
-                    else:
-                        # Use JSON body
-                        response = requests.post(f"{self.base_url}{endpoint}", headers=self.get_headers(), json=params, timeout=15)
+                    response = requests.post(f"{self.base_url}{endpoint}", headers=self.get_headers(), timeout=15)
                 
                 # For reverse proxy, we expect 500 errors (no real server), but NOT 400 "not supported" errors
                 if response.status_code == 200:
                     success_count += 1
-                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", True, "Endpoint working correctly")
+                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", True, "Endpoint working correctly")
                 elif response.status_code == 500:
                     if "not supported" not in response.text.lower() and "reverse_proxy not supported" not in response.text.lower():
                         success_count += 1
-                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", True, "Endpoint accessible (expected 500 due to no real server)")
+                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", True, "Endpoint accessible (expected 500 due to no real server)")
                     else:
-                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Unsupported connection type error: {response.text}")
+                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Unsupported connection type error: {response.text}")
                 else:
-                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Unexpected response: {response.status_code} - {response.text}")
+                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Unexpected response: {response.status_code} - {response.text}")
                     
             except Exception as e:
-                self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Request error: {str(e)}")
+                self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1].split('?')[0]}", False, f"Request error: {str(e)}")
         
         if success_count == total_count:
             self.log_result("Reverse Proxy Comprehensive Test", True, f"All {total_count} reverse proxy endpoints accessible")

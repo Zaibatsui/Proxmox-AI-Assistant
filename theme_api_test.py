@@ -11,7 +11,7 @@ import sys
 from datetime import datetime
 
 # Get backend URL from frontend env
-BACKEND_URL = "https://proxwizard.preview.emergentagent.com/api"
+BACKEND_URL = "https://ai-proxmox.preview.emergentagent.com/api"
 
 class ThemeAPITester:
     def __init__(self):

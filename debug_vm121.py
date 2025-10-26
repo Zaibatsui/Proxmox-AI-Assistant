@@ -9,7 +9,7 @@ import os
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 
-BACKEND_URL = "https://proxwizard.preview.emergentagent.com/api"
+BACKEND_URL = "https://ai-proxmox.preview.emergentagent.com/api"
 
 async def check_database():
     """Check MongoDB for existing configurations"""

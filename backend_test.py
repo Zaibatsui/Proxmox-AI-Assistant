@@ -257,45 +257,52 @@ class DockerContainerTester:
             self.log_result("Container File Write", False, f"Error writing container file: {str(e)}")
             return False
 
-    def test_create_reverse_proxy_profile(self):
-        """Test creating a Reverse Proxy connection profile"""
+    def test_upload_container_file(self, container_id, destination_path, filename, content):
+        """Test POST /api/containers/files/upload - Upload a file to container"""
         try:
-            profile_data = {
-                "name": "Test Reverse Proxy Profile",
-                "connection_type": "reverse_proxy",
-                "host": "https://api.example.com",
-                "port": 443,
-                "username": "apiuser",
-                "password": "apipass",
-                "base_path": "/files",
-                "notes": "Test reverse proxy profile for file operations testing"
+            # Encode content as base64
+            content_b64 = base64.b64encode(content.encode('utf-8')).decode('utf-8')
+            
+            request_data = {
+                "container_id": container_id,
+                "destination_path": destination_path,
+                "filename": filename,
+                "content": content_b64
+            }
+            
+            # FileLocation query parameter
+            location_params = {
+                "location": json.dumps({
+                    "type": "vm",
+                    "id": "119"
+                })
             }
             
             response = requests.post(
-                f"{self.base_url}/connection-profiles", 
-                json=profile_data, 
+                f"{self.base_url}/containers/files/upload", 
+                json=request_data,
+                params=location_params,
                 headers=self.get_headers(), 
-                timeout=15
+                timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                rproxy_profile_id = result.get('id')
-                self.reverse_proxy_profile_id = rproxy_profile_id
+                data = response.json()
+                
                 self.log_result(
-                    "Create Reverse Proxy Profile", 
+                    "Container File Upload", 
                     True, 
-                    f"Successfully created Reverse Proxy profile with ID: {rproxy_profile_id}",
-                    {"profile_id": rproxy_profile_id, "name": profile_data["name"]}
+                    f"Successfully uploaded file {filename} to container {container_id[:12]} at {destination_path}",
+                    {"container_id": container_id[:12], "filename": filename, "destination_path": destination_path}
                 )
-                return rproxy_profile_id
+                return True
             else:
-                self.log_result("Create Reverse Proxy Profile", False, f"Failed to create Reverse Proxy profile: {response.status_code} - {response.text}")
-                return None
+                self.log_result("Container File Upload", False, f"Failed to upload file: {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_result("Create Reverse Proxy Profile", False, f"Reverse Proxy profile creation error: {str(e)}")
-            return None
+            self.log_result("Container File Upload", False, f"Error uploading container file: {str(e)}")
+            return False
     
     def test_profile_connection(self, profile_id):
         """Test connection profile connectivity"""

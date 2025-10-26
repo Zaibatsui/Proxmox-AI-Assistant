@@ -4143,6 +4143,20 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     pending_action = json.loads(match.group())
             except:
                 pass
+        elif "container_file_edit_proposal" in response_text:
+            try:
+                match = re.search(r'\{[^}]*"type":\s*"container_file_edit_proposal"[^}]*\}', response_text)
+                if match:
+                    pending_action = json.loads(match.group())
+            except:
+                pass
+        elif "container_command_execution_proposal" in response_text:
+            try:
+                match = re.search(r'\{[^}]*"type":\s*"container_command_execution_proposal"[^}]*\}', response_text)
+                if match:
+                    pending_action = json.loads(match.group())
+            except:
+                pass
         
         # Update session with pending action and messages
         await db.conversation_sessions.update_one(

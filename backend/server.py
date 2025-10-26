@@ -3947,13 +3947,17 @@ async def exec_in_location(ssh_client, command: str, location: Optional[FileLoca
         return await ssh_exec_command(ssh_client, lxc_command)
     
     elif location.type == "vm" or location.type == "qemu":
-        # For VMs, use qm guest exec with proper syntax
-        # qm guest exec requires: qm guest exec <vmid> <command> [<arg1> [<arg2> ...]]
-        # We need to pass the full command as a shell invocation
+        # For VMs, use qm guest exec with proper argument passing
+        # The command needs to be passed as a single argument after --
+        # We'll use bash -c to execute the full command
         import shlex
-        # Escape the command for shell execution
-        escaped_command = command.replace("'", "'\\''")
-        qemu_command = f"qm guest exec {location.id} sh -c '{escaped_command}'"
+        
+        # Escape the command for safe passing
+        escaped_command = command.replace("\\", "\\\\").replace('"', '\\"')
+        
+        # Use -- separator and pass the full command to bash -c
+        qemu_command = f'qm guest exec {location.id} -- bash -c "{escaped_command}"'
+        
         return await ssh_exec_command(ssh_client, qemu_command)
     
     else:

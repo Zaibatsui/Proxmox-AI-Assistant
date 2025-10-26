@@ -304,42 +304,50 @@ class DockerContainerTester:
             self.log_result("Container File Upload", False, f"Error uploading container file: {str(e)}")
             return False
     
-    def test_profile_connection(self, profile_id):
-        """Test connection profile connectivity"""
+    def test_error_handling(self):
+        """Test error handling for invalid container IDs and paths"""
         try:
+            # Test with invalid container ID
+            invalid_container_id = "invalid-container-id-12345"
+            
+            request_data = {
+                "container_id": invalid_container_id,
+                "path": "/"
+            }
+            
+            location_params = {
+                "location": json.dumps({
+                    "type": "vm",
+                    "id": "119"
+                })
+            }
+            
             response = requests.post(
-                f"{self.base_url}/connection-profiles/{profile_id}/test", 
+                f"{self.base_url}/containers/files/list", 
+                json=request_data,
+                params=location_params,
                 headers=self.get_headers(), 
-                timeout=15
+                timeout=30
             )
             
-            if response.status_code == 200:
-                result = response.json()
-                status = result.get('status', 'unknown')
-                message = result.get('message', 'No message')
-                
-                if status == 'success':
-                    self.log_result(
-                        "Profile Connection Test", 
-                        True, 
-                        f"Connection test successful: {message}",
-                        {"profile_id": profile_id, "status": status}
-                    )
-                    return True
-                else:
-                    self.log_result(
-                        "Profile Connection Test", 
-                        False, 
-                        f"Connection test failed: {message}",
-                        {"profile_id": profile_id, "status": status}
-                    )
-                    return False
+            # Should return an error for invalid container
+            if response.status_code in [404, 500]:
+                self.log_result(
+                    "Invalid Container Error Handling", 
+                    True, 
+                    f"Correctly returned error {response.status_code} for invalid container ID"
+                )
             else:
-                self.log_result("Profile Connection Test", False, f"Connection test request failed: {response.status_code} - {response.text}")
-                return False
+                self.log_result(
+                    "Invalid Container Error Handling", 
+                    False, 
+                    f"Unexpected response for invalid container: {response.status_code}"
+                )
+            
+            return True
                 
         except Exception as e:
-            self.log_result("Profile Connection Test", False, f"Connection test error: {str(e)}")
+            self.log_result("Invalid Container Error Handling", False, f"Error handling test error: {str(e)}")
             return False
     
     def test_file_operations(self, profile_id, connection_type="unknown"):

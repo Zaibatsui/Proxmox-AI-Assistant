@@ -4443,6 +4443,9 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
             permissions=permissions
         ))
     
+    if skipped_lines > 0:
+        logger.warning(f"Skipped {skipped_lines} lines while parsing {path}")
+    
     logger.info(f"Parsed {len(files)} files from directory {path}")
     return files
 

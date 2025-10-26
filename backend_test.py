@@ -513,9 +513,9 @@ class DockerContainerTester:
             print("❌ Cannot proceed without authentication")
             return False
         
-        # Step 2: Create Proxmox configuration
-        print(f"\n🔍 Creating Proxmox configuration...")
-        if not self.test_create_proxmox_config():
+        # Step 2: Check/Create Proxmox configuration
+        print(f"\n🔍 Checking Proxmox configuration...")
+        if not self.test_check_proxmox_config():
             print("❌ Cannot proceed without Proxmox configuration")
             return False
         

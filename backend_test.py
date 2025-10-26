@@ -421,10 +421,25 @@ class DockerContainerTester:
             self.log_result("Comprehensive Container Operations", False, f"Container operations error: {str(e)}")
             return False
     
-    def test_create_proxmox_config(self):
-        """Create Proxmox configuration for testing"""
+    def test_check_proxmox_config(self):
+        """Check if Proxmox configuration exists, create if needed"""
         try:
-            # Create a test Proxmox configuration
+            # First check if config already exists
+            response = requests.get(
+                f"{self.base_url}/proxmox/config", 
+                headers=self.get_headers(), 
+                timeout=15
+            )
+            
+            if response.status_code == 200 and response.json():
+                self.log_result(
+                    "Proxmox Configuration", 
+                    True, 
+                    "Using existing Proxmox configuration"
+                )
+                return True
+            
+            # Create a test Proxmox configuration if none exists
             config_data = {
                 "host": "proxmox.zaibatsui.co.uk:8006",
                 "api_token_name": "root@pam!testing",

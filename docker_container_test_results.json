@@ -4,27 +4,27 @@
     "success": true,
     "message": "Logged in with existing user successfully",
     "details": {},
-    "timestamp": "2025-10-26T17:30:07.352811"
+    "timestamp": "2025-10-26T17:30:49.764085"
   },
   {
     "test": "Proxmox Configuration",
     "success": true,
     "message": "Using existing Proxmox configuration",
     "details": {},
-    "timestamp": "2025-10-26T17:30:07.393990"
+    "timestamp": "2025-10-26T17:30:49.808018"
   },
   {
     "test": "Base64 Encoding/Decoding",
     "success": true,
     "message": "Base64 encoding and decoding working correctly",
     "details": {},
-    "timestamp": "2025-10-26T17:30:07.394626"
+    "timestamp": "2025-10-26T17:30:49.808640"
   },
   {
     "test": "Docker Container List",
     "success": false,
     "message": "Failed to list containers: 500 - {\"detail\":\"Could not establish session to SSH gateway\"}",
     "details": {},
-    "timestamp": "2025-10-26T17:30:07.444525"
+    "timestamp": "2025-10-26T17:30:53.286970"
   }
 ]

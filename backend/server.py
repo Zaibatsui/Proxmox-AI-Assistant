@@ -1392,6 +1392,35 @@ async def test_connection_profile(profile_id: str, current_user: dict = Depends(
 @api_router.post("/connection-profiles/{profile_id}/files/list")
 async def list_files_by_profile(profile_id: str, path: str = "/", current_user: dict = Depends(get_current_user)):
     """List files and directories using a connection profile"""
+    # Check if it's a temporary Proxmox connection
+    if profile_id.startswith("temp_"):
+        # Handle temporary Proxmox location
+        location_id = profile_id.replace(f"temp_", "").replace(f"_{current_user['user_id']}", "")
+        
+        # Determine location type
+        location = None
+        if location_id.startswith("vm_"):
+            vmid = location_id.replace("vm_", "")
+            location = FileLocation(type="qemu", id=vmid)
+        elif location_id.startswith("lxc_"):
+            vmid = location_id.replace("lxc_", "")
+            location = FileLocation(type="lxc", id=vmid)
+        elif location_id.startswith("docker_"):
+            # Docker containers need special handling
+            container_id = location_id.replace("docker_", "")
+            # For now, return an error - Docker file browsing needs different approach
+            raise HTTPException(status_code=400, detail="Docker container file browsing not yet supported. Use docker cp or docker exec commands.")
+        # else: host - location remains None
+        
+        # Use the location-aware file listing
+        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+        try:
+            files = await location_list_directory(ssh_client, path, location)
+            return files
+        finally:
+            ssh_client.close()
+    
+    # Regular connection profile
     profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
     
     if not profile:

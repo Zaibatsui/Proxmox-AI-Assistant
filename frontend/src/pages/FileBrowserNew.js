@@ -85,6 +85,80 @@ function FileBrowserNew({ onLogout }) {
     }
   };
 
+  const handleTransferFile = async (file, sourcePath, fromPane) => {
+    const targetConnection = fromPane === 'left' ? rightConnection : leftConnection;
+    const sourceConnection = fromPane === 'left' ? leftConnection : rightConnection;
+    
+    if (!targetConnection) {
+      toast.error(`Please select a connection for the ${fromPane === 'left' ? 'right' : 'left'} pane first`);
+      return;
+    }
+    
+    if (!sourceConnection) {
+      toast.error('Source connection not available');
+      return;
+    }
+    
+    setTransferring(true);
+    
+    try {
+      // Step 1: Download from source
+      const filePath = sourcePath === '/' ? `/${file.name}` : `${sourcePath}/${file.name}`;
+      
+      toast.info(`Downloading ${file.name} from ${fromPane} pane...`);
+      
+      const downloadResponse = await axios.get(
+        `${API}/api/connection-profiles/${sourceConnection.id}/files/download`,
+        {
+          params: { path: filePath },
+          responseType: 'blob'
+        }
+      );
+      
+      // Step 2: Upload to target
+      toast.info(`Uploading ${file.name} to ${fromPane === 'left' ? 'right' : 'left'} pane...`);
+      
+      const fileContent = await downloadResponse.data.arrayBuffer();
+      const base64Content = btoa(
+        new Uint8Array(fileContent).reduce((data, byte) => data + String.fromCharCode(byte), '')
+      );
+      
+      // Upload to target in chunks
+      const chunkSize = 1024 * 1024; // 1MB chunks
+      const totalChunks = Math.ceil(fileContent.byteLength / chunkSize);
+      
+      for (let i = 0; i < totalChunks; i++) {
+        const start = i * chunkSize;
+        const end = Math.min(start + chunkSize, fileContent.byteLength);
+        const chunk = fileContent.slice(start, end);
+        const chunkBase64 = btoa(
+          new Uint8Array(chunk).reduce((data, byte) => data + String.fromCharCode(byte), '')
+        );
+        
+        await axios.post(
+          `${API}/api/connection-profiles/${targetConnection.id}/files/upload`,
+          null,
+          {
+            params: {
+              path: sourcePath, // Use same path
+              chunk_data: chunkBase64,
+              chunk_index: i,
+              total_chunks: totalChunks,
+              file_name: file.name
+            }
+          }
+        );
+      }
+      
+      toast.success(`Successfully transferred ${file.name}`);
+    } catch (error) {
+      console.error('Transfer failed:', error);
+      toast.error(error.response?.data?.detail || 'Failed to transfer file');
+    } finally {
+      setTransferring(false);
+    }
+  };
+
   return (
     <Layout onLogout={onLogout} currentPage="files">
       <div className="h-[calc(100vh-6rem)] flex flex-col">

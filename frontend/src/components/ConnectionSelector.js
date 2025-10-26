@@ -46,7 +46,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
     }
   };
 
-  const connections = getAllConnections();
+  const connections = getAllConnections(true); // Only show available connections
   const Icon = currentConnection ? getIcon(currentConnection.type) : Wifi;
 
   if (showInHeader) {

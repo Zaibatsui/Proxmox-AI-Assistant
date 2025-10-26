@@ -23,6 +23,10 @@ import urllib3
 from ftplib import FTP
 import io
 import stat
+import base64
+
+# Import Portainer Agent client for Docker container management
+from portainer_agent_client import PortainerAgentClient
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

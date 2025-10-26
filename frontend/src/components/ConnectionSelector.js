@@ -134,6 +134,11 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                                 </span>
                               )}
                             </div>
+                            {conn._original?.agent_warning && (
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="text-xs text-amber-400">⚠️ {conn._original.agent_warning}</span>
+                              </div>
+                            )}
                           </div>
                           {isSelected && <Check className="w-4 h-4 text-amber-400" />}
                         </button>

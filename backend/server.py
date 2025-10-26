@@ -4360,6 +4360,72 @@ async def ftp_file_exists(profile: dict, path: str):
     finally:
         ftp.quit()
 
+# ==================== REVERSE PROXY HELPER FUNCTIONS ====================
+
+async def rproxy_request(profile: dict, method: str, endpoint: str, **kwargs):
+    """Make HTTP request to reverse proxy API"""
+    base_url = f"{'https' if profile.get('use_ssl', True) else 'http'}://{profile['host']}:{profile['port']}"
+    url = f"{base_url}{endpoint}"
+    
+    # Add authentication if provided
+    headers = kwargs.get('headers', {})
+    if profile.get('username') and profile.get('password'):
+        import base64
+        credentials = f"{profile['username']}:{profile['password']}"
+        auth_str = base64.b64encode(credentials.encode()).decode()
+        headers['Authorization'] = f'Basic {auth_str}'
+    
+    kwargs['headers'] = headers
+    kwargs['verify'] = False  # Skip SSL verification for self-signed certs
+    
+    try:
+        response = requests.request(method, url, **kwargs, timeout=30)
+        response.raise_for_status()
+        return response
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(status_code=500, detail=f"Reverse proxy request failed: {str(e)}")
+
+async def rproxy_list_directory(profile: dict, path: str):
+    """List directory via reverse proxy API"""
+    response = await rproxy_request(profile, 'GET', '/api/files', params={'path': path})
+    return response.json()
+
+async def rproxy_read_file(profile: dict, path: str):
+    """Read file via reverse proxy API"""
+    response = await rproxy_request(profile, 'GET', '/api/files/read', params={'path': path})
+    return response.text
+
+async def rproxy_write_file(profile: dict, path: str, content: str):
+    """Write file via reverse proxy API"""
+    response = await rproxy_request(profile, 'POST', '/api/files/write', json={'path': path, 'content': content})
+    return response.json()
+
+async def rproxy_delete_file(profile: dict, path: str):
+    """Delete file via reverse proxy API"""
+    response = await rproxy_request(profile, 'DELETE', '/api/files', params={'path': path})
+    return response.json()
+
+async def rproxy_create_directory(profile: dict, path: str):
+    """Create directory via reverse proxy API"""
+    response = await rproxy_request(profile, 'POST', '/api/files/mkdir', json={'path': path})
+    return response.json()
+
+async def rproxy_download_file(profile: dict, path: str):
+    """Download file via reverse proxy API (returns bytes)"""
+    response = await rproxy_request(profile, 'GET', '/api/files/download', params={'path': path})
+    return response.content
+
+async def rproxy_upload_file(profile: dict, path: str, content: bytes):
+    """Upload file via reverse proxy API"""
+    files = {'file': (path.split('/')[-1], content)}
+    response = await rproxy_request(profile, 'POST', '/api/files/upload', files=files, data={'path': path})
+    return response.json()
+
+async def rproxy_rename_file(profile: dict, old_path: str, new_path: str):
+    """Rename file via reverse proxy API"""
+    response = await rproxy_request(profile, 'POST', '/api/files/rename', json={'old_path': old_path, 'new_path': new_path})
+    return response.json()
+
 # ==================== ENHANCED FILE OPERATIONS ====================
 
 @api_router.post("/files/upload")

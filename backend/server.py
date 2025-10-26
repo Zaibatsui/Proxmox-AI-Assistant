@@ -4404,6 +4404,7 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
             name_and_target = parts[7]
         else:
             logger.warning(f"Unexpected format: {line}")
+            skipped_lines += 1
             continue
         
         # Handle symlinks: "linkname -> target"

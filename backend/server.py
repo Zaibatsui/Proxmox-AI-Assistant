@@ -1205,6 +1205,46 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
     except Exception as e:
         return {"locations": [], "error": str(e)}
 
+@api_router.post("/proxmox-locations/{location_id}/quick-connect")
+async def quick_connect_proxmox_location(location_id: str, current_user: dict = Depends(get_current_user)):
+    """Quick connect to a Proxmox location without creating a permanent connection profile"""
+    try:
+        # Parse location_id
+        location_type = "host"
+        vmid = None
+        container_id = None
+        
+        if location_id.startswith("vm_"):
+            location_type = "vm"
+            vmid = location_id.replace("vm_", "")
+        elif location_id.startswith("lxc_"):
+            location_type = "lxc"
+            vmid = location_id.replace("lxc_", "")
+        elif location_id.startswith("docker_"):
+            location_type = "docker"
+            container_id = location_id.replace("docker_", "")
+        
+        # Create temporary connection profile for this session
+        temp_profile = {
+            "id": f"temp_{location_id}_{current_user['user_id']}",
+            "name": location_id,
+            "connection_type": "ssh",  # Use SSH for Proxmox connections
+            "location_type": location_type,
+            "vmid": vmid,
+            "container_id": container_id,
+            "user_id": current_user["user_id"],
+            "is_temporary": True
+        }
+        
+        return {
+            "success": True,
+            "profile": temp_profile,
+            "message": f"Connected to {location_id}"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @api_router.post("/connection-profiles")
 async def create_connection_profile(profile_data: ConnectionProfileCreate, current_user: dict = Depends(get_current_user)):
     """Create a new connection profile"""

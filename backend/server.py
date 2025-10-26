@@ -5894,49 +5894,144 @@ async def list_containers_endpoint(request: ContainerListRequest, current_user: 
     Tries Portainer Agent first, falls back to direct Docker commands via SSH.
     """
     try:
-        # Get SSH connection to the location
-        location = FileLocation(
-            type=request.location_type,
-            id=request.location_id if request.location_type != "host" else None,
-            ssh_username=request.ssh_username,
-            ssh_password=request.ssh_password
-        )
-        
-        ssh_client = await get_location_ssh_client(current_user["user_id"], location)
-        
+        # Method 1: Try Portainer Agent first (requires finding host IP)
         try:
-            # Method 1: Try using direct Docker commands (works with unix socket)
-            logger.info(f"Listing containers on {request.location_type} {request.location_id} using direct Docker commands")
+            logger.info(f"Trying Portainer Agent method for {request.location_type} {request.location_id}")
             
-            result = await docker_list_containers_func(ssh_client, location, request.all_containers)
+            # Get Proxmox config
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
+            if not proxmox_config:
+                raise Exception("Proxmox configuration not found")
             
-            if result.get("error"):
-                raise Exception(result["error"])
+            host = None
+            username = request.ssh_username or proxmox_config.get("ssh_username", "root")
+            password = request.ssh_password or proxmox_config.get("ssh_password")
             
-            # Convert Docker ps JSON format to our format
-            containers = []
-            for container_data in result.get("containers", []):
-                containers.append({
-                    "id": container_data.get("ID", "")[:12],
-                    "name": container_data.get("Names", "").lstrip("/"),
-                    "image": container_data.get("Image", ""),
-                    "status": container_data.get("Status", ""),
-                    "state": container_data.get("State", "")
-                })
+            # Determine the host based on location type
+            if request.location_type == "host":
+                host = proxmox_config["host"]
+                if '://' in host:
+                    host = host.split('://', 1)[1]
+                if ':' in host:
+                    host = host.split(':')[0]
+            elif request.location_type in ["vm", "lxc"] and request.location_id:
+                # For VM/LXC, try to get IP from Proxmox API
+                try:
+                    proxmox = ProxmoxAPI(
+                        proxmox_config["host"].split("://")[-1].split(":")[0],
+                        user=proxmox_config["api_token_name"].split("!")[0],
+                        token_name=proxmox_config["api_token_name"].split("!")[1],
+                        token_value=proxmox_config["api_token_secret"],
+                        verify_ssl=proxmox_config.get("verify_ssl", False)
+                    )
+                    
+                    # Search for VM/LXC across all nodes
+                    for node in proxmox.nodes.get():
+                        node_name = node['node']
+                        
+                        if request.location_type == "vm":
+                            try:
+                                # Get VM config
+                                vm_config = proxmox.nodes(node_name).qemu(request.location_id).agent('network-get-interfaces').get()
+                                # Extract IP from agent data
+                                for interface in vm_config.get('result', []):
+                                    if interface.get('name') not in ['lo']:
+                                        for ip_addr in interface.get('ip-addresses', []):
+                                            if ip_addr.get('ip-address-type') == 'ipv4':
+                                                host = ip_addr['ip-address']
+                                                break
+                                    if host:
+                                        break
+                            except:
+                                # If agent not available, try to use the vmid as hint
+                                pass
+                        
+                        if host:
+                            break
+                except Exception as e:
+                    logger.warning(f"Could not get IP from Proxmox API: {str(e)}")
+                    # Fallback: try using location_id as direct IP/hostname
+                    if "." in request.location_id:
+                        host = request.location_id
             
-            return {
-                "containers": containers,
-                "location": {
-                    "type": request.location_type,
-                    "id": request.location_id,
-                    "method": "direct_docker"
+            if not host:
+                raise Exception(f"Could not determine host for {request.location_type} {request.location_id}")
+            
+            # Create Portainer Agent client
+            async with PortainerAgentClient(
+                remote_host=host,
+                ssh_username=username,
+                ssh_password=password
+            ) as portainer_client:
+                containers = await portainer_client.list_containers(request.all_containers)
+                
+                return {
+                    "containers": [
+                        {
+                            "id": c.id,
+                            "name": c.name,
+                            "image": c.image,
+                            "status": c.status,
+                            "state": c.state
+                        }
+                        for c in containers
+                    ],
+                    "location": {
+                        "type": request.location_type,
+                        "id": request.location_id,
+                        "host": host,
+                        "method": "portainer_agent"
+                    }
                 }
-            }
-            
+        
         except Exception as e:
-            logger.warning(f"Direct Docker method failed: {str(e)}, falling back to Portainer Agent")
+            logger.warning(f"Portainer Agent method failed: {str(e)}, falling back to direct Docker commands")
             
-            # Method 2: Fallback to Portainer Agent (requires finding host IP)
+            # Method 2: Fallback to direct Docker commands via SSH
+            location = FileLocation(
+                type=request.location_type,
+                id=request.location_id if request.location_type != "host" else None,
+                ssh_username=request.ssh_username,
+                ssh_password=request.ssh_password
+            )
+            
+            ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+            
+            try:
+                logger.info(f"Using direct Docker commands fallback for {request.location_type} {request.location_id}")
+                
+                result = await docker_list_containers_func(ssh_client, location, request.all_containers)
+                
+                if result.get("error"):
+                    raise Exception(result["error"])
+                
+                # Convert Docker ps JSON format to our format
+                containers = []
+                for container_data in result.get("containers", []):
+                    containers.append({
+                        "id": container_data.get("ID", "")[:12],
+                        "name": container_data.get("Names", "").lstrip("/"),
+                        "image": container_data.get("Image", ""),
+                        "status": container_data.get("Status", ""),
+                        "state": container_data.get("State", "")
+                    })
+                
+                return {
+                    "containers": containers,
+                    "location": {
+                        "type": request.location_type,
+                        "id": request.location_id,
+                        "method": "direct_docker"
+                    }
+                }
+            finally:
+                ssh_client.close()
+    
+    except Exception as e:
+        logger.error(f"Failed to list containers: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+# Remove the old Method 2 code that's now duplicated
             proxmox_config = await db.proxmox_configs.find_one({"user_id": current_user["user_id"]})
             if not proxmox_config:
                 raise HTTPException(status_code=404, detail="Proxmox configuration not found")

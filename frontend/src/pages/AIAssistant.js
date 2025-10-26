@@ -24,6 +24,7 @@ function AIAssistant({ onLogout }) {
   const [pendingFileEdit, setPendingFileEdit] = useState(null);
   const [editableContent, setEditableContent] = useState("");
   const [executing, setExecuting] = useState(false);
+  const [sessionId, setSessionId] = useState(null); // Track conversation session
   
   // Command and VM action proposals
   const [pendingCommand, setPendingCommand] = useState(null);
@@ -41,6 +42,8 @@ function AIAssistant({ onLogout }) {
   useEffect(() => {
     fetchHistory();
     fetchLocations();
+    // Generate a new session ID when component mounts
+    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   }, []);
 
   const fetchHistory = async () => {

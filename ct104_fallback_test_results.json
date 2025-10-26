@@ -1,0 +1,9 @@
+[
+  {
+    "test": "Authentication",
+    "success": false,
+    "message": "Registration failed: 502 - ",
+    "details": {},
+    "timestamp": "2025-10-26T22:52:52.912025"
+  }
+]

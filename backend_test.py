@@ -129,8 +129,8 @@ class DockerContainerTester:
             # FileLocation query parameter
             location_params = {
                 "location": json.dumps({
-                    "type": "vm",
-                    "id": "119.119.119.119"
+                    "type": "host",
+                    "id": None
                 })
             }
             
@@ -172,8 +172,8 @@ class DockerContainerTester:
             # FileLocation query parameter
             location_params = {
                 "location": json.dumps({
-                    "type": "vm",
-                    "id": "119.119.119.119"
+                    "type": "host",
+                    "id": None
                 })
             }
             
@@ -226,8 +226,8 @@ class DockerContainerTester:
             # FileLocation query parameter
             location_params = {
                 "location": json.dumps({
-                    "type": "vm",
-                    "id": "119.119.119.119"
+                    "type": "host",
+                    "id": None
                 })
             }
             
@@ -273,8 +273,8 @@ class DockerContainerTester:
             # FileLocation query parameter
             location_params = {
                 "location": json.dumps({
-                    "type": "vm",
-                    "id": "119.119.119.119"
+                    "type": "host",
+                    "id": None
                 })
             }
             
@@ -317,8 +317,8 @@ class DockerContainerTester:
             
             location_params = {
                 "location": json.dumps({
-                    "type": "vm",
-                    "id": "119.119.119.119"
+                    "type": "host",
+                    "id": None
                 })
             }
             

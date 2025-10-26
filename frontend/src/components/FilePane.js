@@ -75,7 +75,8 @@ function FilePane({
       setCurrentPath(path);
     } catch (error) {
       console.error('Failed to load directory:', error);
-      toast.error(error.response?.data?.detail || 'Failed to load directory');
+      setFiles([]); // Ensure files are cleared on error
+      toast.error(error.response?.data?.detail || 'Failed to load directory. Connection may be unavailable.');
     } finally {
       setLoading(false);
     }

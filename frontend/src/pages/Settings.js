@@ -603,29 +603,62 @@ function Settings({ onLogout }) {
                 <CollapsibleContent>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
+                  <Label htmlFor="ssh_host" className="text-slate-200">SSH Host</Label>
+                  <Input
+                    id="ssh_host"
+                    type="text"
+                    placeholder="proxmox.zaibatsui.co.uk or 145.40.178.205"
+                    value={sshFormData.host}
+                    onChange={(e) => setSshFormData({ ...sshFormData, host: e.target.value })}
+                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">Hostname or IP address of SSH server</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="ssh_port" className="text-slate-200">SSH Port</Label>
+                  <Input
+                    id="ssh_port"
+                    type="number"
+                    placeholder="22"
+                    value={sshFormData.port}
+                    onChange={(e) => setSshFormData({ ...sshFormData, port: parseInt(e.target.value) || 22 })}
+                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                  />
+                  <p className="text-xs text-slate-500">SSH port (default: 22)</p>
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="ssh_username" className="text-slate-200">SSH Username</Label>
                   <Input
                     id="ssh_username"
                     type="text"
                     placeholder="root"
-                    value={formData.ssh_username}
-                    onChange={(e) => setFormData({ ...formData, ssh_username: e.target.value })}
+                    value={sshFormData.username}
+                    onChange={(e) => setSshFormData({ ...sshFormData, username: e.target.value })}
                     className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
                   />
                   <p className="text-xs text-slate-500">SSH username for accessing Proxmox host</p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="ssh_password" className="text-slate-200">SSH Password</Label>
+                  <Label htmlFor="ssh_password" className="text-slate-200">
+                    SSH Password {sshConfigs.length > 0 && <span className="text-slate-500 font-normal text-xs">(Optional for updates)</span>}
+                  </Label>
                   <Input
                     id="ssh_password"
                     type="password"
-                    placeholder="Enter SSH password"
-                    value={formData.ssh_password}
-                    onChange={(e) => setFormData({ ...formData, ssh_password: e.target.value })}
+                    placeholder={sshConfigs.length > 0 ? "Leave empty to keep existing password" : "Enter SSH password"}
+                    value={sshFormData.password}
+                    onChange={(e) => setSshFormData({ ...sshFormData, password: e.target.value })}
                     className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
                   />
-                  <p className="text-xs text-slate-500">Optional: Leave empty if using SSH keys</p>
+                  <p className="text-xs text-slate-500">
+                    {sshConfigs.length > 0 
+                      ? "Leave empty to keep existing password" 
+                      : "SSH password (or use SSH keys)"
+                    }
+                  </p>
                 </div>
 
                 {/* SSH Error Display */}
@@ -639,11 +672,11 @@ function Settings({ onLogout }) {
 
                 <div className="flex gap-3 pt-4">
                   <Button
-                    onClick={handleSave}
-                    disabled={saving}
+                    onClick={handleSaveSSH}
+                    disabled={savingSsh}
                     className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
                   >
-                    {saving ? (
+                    {savingSsh ? (
                       <span className="flex items-center gap-2">
                         <span className="animate-pulse">●</span> Saving...
                       </span>

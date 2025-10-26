@@ -1501,6 +1501,9 @@ async def write_file_by_profile(profile_id: str, path: str, content: str, curren
                 raise HTTPException(status_code=500, detail="Failed to write file")
             
             return {"success": True, "message": "File written successfully", "path": path}
+        elif profile['connection_type'] == 'ftp':
+            await ftp_write_file(profile, path, content)
+            return {"success": True, "message": "File written successfully", "path": path}
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

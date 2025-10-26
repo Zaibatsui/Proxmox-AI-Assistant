@@ -72,6 +72,7 @@ function Settings({ onLogout }) {
   useEffect(() => {
     fetchConfig();
     fetchAPIKeys();
+    fetchSSHConfigs();
   }, []);
   
   useEffect(() => {

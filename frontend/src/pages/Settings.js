@@ -366,17 +366,24 @@ function Settings({ onLogout }) {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="api_token_secret" className="text-slate-200">API Token Secret</Label>
+                  <Label htmlFor="api_token_secret" className="text-slate-200">
+                    API Token Secret {config && <span className="text-slate-500 font-normal text-xs">(Optional for updates)</span>}
+                  </Label>
                   <Input
                     id="api_token_secret"
                     data-testid="token-secret-input"
                     type="password"
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    placeholder={config ? "Leave empty to keep existing secret" : "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"}
                     value={formData.api_token_secret}
                     onChange={(e) => setFormData({ ...formData, api_token_secret: e.target.value })}
                     className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
                   />
-                  <p className="text-xs text-slate-500">The secret value provided when creating the token</p>
+                  <p className="text-xs text-slate-500">
+                    {config 
+                      ? "Leave empty to keep the existing secret" 
+                      : "The secret value provided when creating the token"
+                    }
+                  </p>
                 </div>
 
                 <div className="flex items-center justify-between p-4 bg-slate-950/50 rounded-lg border border-slate-800">

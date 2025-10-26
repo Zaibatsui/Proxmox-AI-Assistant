@@ -34,21 +34,20 @@ function Dashboard({ onLogout }) {
 
   const fetchAllData = async () => {
     try {
-      // Only fetch stats and connection status on refresh, not VMs/backups/logs
-      // VMs, backups, and logs are expensive and change less frequently
-      await Promise.all([
+      // Build array of promises to fetch
+      const promises = [
         fetchStats(),
         fetchConnectionStatus()
-      ]);
+      ];
       
       // Only fetch VMs, backups, and audit log on first load
+      // On refresh intervals, skip these expensive calls
       if (loading) {
-        await Promise.all([
-          fetchVMs(),
-          fetchBackups(),
-          fetchAuditLog()
-        ]);
+        promises.push(fetchVMs(), fetchBackups(), fetchAuditLog());
       }
+      
+      // Execute all promises in parallel
+      await Promise.all(promises);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
     } finally {

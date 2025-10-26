@@ -394,9 +394,16 @@ function FilePane({
               </button>
 
               {/* View Containers button - only show for VM/CT connections */}
-              {connection && (connection.type === 'vm' || connection.type === 'lxc' || connection.type === 'qemu') && onShowContainers && (
+              {connection && (
                 <button
-                  onClick={onShowContainers}
+                  onClick={() => {
+                    console.log('Connection type:', connection.type, 'Full connection:', connection);
+                    if ((connection.type === 'vm' || connection.type === 'lxc' || connection.type === 'qemu') && onShowContainers) {
+                      onShowContainers();
+                    } else {
+                      toast.info(`Debug: Connection type is "${connection.type}", vmid: ${connection.vmid}, source: ${connection.source}`);
+                    }
+                  }}
                   className="px-2 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-xs text-white flex items-center gap-1"
                   title="View Docker containers"
                 >

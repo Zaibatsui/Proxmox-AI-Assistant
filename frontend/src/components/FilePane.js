@@ -68,17 +68,20 @@ function FilePane({
       let response;
       
       // Check if this is a Proxmox location or a connection profile
-      if (connection.source === 'proxmox' || connection.vmid) {
+      if (connection.source === 'proxmox' || connection.vmid || connection.type === 'host') {
         // Use the generic files endpoint with location in request body
-        // Ensure vmid/id is always a string
-        const locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
+        // Ensure vmid/id is always a string, but null for host type
+        let locationId = null;
+        if (connection.type !== 'host') {
+          locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
+        }
         
         response = await axios.post(
           `${API}/api/files/list`,
           {
             path,
             location: {
-              type: connection.type,
+              type: connection.type || 'host',
               id: locationId
             }
           }

@@ -161,43 +161,54 @@ class DockerContainerTester:
             self.log_result("Container File List", False, f"Error listing container files: {str(e)}")
             return []
     
-    def test_create_sftp_profile(self):
-        """Test creating an SFTP connection profile"""
+    def test_read_container_file(self, container_id, file_path):
+        """Test POST /api/containers/files/read - Read a file from container"""
         try:
-            profile_data = {
-                "name": "Test SFTP Profile",
-                "connection_type": "sftp",
-                "host": "sftp.example.com",
-                "port": 22,
-                "username": "sftpuser",
-                "password": "sftppass",
-                "base_path": "/uploads",
-                "notes": "Test SFTP profile for file operations testing"
+            request_data = {
+                "container_id": container_id,
+                "path": file_path
+            }
+            
+            # FileLocation query parameter
+            location_params = {
+                "location": json.dumps({
+                    "type": "vm",
+                    "id": "119"
+                })
             }
             
             response = requests.post(
-                f"{self.base_url}/connection-profiles", 
-                json=profile_data, 
+                f"{self.base_url}/containers/files/read", 
+                json=request_data,
+                params=location_params,
                 headers=self.get_headers(), 
-                timeout=15
+                timeout=30
             )
             
             if response.status_code == 200:
-                result = response.json()
-                sftp_profile_id = result.get('id')
+                data = response.json()
+                content_b64 = data.get('content', '')
+                
+                # Decode base64 content for verification
+                try:
+                    content = base64.b64decode(content_b64).decode('utf-8')
+                    content_preview = content[:100] + "..." if len(content) > 100 else content
+                except:
+                    content_preview = "Binary content"
+                
                 self.log_result(
-                    "Create SFTP Profile", 
+                    "Container File Read", 
                     True, 
-                    f"Successfully created SFTP profile with ID: {sftp_profile_id}",
-                    {"profile_id": sftp_profile_id, "name": profile_data["name"]}
+                    f"Successfully read file {file_path} from container {container_id[:12]}",
+                    {"container_id": container_id[:12], "file_path": file_path, "content_preview": content_preview}
                 )
-                return sftp_profile_id
+                return content_b64
             else:
-                self.log_result("Create SFTP Profile", False, f"Failed to create SFTP profile: {response.status_code} - {response.text}")
+                self.log_result("Container File Read", False, f"Failed to read file: {response.status_code} - {response.text}")
                 return None
                 
         except Exception as e:
-            self.log_result("Create SFTP Profile", False, f"SFTP profile creation error: {str(e)}")
+            self.log_result("Container File Read", False, f"Error reading container file: {str(e)}")
             return None
 
     def test_create_ftp_profile(self):

@@ -42,11 +42,16 @@ export const ConnectionProvider = ({ children }) => {
   };
 
   // Get all connections (Proxmox + Profiles) as a unified list
-  const getAllConnections = () => {
+  const getAllConnections = (onlyAvailable = false) => {
     const all = [];
     
     // Add Proxmox locations
     proxmoxLocations.forEach(loc => {
+      // Filter by availability if requested
+      if (onlyAvailable && loc.status !== 'running' && loc.status !== 'available') {
+        return; // Skip non-running/unavailable locations
+      }
+      
       all.push({
         id: loc.id,
         name: loc.name,
@@ -61,7 +66,7 @@ export const ConnectionProvider = ({ children }) => {
       });
     });
 
-    // Add connection profiles
+    // Add connection profiles (always available)
     connectionProfiles.forEach(profile => {
       all.push({
         id: profile.id,

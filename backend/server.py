@@ -4235,6 +4235,51 @@ async def ftp_create_directory(profile: dict, path: str):
     finally:
         ftp.quit()
 
+async def ftp_download_file(profile: dict, path: str):
+    """Download file content via FTP (returns bytes)"""
+    ftp = await get_ftp_client(profile)
+    try:
+        content = io.BytesIO()
+        ftp.retrbinary(f'RETR {path}', content.write)
+        return content.getvalue()
+    finally:
+        ftp.quit()
+
+async def ftp_upload_file(profile: dict, path: str, content: bytes):
+    """Upload file content via FTP (accepts bytes)"""
+    ftp = await get_ftp_client(profile)
+    try:
+        ftp.storbinary(f'STOR {path}', io.BytesIO(content))
+    finally:
+        ftp.quit()
+
+async def ftp_rename_file(profile: dict, old_path: str, new_path: str):
+    """Rename/move file or directory via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        ftp.rename(old_path, new_path)
+    finally:
+        ftp.quit()
+
+async def ftp_file_exists(profile: dict, path: str):
+    """Check if file/directory exists via FTP"""
+    ftp = await get_ftp_client(profile)
+    try:
+        # Try to get file size (works for files and directories)
+        ftp.size(path)
+        return True
+    except:
+        # Try changing to directory
+        try:
+            current_dir = ftp.pwd()
+            ftp.cwd(path)
+            ftp.cwd(current_dir)
+            return True
+        except:
+            return False
+    finally:
+        ftp.quit()
+
 # ==================== ENHANCED FILE OPERATIONS ====================
 
 @api_router.post("/files/upload")

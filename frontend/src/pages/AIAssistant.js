@@ -328,7 +328,7 @@ function AIAssistant({ onLogout }) {
           <p className="text-sm text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
         </div>
 
-        {/* Location Selector */}
+        {/* Current Connection Display */}
         <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm mb-3 flex-shrink-0">
           <CardContent className="p-3">
             <div className="flex items-center gap-4">
@@ -336,33 +336,28 @@ function AIAssistant({ onLogout }) {
                 <Server className="w-4 h-4" />
                 Working on:
               </label>
-              <select
-                value={JSON.stringify(currentLocation)}
-                onChange={(e) => {
-                  const loc = JSON.parse(e.target.value);
-                  handleLocationChange(loc);
-                }}
-                className="flex-1 px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-cyan-500 focus:outline-none"
-              >
-                <option value={JSON.stringify({ type: 'host', label: 'Proxmox Host' })}>
-                  Proxmox Host
-                </option>
-                <optgroup label="Containers">
-                  {availableLocations.filter(l => l.type === 'lxc').map((loc) => (
-                    <option 
-                      key={loc.vmid} 
-                      value={JSON.stringify({ type: 'lxc', id: loc.vmid, label: `Container ${loc.vmid} (${loc.name})` })}
-                    >
-                      Container: {loc.vmid} ({loc.name})
-                    </option>
-                  ))}
-                </optgroup>
-                <optgroup label="Virtual Machines">
-                  {availableLocations.filter(l => l.type === 'qemu').map((loc) => (
-                    <option 
-                      key={loc.vmid} 
-                      value={JSON.stringify({ type: 'vm', id: loc.vmid, label: `VM ${loc.vmid} (${loc.name})` })}
-                    >
+              <div className="flex-1 px-3 py-2 bg-slate-800/50 text-white rounded border border-slate-700 flex items-center gap-2">
+                {currentConnection ? (
+                  <>
+                    <span className="text-cyan-400">●</span>
+                    <span>{currentConnection.name}</span>
+                    {currentConnection.status && (
+                      <span className="text-xs text-slate-500">({currentConnection.status})</span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <span className="text-slate-500">●</span>
+                    <span className="text-slate-400">Proxmox Host</span>
+                  </>
+                )}
+              </div>
+              <div className="text-xs text-slate-500">
+                Use the connection selector in the header to switch locations
+              </div>
+            </div>
+          </CardContent>
+        </Card>
                       VM: {loc.vmid} ({loc.name})
                     </option>
                   ))}

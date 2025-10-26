@@ -41,6 +41,15 @@ function Settings({ onLogout }) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sshConfigs, setSshConfigs] = useState([]);
+  const [sshFormData, setSshFormData] = useState({
+    name: "Proxmox Host SSH",
+    host: "proxmox.zaibatsui.co.uk",
+    port: 22,
+    username: "root",
+    password: ""
+  });
+  const [savingSsh, setSavingSsh] = useState(false);
   
   // Advanced appearance state
   const [customPrimary, setCustomPrimary] = useState("");

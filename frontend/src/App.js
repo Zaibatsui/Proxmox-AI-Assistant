@@ -63,10 +63,11 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="App">
-        <Toaster position="top-right" />
-        <BrowserRouter>
-          <Routes>
+      <ConnectionProvider>
+        <div className="App">
+          <Toaster position="top-right" />
+          <BrowserRouter>
+            <Routes>
             <Route
               path="/login"
               element={

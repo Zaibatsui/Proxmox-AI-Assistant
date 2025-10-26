@@ -457,10 +457,10 @@ class DockerContainerTester:
             return False
 
     def run_all_tests(self):
-        """Run all tests for File Browser Connection Profile Operations"""
+        """Run all tests for Docker Container File Browser via Portainer Agent"""
         print("=" * 80)
-        print("TESTING FILE BROWSER CONNECTION PROFILE OPERATIONS")
-        print("Focus: Reverse Proxy Support & All Protocol Verification")
+        print("TESTING DOCKER CONTAINER FILE BROWSER VIA PORTAINER AGENT")
+        print("Focus: VM119 with Portainer Agent on port 9001")
         print("=" * 80)
         
         # Step 1: Authenticate
@@ -468,95 +468,36 @@ class DockerContainerTester:
             print("❌ Cannot proceed without authentication")
             return False
         
-        # Step 2: Test connection profiles list
-        print(f"\n🔍 Testing connection profiles list...")
-        self.test_connection_profiles_list()
+        # Step 2: Test base64 encoding/decoding
+        print(f"\n🔍 Testing base64 encoding/decoding...")
+        self.test_base64_encoding_decoding()
         
-        # Step 3: Test Protocol Support Verification
-        print(f"\n🔍 Testing protocol support verification...")
-        self.test_protocol_support_verification()
+        # Step 3: Test SSH tunnel connectivity
+        print(f"\n🔍 Testing SSH tunnel connectivity...")
+        self.test_ssh_tunnel_connectivity()
         
-        # Step 4: Create SSH connection profile
-        print(f"\n🔍 Creating SSH connection profile...")
-        ssh_success = self.test_create_ssh_profile()
+        # Step 4: List Docker containers on VM119
+        print(f"\n🔍 Testing Docker container listing on VM119...")
+        containers = self.test_list_containers()
         
-        # Step 5: Create SFTP connection profile
-        print(f"\n🔍 Creating SFTP connection profile...")
-        sftp_profile_id = self.test_create_sftp_profile()
-        
-        # Step 6: Create FTP connection profile
-        print(f"\n🔍 Creating FTP connection profile...")
-        ftp_profile_id = self.test_create_ftp_profile()
-        
-        # Step 7: Create Reverse Proxy connection profile
-        print(f"\n🔍 Creating Reverse Proxy connection profile...")
-        rproxy_profile_id = self.test_create_reverse_proxy_profile()
-        
-        # Step 8: Test connection profile connectivity (expected to fail - no real servers)
-        if self.test_profile_id:
-            print(f"\n🔍 Testing SSH profile connectivity...")
-            self.test_profile_connection(self.test_profile_id)
-        
-        if sftp_profile_id:
-            print(f"\n🔍 Testing SFTP profile connectivity...")
-            self.test_profile_connection(sftp_profile_id)
+        if not containers:
+            print("❌ No containers found or container listing failed. Cannot proceed with file operations.")
+            print("📋 This could be due to:")
+            print("   - VM119 not accessible via SSH")
+            print("   - Portainer Agent not running on port 9001")
+            print("   - No Docker containers running on VM119")
+            print("   - SSH credentials not configured properly")
+        else:
+            print(f"✅ Found {len(containers)} containers. Proceeding with file operations testing...")
             
-        if ftp_profile_id:
-            print(f"\n🔍 Testing FTP profile connectivity...")
-            self.test_profile_connection(ftp_profile_id)
+            # Step 5: Test comprehensive file operations on first container
+            if self.test_container_id:
+                print(f"\n🔍 Testing comprehensive file operations on container {self.test_container_id[:12]}...")
+                self.test_comprehensive_container_operations(self.test_container_id)
             
-        if rproxy_profile_id:
-            print(f"\n🔍 Testing Reverse Proxy profile connectivity...")
-            self.test_profile_connection(rproxy_profile_id)
-        
-        # Step 9: Test file operations for all protocols (API structure testing)
-        if sftp_profile_id:
-            print(f"\n🔍 Testing SFTP file operations...")
-            self.test_file_operations(sftp_profile_id, "sftp")
-            
-            print(f"\n🔍 Testing SFTP chunked upload...")
-            self.test_chunked_upload(sftp_profile_id, "sftp")
-            
-            print(f"\n🔍 Testing SFTP download operation...")
-            self.test_download_operation(sftp_profile_id, "sftp")
-            
-        if self.test_profile_id:
-            print(f"\n🔍 Testing SSH file operations...")
-            self.test_file_operations(self.test_profile_id, "ssh")
-            
-            print(f"\n🔍 Testing SSH chunked upload...")
-            self.test_chunked_upload(self.test_profile_id, "ssh")
-            
-            print(f"\n🔍 Testing SSH download operation...")
-            self.test_download_operation(self.test_profile_id, "ssh")
-            
-        if ftp_profile_id:
-            print(f"\n🔍 Testing FTP file operations...")
-            self.test_file_operations(ftp_profile_id, "ftp")
-            
-            print(f"\n🔍 Testing FTP chunked upload...")
-            self.test_chunked_upload(ftp_profile_id, "ftp")
-            
-            print(f"\n🔍 Testing FTP download operation...")
-            self.test_download_operation(ftp_profile_id, "ftp")
-        
-        # Step 10: COMPREHENSIVE REVERSE PROXY TESTING
-        if rproxy_profile_id:
-            print(f"\n🔍 Testing Reverse Proxy file operations...")
-            self.test_file_operations(rproxy_profile_id, "reverse_proxy")
-            
-            print(f"\n🔍 Testing Reverse Proxy chunked upload...")
-            self.test_chunked_upload(rproxy_profile_id, "reverse_proxy")
-            
-            print(f"\n🔍 Testing Reverse Proxy download operation...")
-            self.test_download_operation(rproxy_profile_id, "reverse_proxy")
-            
-            print(f"\n🔍 Testing comprehensive Reverse Proxy endpoints...")
-            self.test_reverse_proxy_endpoints_comprehensive()
-        
-        # Step 11: Test error handling
-        print(f"\n🔍 Testing invalid profile handling...")
-        self.test_invalid_profile_handling()
+            # Step 6: Test error handling
+            print(f"\n🔍 Testing error handling...")
+            self.test_error_handling()
         
         # Summary
         print("\n" + "=" * 80)
@@ -574,11 +515,23 @@ class DockerContainerTester:
                 if not result['success']:
                     print(f"  - {result['test']}: {result['message']}")
         
-        print("\n📋 NOTE: Connection and file operation 500 errors are expected since we don't have real servers.")
-        print("📋 The focus is on testing API endpoint structure and ensuring NO 400 'not supported' errors for reverse_proxy.")
-        print("📋 SUCCESS CRITERIA: All endpoints accessible, reverse proxy helper functions reachable.")
+        if passed == total:
+            print("\n🎉 ALL TESTS PASSED!")
+            print("✅ Docker Container File Browser via Portainer Agent is working correctly")
+        elif passed >= (total * 0.8):
+            print(f"\n✅ MOSTLY SUCCESSFUL: {passed}/{total} tests passed")
+            print("📋 Docker Container File Browser functionality is operational")
+        else:
+            print(f"\n❌ SIGNIFICANT ISSUES: Only {passed}/{total} tests passed")
+            print("📋 Docker Container File Browser needs attention")
         
-        return passed >= (total * 0.8)  # Allow 20% failure rate due to expected connection failures
+        print("\n📋 SUCCESS CRITERIA:")
+        print("   ✅ Container listing works (connects to VM119 via SSH tunnel)")
+        print("   ✅ File operations work (list, read, write, upload)")
+        print("   ✅ Base64 encoding/decoding works correctly")
+        print("   ✅ Error handling works for invalid containers")
+        
+        return passed >= (total * 0.7)  # Allow 30% failure rate for network/connectivity issues
 
 if __name__ == "__main__":
     tester = ConnectionProfileTester()

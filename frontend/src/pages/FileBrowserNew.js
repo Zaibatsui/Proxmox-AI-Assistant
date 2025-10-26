@@ -258,8 +258,8 @@ function FileBrowserNew({ onLogout }) {
             onDrop={handleDrop}
             isExpanded={leftPaneExpanded}
             onToggleExpand={() => {
-              // If clicking on minimized left pane (5% width), restore to 50/50
-              if (style?.width === '5%' || rightPaneExpanded) {
+              // If right pane is expanded (meaning left is at 5%), restore to 50/50
+              if (rightPaneExpanded) {
                 setLeftPaneExpanded(false);
                 setRightPaneExpanded(false);
               } else if (leftPaneExpanded) {

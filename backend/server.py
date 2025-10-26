@@ -279,6 +279,47 @@ class ActionExecute(BaseModel):
     action_id: str
     dry_run: bool = True
 
+# ==================== DOCKER CONTAINER MODELS ====================
+
+class DockerContainer(BaseModel):
+    """Docker container information."""
+    id: str
+    name: str
+    image: str
+    status: str
+    state: str
+
+class ContainerListRequest(BaseModel):
+    """Request to list containers on a Proxmox location."""
+    location_type: str  # "host", "lxc", "vm"
+    location_id: Optional[str] = None  # For VM/LXC
+    ssh_username: Optional[str] = None
+    ssh_password: Optional[str] = None
+    all_containers: bool = True  # Include stopped containers
+
+class ContainerFileListRequest(BaseModel):
+    """Request to list files inside a container."""
+    container_id: str
+    path: str = "/"
+
+class ContainerFileReadRequest(BaseModel):
+    """Request to read a file from a container."""
+    container_id: str
+    path: str
+
+class ContainerFileWriteRequest(BaseModel):
+    """Request to write a file to a container."""
+    container_id: str
+    path: str
+    content: str
+
+class ContainerFileUploadRequest(BaseModel):
+    """Request to upload a file to a container."""
+    container_id: str
+    destination_path: str
+    filename: str
+    content: str  # Base64 encoded file content
+
 # ==================== AUDIT LOG MODELS ====================
 
 class AuditLog(BaseModel):

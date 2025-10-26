@@ -32,18 +32,13 @@ function AIAssistant({ onLogout }) {
   const [pendingCommand, setPendingCommand] = useState(null);
   const [pendingVMAction, setPendingVMAction] = useState(null);
   
-  // Location awareness
-  const [currentLocation, setCurrentLocation] = useState({ type: 'host', label: 'Proxmox Host' });
-  const [availableLocations, setAvailableLocations] = useState([]);
-  
-  // VM Credentials management
+  // VM Credentials management (keep for backward compatibility)
   const [showVMCredentials, setShowVMCredentials] = useState(false);
   const [vmCredentials, setVmCredentials] = useState({ username: 'root', password: '' });
-  const [sessionCredentials, setSessionCredentials] = useState({}); // Store VM credentials for session
+  const [sessionCredentials, setSessionCredentials] = useState({});
 
   useEffect(() => {
     fetchHistory();
-    fetchLocations();
     // Generate a new session ID when component mounts
     setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   }, []);
@@ -56,8 +51,6 @@ function AIAssistant({ onLogout }) {
       // Ignore error
     }
   };
-
-  const fetchLocations = async () => {
     try {
       const response = await axios.get(`${API}/vms`);
       setAvailableLocations(response.data);

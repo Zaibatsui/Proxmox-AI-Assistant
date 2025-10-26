@@ -70,13 +70,16 @@ function FilePane({
       // Check if this is a Proxmox location or a connection profile
       if (connection.source === 'proxmox' || connection.vmid) {
         // Use the generic files endpoint with location in request body
+        // Ensure vmid/id is always a string
+        const locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
+        
         response = await axios.post(
           `${API}/api/files/list`,
           {
             path,
             location: {
               type: connection.type,
-              id: String(connection.vmid || connection.id)
+              id: locationId
             }
           }
         );
@@ -94,7 +97,18 @@ function FilePane({
     } catch (error) {
       console.error('Failed to load directory:', error);
       setFiles([]); // Ensure files are cleared on error
-      toast.error(error.response?.data?.detail || 'Failed to load directory. Connection may be unavailable.');
+      
+      // Better error message handling
+      let errorMessage = 'Failed to load directory. Connection may be unavailable.';
+      if (error.response?.data?.detail) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMessage = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          // Handle Pydantic validation errors
+          errorMessage = error.response.data.detail.map(err => err.msg).join(', ');
+        }
+      }
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }

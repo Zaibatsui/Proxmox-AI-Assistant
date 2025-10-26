@@ -4291,7 +4291,41 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
     
     elif location.type == "lxc":
         # For LXC, we'll use pct exec via host SSH
-        return await get_ssh_client(user_id)
+        # If SSH credentials are provided in location, use them; otherwise use user's config
+        if location.ssh_username and location.ssh_password:
+            # Use provided SSH credentials to connect to the LXC host
+            config_doc = await db.proxmox_configs.find_one({"user_id": user_id})
+            if not config_doc:
+                raise HTTPException(status_code=400, detail="Proxmox configuration not found")
+            
+            # Parse host to get hostname/IP
+            host = config_doc['host']
+            if '://' in host:
+                _, host = host.split('://', 1)
+            host = host.rstrip('/')
+            if ':' in host:
+                hostname, _ = host.rsplit(':', 1)
+            else:
+                hostname = host
+            
+            try:
+                ssh_client = paramiko.SSHClient()
+                ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh_client.connect(
+                    hostname,
+                    username=location.ssh_username,
+                    password=location.ssh_password,
+                    timeout=10,
+                    allow_agent=False,
+                    look_for_keys=False
+                )
+                return ssh_client
+            except Exception as e:
+                logger.error(f"SSH connection failed with provided credentials: {str(e)}")
+                raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}")
+        else:
+            # Use user's configured SSH credentials
+            return await get_ssh_client(user_id)
     
     elif location.type == "qemu":
         # For QEMU VMs, we use qm guest exec via host SSH (no direct VM SSH needed)

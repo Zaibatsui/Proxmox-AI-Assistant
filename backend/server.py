@@ -1129,6 +1129,93 @@ async def get_connection_profiles(current_user: dict = Depends(get_current_user)
     
     return {"profiles": profiles}
 
+@api_router.get("/proxmox-locations")
+async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
+    """Get available Proxmox locations: host, VMs, CTs, and Docker containers"""
+    try:
+        proxmox_credentials = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
+        
+        if not proxmox_credentials or not proxmox_credentials.get('proxmox_host'):
+            return {"locations": [], "error": "Proxmox not configured"}
+        
+        # Connect to Proxmox
+        proxmox = ProxmoxAPI(
+            proxmox_credentials['proxmox_host'],
+            user=proxmox_credentials['proxmox_user'],
+            token_name=proxmox_credentials['proxmox_token_name'],
+            token_value=proxmox_credentials['proxmox_token_value'],
+            verify_ssl=False
+        )
+        
+        locations = []
+        
+        # Add Proxmox Host
+        locations.append({
+            "id": "proxmox_host",
+            "name": "Proxmox Host",
+            "type": "host",
+            "icon": "Server",
+            "status": "available"
+        })
+        
+        # Get all nodes
+        for node in proxmox.nodes.get():
+            node_name = node['node']
+            
+            # Get VMs (qemu)
+            try:
+                for vm in proxmox.nodes(node_name).qemu.get():
+                    locations.append({
+                        "id": f"vm_{vm['vmid']}",
+                        "name": f"VM {vm['vmid']}: {vm.get('name', 'Unnamed')}",
+                        "type": "vm",
+                        "vmid": vm['vmid'],
+                        "node": node_name,
+                        "icon": "HardDrive",
+                        "status": vm.get('status', 'unknown')
+                    })
+            except:
+                pass
+            
+            # Get LXC Containers
+            try:
+                for ct in proxmox.nodes(node_name).lxc.get():
+                    locations.append({
+                        "id": f"lxc_{ct['vmid']}",
+                        "name": f"CT {ct['vmid']}: {ct.get('name', 'Unnamed')}",
+                        "type": "lxc",
+                        "vmid": ct['vmid'],
+                        "node": node_name,
+                        "icon": "Package",
+                        "status": ct.get('status', 'unknown')
+                    })
+            except:
+                pass
+        
+        # Try to get Docker containers from Proxmox host
+        try:
+            ssh_client = await get_ssh_client(current_user["user_id"])
+            docker_result = await docker_list_containers_func(ssh_client, None, True)
+            ssh_client.close()
+            
+            if docker_result.get("containers"):
+                for container in docker_result["containers"]:
+                    locations.append({
+                        "id": f"docker_{container.get('ID', container.get('Names', 'unknown'))}",
+                        "name": f"Docker: {container.get('Names', container.get('ID', 'Unnamed'))}",
+                        "type": "docker",
+                        "container_id": container.get("ID"),
+                        "icon": "Package",
+                        "status": container.get('State', 'unknown')
+                    })
+        except:
+            pass
+        
+        return {"locations": locations, "total": len(locations)}
+        
+    except Exception as e:
+        return {"locations": [], "error": str(e)}
+
 @api_router.post("/connection-profiles")
 async def create_connection_profile(profile_data: ConnectionProfileCreate, current_user: dict = Depends(get_current_user)):
     """Create a new connection profile"""

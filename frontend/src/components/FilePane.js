@@ -65,13 +65,31 @@ function FilePane({
     setFiles([]); // Clear old files immediately
     
     try {
-      const response = await axios.post(
-        `${API}/api/connection-profiles/${connection.id}/files/list`,
-        null,
-        { params: { path } }
-      );
+      let response;
       
-      setFiles(response.data || []);
+      // Check if this is a Proxmox location or a connection profile
+      if (connection.source === 'proxmox' || connection.vmid) {
+        // Use the generic files endpoint with location parameter
+        response = await axios.post(
+          `${API}/api/files/list`,
+          { path },
+          {
+            params: {
+              location_type: connection.type,
+              location_id: connection.vmid || connection.id
+            }
+          }
+        );
+      } else {
+        // Use the connection profile endpoint
+        response = await axios.post(
+          `${API}/api/connection-profiles/${connection.id}/files/list`,
+          null,
+          { params: { path } }
+        );
+      }
+      
+      setFiles(response.data.files || response.data || []);
       setCurrentPath(path);
     } catch (error) {
       console.error('Failed to load directory:', error);

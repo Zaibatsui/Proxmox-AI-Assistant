@@ -4371,19 +4371,33 @@ async def location_list_directory(ssh_client, path: str, location: Optional[File
         if not line or line.startswith('total'):
             continue
         
+        # Parse ls -lAh output
+        # Format: permissions links owner group size date time name [-> target]
         parts = line.split(None, 8)
-        if len(parts) < 9:
+        if len(parts) < 8:
+            # Skip lines that don't have enough parts
+            logger.warning(f"Skipping line with insufficient parts: {line}")
             continue
         
         permissions = parts[0]
         size_str = parts[4]
-        modified = f"{parts[5]} {parts[6]}"
-        name_and_target = parts[8]
+        
+        # Handle date/time - could be in parts[5] and parts[6], or combined
+        if len(parts) >= 9:
+            # Standard format with separate date and time
+            modified = f"{parts[5]} {parts[6]}"
+            name_and_target = parts[8]
+        elif len(parts) == 8:
+            # Sometimes date/time might be together, name in parts[7]
+            modified = f"{parts[5]} {parts[6]}"
+            name_and_target = parts[7]
+        else:
+            logger.warning(f"Unexpected format: {line}")
+            continue
         
         # Handle symlinks: "linkname -> target"
         if ' -> ' in name_and_target:
             name = name_and_target.split(' -> ')[0]
-            # Still treat as the type indicated by permissions
         else:
             name = name_and_target
         

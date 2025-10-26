@@ -305,8 +305,8 @@ function FilePane({
         </div>
       </div>
 
-      {/* Only show content when not minimized */}
-      {!isExpanded || (
+      {/* Only show content when this pane is not minimized (width > 5%) */}
+      {style?.width !== '5%' && (
         <>
           {/* Action Bar */}
           <div className="flex items-center gap-1 p-2 border-b border-slate-700 bg-slate-800/30">

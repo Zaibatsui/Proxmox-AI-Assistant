@@ -323,20 +323,30 @@ function AIAssistant({ onLogout }) {
                 {currentConnection ? (
                   <>
                     <span className="text-cyan-400">●</span>
-                    <span>{currentConnection.name}</span>
-                    {currentConnection.status && (
-                      <span className="text-xs text-slate-500">({currentConnection.status})</span>
+                    <span className="font-semibold">{currentConnection.name}</span>
+                    {currentConnection.type && (
+                      <Badge variant="outline" className="text-xs bg-cyan-600/20 text-cyan-400 border-cyan-600/50">
+                        {currentConnection.type === 'lxc' ? 'Container' : 
+                         currentConnection.type === 'vm' || currentConnection.type === 'qemu' ? 'VM' : 
+                         currentConnection.type}
+                      </Badge>
+                    )}
+                    {currentConnection.vmid && (
+                      <span className="text-xs text-slate-500">ID: {currentConnection.vmid}</span>
                     )}
                   </>
                 ) : (
                   <>
-                    <span className="text-slate-500">●</span>
-                    <span className="text-slate-400">Proxmox Host</span>
+                    <span className="text-amber-500">●</span>
+                    <span className="font-semibold text-amber-400">Proxmox Host</span>
+                    <Badge variant="outline" className="text-xs bg-amber-600/20 text-amber-400 border-amber-600/50">
+                      Host
+                    </Badge>
                   </>
                 )}
               </div>
-              <div className="text-xs text-slate-500">
-                Use the connection selector in the header to switch locations
+              <div className="text-xs text-slate-400 bg-slate-800/30 px-2 py-1 rounded border border-slate-700/50">
+                💡 Change location using the dropdown in the header
               </div>
             </div>
           </CardContent>

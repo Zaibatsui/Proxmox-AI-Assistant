@@ -1923,6 +1923,14 @@ async def download_file_by_profile(profile_id: str, path: str, current_user: dic
                 media_type='application/octet-stream',
                 headers={'Content-Disposition': f'attachment; filename="{filename}"'}
             )
+        elif profile['connection_type'] == 'ftp':
+            content = await ftp_download_file(profile, path)
+            
+            return StreamingResponse(
+                io.BytesIO(content),
+                media_type='application/octet-stream',
+                headers={'Content-Disposition': f'attachment; filename="{filename}"'}
+            )
         else:
             raise HTTPException(status_code=400, detail=f"Connection type {profile['connection_type']} not supported")
     except HTTPException:

@@ -393,8 +393,20 @@ function FilePane({
                 <RefreshCw className={`w-4 h-4 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
               </button>
 
+              {/* Debug connection object */}
+              {connection && console.log('FilePane connection:', {
+                name: connection.name,
+                vmid: connection.vmid,
+                source: connection.source,
+                type: connection.type,
+                hasVmid: !!connection.vmid,
+                hasSource: !!connection.source,
+                isProxmox: connection.source === 'proxmox',
+                hasShowContainers: !!onShowContainers
+              })}
+              
               {/* View Containers button - show for Proxmox locations with vmid */}
-              {connection && connection.vmid && connection.source === 'proxmox' && onShowContainers && (
+              {connection && connection.vmid && connection.source === 'proxmox' && onShowContainers ? (
                 <button
                   onClick={onShowContainers}
                   className="px-2 py-1 bg-cyan-600 hover:bg-cyan-700 rounded text-xs text-white flex items-center gap-1"
@@ -403,6 +415,16 @@ function FilePane({
                   <Box className="w-3 h-3" />
                   Containers
                 </button>
+              ) : (
+                connection && console.log('Container button NOT showing because:', {
+                  hasConnection: !!connection,
+                  hasVmid: !!connection.vmid,
+                  vmidValue: connection.vmid,
+                  hasSource: !!connection.source,
+                  sourceValue: connection.source,
+                  sourceIsProxmox: connection.source === 'proxmox',
+                  hasCallback: !!onShowContainers
+                })
               )}
             </>
           )}

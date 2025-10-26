@@ -79,22 +79,16 @@ function AIAssistant({ onLogout }) {
     const userQuestion = question;
     setQuestion("");
 
-    // Add location context to the question if not on host
+    // Add location context from unified connection system
     let contextualQuestion = userQuestion;
     const requestPayload = { question: contextualQuestion };
     
-    if (currentLocation.type !== 'host') {
-      const locationStr = currentLocation.type === 'lxc' 
-        ? `lxc:${currentLocation.id}` 
-        : `vm:${currentLocation.id}`;
-      contextualQuestion = `[Working on ${currentLocation.label} (location: ${locationStr})] ${userQuestion}`;
-      requestPayload.question = contextualQuestion;
-      
-      // Add SSH credentials for VMs
-      if (currentLocation.type === 'vm' && sessionCredentials[currentLocation.id]) {
-        requestPayload.ssh_username = sessionCredentials[currentLocation.id].username;
-        requestPayload.ssh_password = sessionCredentials[currentLocation.id].password;
-        requestPayload.vm_id = currentLocation.id;
+    // Use the current connection from context
+    if (currentConnection) {
+      const locationStr = getLocationString(currentConnection);
+      if (locationStr !== 'host') {
+        contextualQuestion = `[Working on ${currentConnection.name} (location: ${locationStr})] ${userQuestion}`;
+        requestPayload.question = contextualQuestion;
       }
     }
 

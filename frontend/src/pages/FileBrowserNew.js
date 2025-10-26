@@ -330,33 +330,52 @@ function FileBrowserNew({ onLogout }) {
             }}
           />
 
-          <FilePane
-            paneId="right"
-            connection={rightConnection}
-            draggedFile={draggedFile}
-            onDragStart={handleDragStart}
-            onDrop={handleDrop}
-            isExpanded={rightPaneExpanded}
-            onToggleExpand={() => {
-              // If left pane is expanded (meaning right is at 5%), restore to 50/50
-              if (leftPaneExpanded) {
-                setLeftPaneExpanded(false);
-                setRightPaneExpanded(false);
-              } else if (rightPaneExpanded) {
-                // If right is expanded (95%), minimize it back to 50/50
-                setRightPaneExpanded(false);
-              } else {
-                // If both at 50%, expand right to 95%
-                setRightPaneExpanded(true);
-                setLeftPaneExpanded(false);
-              }
-            }}
-            onTransferFile={(file, path) => handleTransferFile(file, path, 'right')}
-            style={{
-              width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
-              transition: 'width 0.3s ease-in-out'
-            }}
-          />
+          {rightPaneMode === 'files' ? (
+            <FilePane
+              paneId="right"
+              connection={rightConnection}
+              draggedFile={draggedFile}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+              isExpanded={rightPaneExpanded}
+              onToggleExpand={() => {
+                // If left pane is expanded (meaning right is at 5%), restore to 50/50
+                if (leftPaneExpanded) {
+                  setLeftPaneExpanded(false);
+                  setRightPaneExpanded(false);
+                } else if (rightPaneExpanded) {
+                  // If right is expanded (95%), minimize it back to 50/50
+                  setRightPaneExpanded(false);
+                } else {
+                  // If both at 50%, expand right to 95%
+                  setRightPaneExpanded(true);
+                  setLeftPaneExpanded(false);
+                }
+              }}
+              onTransferFile={(file, path) => handleTransferFile(file, path, 'right')}
+              style={{
+                width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
+                transition: 'width 0.3s ease-in-out'
+              }}
+            />
+          ) : (
+            <div
+              style={{
+                width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
+                transition: 'width 0.3s ease-in-out'
+              }}
+            >
+              <Terminal
+                connection={leftConnection}
+                containerId={selectedContainer}
+                isExpanded={!leftPaneExpanded}
+                onRestore={() => {
+                  setLeftPaneExpanded(false);
+                  setRightPaneExpanded(false);
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Connection Manager Modal */}

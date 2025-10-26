@@ -552,6 +552,105 @@ class ConnectionProfileTester:
             self.log_result("Invalid Profile Handling", False, f"Invalid profile test error: {str(e)}")
             return False
 
+    def test_protocol_support_verification(self):
+        """Test that all 4 protocols are supported: SSH, SFTP, FTP, Reverse Proxy"""
+        protocols_tested = []
+        
+        # Test SSH support
+        if self.test_profile_id:
+            protocols_tested.append("SSH")
+            
+        # Test SFTP support  
+        sftp_id = self.test_create_sftp_profile()
+        if sftp_id:
+            protocols_tested.append("SFTP")
+            
+        # Test FTP support
+        ftp_id = self.test_create_ftp_profile()
+        if ftp_id:
+            protocols_tested.append("FTP")
+            
+        # Test Reverse Proxy support
+        rproxy_id = self.test_create_reverse_proxy_profile()
+        if rproxy_id:
+            protocols_tested.append("Reverse Proxy")
+            
+        expected_protocols = ["SSH", "SFTP", "FTP", "Reverse Proxy"]
+        missing_protocols = [p for p in expected_protocols if p not in protocols_tested]
+        
+        if len(protocols_tested) == 4:
+            self.log_result(
+                "Protocol Support Verification", 
+                True, 
+                f"All 4 protocols supported: {', '.join(protocols_tested)}",
+                {"supported_protocols": protocols_tested}
+            )
+            return True
+        else:
+            self.log_result(
+                "Protocol Support Verification", 
+                False, 
+                f"Missing protocol support. Supported: {protocols_tested}, Missing: {missing_protocols}",
+                {"supported_protocols": protocols_tested, "missing_protocols": missing_protocols}
+            )
+            return False
+
+    def test_reverse_proxy_endpoints_comprehensive(self):
+        """Comprehensive test of all reverse proxy file operation endpoints"""
+        if not self.reverse_proxy_profile_id:
+            self.log_result("Reverse Proxy Comprehensive Test", False, "No reverse proxy profile ID available")
+            return False
+            
+        endpoints_to_test = [
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/list", {"path": "/"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/read", {"path": "/test.txt"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/write", {"path": "/test.txt", "content": "test"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/delete", {"path": "/test.txt"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/mkdir", {"path": "/testdir"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/rename", {"old_path": "/test.txt", "new_name": "renamed.txt"}),
+            ("POST", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/upload", {"path": "/", "chunk_data": "dGVzdA==", "chunk_index": 0, "total_chunks": 1, "file_name": "test.txt"}),
+            ("GET", f"/connection-profiles/{self.reverse_proxy_profile_id}/files/download", {"path": "/test.txt"}),
+        ]
+        
+        success_count = 0
+        total_count = len(endpoints_to_test)
+        
+        for method, endpoint, params in endpoints_to_test:
+            try:
+                if method == "GET":
+                    response = requests.get(f"{self.base_url}{endpoint}", headers=self.get_headers(), params=params, timeout=15)
+                else:
+                    if "?" in endpoint:
+                        # Use query params
+                        param_str = "&".join([f"{k}={v}" for k, v in params.items()])
+                        response = requests.post(f"{self.base_url}{endpoint}&{param_str}", headers=self.get_headers(), timeout=15)
+                    else:
+                        # Use JSON body
+                        response = requests.post(f"{self.base_url}{endpoint}", headers=self.get_headers(), json=params, timeout=15)
+                
+                # For reverse proxy, we expect 500 errors (no real server), but NOT 400 "not supported" errors
+                if response.status_code == 200:
+                    success_count += 1
+                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", True, "Endpoint working correctly")
+                elif response.status_code == 500:
+                    if "not supported" not in response.text.lower() and "reverse_proxy not supported" not in response.text.lower():
+                        success_count += 1
+                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", True, "Endpoint accessible (expected 500 due to no real server)")
+                    else:
+                        self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Unsupported connection type error: {response.text}")
+                else:
+                    self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Unexpected response: {response.status_code} - {response.text}")
+                    
+            except Exception as e:
+                self.log_result(f"Reverse Proxy {method} {endpoint.split('/')[-1]}", False, f"Request error: {str(e)}")
+        
+        if success_count == total_count:
+            self.log_result("Reverse Proxy Comprehensive Test", True, f"All {total_count} reverse proxy endpoints accessible")
+            return True
+        else:
+            self.log_result("Reverse Proxy Comprehensive Test", False, f"Only {success_count}/{total_count} reverse proxy endpoints working")
+            return False
+
     def run_all_tests(self):
         """Run all tests for Connection Profile SFTP File Operations"""
         print("=" * 70)

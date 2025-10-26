@@ -409,21 +409,39 @@ class DockerContainerTester:
             self.log_result("Comprehensive Container Operations", False, f"Container operations error: {str(e)}")
             return False
     
-    def test_ssh_tunnel_connectivity(self):
-        """Test SSH tunnel creation to VM119 for Portainer Agent access"""
+    def test_create_proxmox_config(self):
+        """Create Proxmox configuration for testing"""
         try:
-            # This is tested implicitly when we call the container endpoints
-            # The endpoints will create SSH tunnels to VM119 and connect to Portainer Agent on port 9001
+            # Create a test Proxmox configuration
+            config_data = {
+                "host": "proxmox.zaibatsui.co.uk:8006",
+                "api_token_name": "root@pam!testing",
+                "api_token_secret": "test-secret-key",
+                "verify_ssl": False,
+                "ssh_username": "root",
+                "ssh_password": "test-password"
+            }
             
-            self.log_result(
-                "SSH Tunnel Connectivity", 
-                True, 
-                "SSH tunnel connectivity will be tested through container operations"
+            response = requests.post(
+                f"{self.base_url}/proxmox/config", 
+                json=config_data,
+                headers=self.get_headers(), 
+                timeout=15
             )
-            return True
+            
+            if response.status_code == 200:
+                self.log_result(
+                    "Proxmox Configuration", 
+                    True, 
+                    "Successfully created Proxmox configuration for testing"
+                )
+                return True
+            else:
+                self.log_result("Proxmox Configuration", False, f"Failed to create Proxmox config: {response.status_code} - {response.text}")
+                return False
                 
         except Exception as e:
-            self.log_result("SSH Tunnel Connectivity", False, f"SSH tunnel test error: {str(e)}")
+            self.log_result("Proxmox Configuration", False, f"Proxmox config error: {str(e)}")
             return False
     
     def test_base64_encoding_decoding(self):

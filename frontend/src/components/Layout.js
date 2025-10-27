@@ -10,7 +10,7 @@ function Layout({ children, onLogout, currentPage }) {
     { name: "Dashboard", path: "/", icon: Server, key: "dashboard" },
     { name: "Devices", path: "/devices", icon: Cpu, key: "devices" },
     { name: "VMs & CTs", path: "/vms", icon: Box, key: "vms" },
-    { name: "AI Assistant", path: "/assistant", icon: MessageSquare, key: "assistant" },
+    { name: "AI Assistant", path: "/ai-assistant", icon: MessageSquare, key: "assistant" },
     { name: "File Browser", path: "/files", icon: FolderOpen, key: "files" },
     { name: "Backups", path: "/backups", icon: Archive, key: "backups" },
     { name: "Actions", path: "/actions", icon: Activity, key: "actions" },

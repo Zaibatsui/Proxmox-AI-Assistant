@@ -62,40 +62,44 @@ export const ConnectionProvider = ({ children }) => {
   const getAllConnections = (onlyAvailable = false) => {
     const all = [];
     
-    // Add Proxmox locations
-    proxmoxLocations.forEach(loc => {
-      // Filter by availability if requested
-      if (onlyAvailable && loc.status !== 'running' && loc.status !== 'available') {
-        return; // Skip non-running/unavailable locations
-      }
-      
-      all.push({
-        id: loc.id,
-        name: loc.name,
-        type: loc.type,
-        source: 'proxmox',
-        icon: loc.icon,
-        status: loc.status,
-        vmid: loc.vmid,
-        node: loc.node,
-        container_id: loc.container_id,
-        _original: loc
+    // Add Proxmox locations (with safety check)
+    if (Array.isArray(proxmoxLocations)) {
+      proxmoxLocations.forEach(loc => {
+        // Filter by availability if requested
+        if (onlyAvailable && loc.status !== 'running' && loc.status !== 'available') {
+          return; // Skip non-running/unavailable locations
+        }
+        
+        all.push({
+          id: loc.id,
+          name: loc.name,
+          type: loc.type,
+          source: 'proxmox',
+          icon: loc.icon,
+          status: loc.status,
+          vmid: loc.vmid,
+          node: loc.node,
+          container_id: loc.container_id,
+          _original: loc
+        });
       });
-    });
+    }
 
-    // Add connection profiles (always available)
-    connectionProfiles.forEach(profile => {
-      all.push({
-        id: profile.id,
-        name: profile.name,
-        type: profile.connection_type,
-        source: 'profile',
-        icon: 'Server',
-        host: profile.host,
-        port: profile.port,
-        _original: profile
+    // Add connection profiles (always available, with safety check)
+    if (Array.isArray(connectionProfiles)) {
+      connectionProfiles.forEach(profile => {
+        all.push({
+          id: profile.id,
+          name: profile.name,
+          type: profile.connection_type,
+          source: 'profile',
+          icon: 'Server',
+          host: profile.host,
+          port: profile.port,
+          _original: profile
+        });
       });
-    });
+    }
 
     return all;
   };

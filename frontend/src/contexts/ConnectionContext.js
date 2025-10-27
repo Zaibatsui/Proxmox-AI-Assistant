@@ -19,14 +19,28 @@ export const ConnectionProvider = ({ children }) => {
   const [currentConnection, setCurrentConnection] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Load all available connections on mount
+  // Load all available connections on mount (only if authenticated)
   useEffect(() => {
-    loadAllConnections();
+    const token = localStorage.getItem('token');
+    if (token) {
+      loadAllConnections();
+    } else {
+      setLoading(false);
+    }
   }, []);
 
   const loadAllConnections = async () => {
     setLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        console.log('No token found, skipping connection load');
+        setProxmoxLocations([]);
+        setConnectionProfiles([]);
+        setLoading(false);
+        return;
+      }
+
       // Load Proxmox locations
       const proxmoxResponse = await axios.get(`${API}/api/proxmox-locations`);
       setProxmoxLocations(proxmoxResponse.data.locations || []);
@@ -36,6 +50,9 @@ export const ConnectionProvider = ({ children }) => {
       setConnectionProfiles(profilesResponse.data.profiles || []);
     } catch (error) {
       console.error('Failed to load connections:', error);
+      // Set empty arrays on error
+      setProxmoxLocations([]);
+      setConnectionProfiles([]);
     } finally {
       setLoading(false);
     }

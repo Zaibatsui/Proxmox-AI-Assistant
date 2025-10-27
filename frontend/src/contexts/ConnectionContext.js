@@ -134,16 +134,20 @@ export const ConnectionProvider = ({ children }) => {
 
   // Connect to any connection (auto-detect type)
   const connect = async (connectionId) => {
-    // Check if it's a Proxmox location
-    const proxmoxLoc = proxmoxLocations.find(loc => loc.id === connectionId);
-    if (proxmoxLoc) {
-      return await quickConnectProxmox(connectionId);
+    // Check if it's a Proxmox location (with safety check)
+    if (Array.isArray(proxmoxLocations)) {
+      const proxmoxLoc = proxmoxLocations.find(loc => loc.id === connectionId);
+      if (proxmoxLoc) {
+        return await quickConnectProxmox(connectionId);
+      }
     }
 
-    // Check if it's a connection profile
-    const profile = connectionProfiles.find(p => p.id === connectionId);
-    if (profile) {
-      return connectToProfile(profile);
+    // Check if it's a connection profile (with safety check)
+    if (Array.isArray(connectionProfiles)) {
+      const profile = connectionProfiles.find(p => p.id === connectionId);
+      if (profile) {
+        return connectToProfile(profile);
+      }
     }
 
     return { success: false, error: 'Connection not found' };

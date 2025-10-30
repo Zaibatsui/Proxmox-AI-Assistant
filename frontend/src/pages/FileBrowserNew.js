@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Layout from '../components/Layout';
 import ConnectionManager from '../components/ConnectionManager';
 import FilePane from '../components/FilePane';
-import Terminal from '../components/Terminal';
+import TerminalWebSocket from '../components/TerminalWebSocket';
 import ContainerBrowser from '../components/ContainerBrowser';
 import { ArrowRightLeft, X, Monitor, Terminal as TerminalIcon, Box, Key } from 'lucide-react';
 import { toast } from 'sonner';

@@ -824,8 +824,10 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
                 logger.info("SSH connection successful with keys")
         except Exception as ssh_err:
             logger.error(f"SSH connection failed: {str(ssh_err)}")
-            logger.warning("Returning mock data. Please configure SSH credentials in Settings.")
-            return get_mock_devices()
+            raise HTTPException(
+                status_code=500, 
+                detail=f"SSH connection failed: {str(ssh_err)}. Please configure SSH credentials in Settings to scan real devices."
+            )
         
         # Run lspci command
         stdin, stdout, stderr = ssh_client.exec_command('lspci -nnk')

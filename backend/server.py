@@ -4783,47 +4783,51 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
         if not location.ssh_username or not location.ssh_password:
             raise HTTPException(status_code=400, detail="VM SSH credentials required")
         
-        # Get VM IP from Proxmox
-        proxmox, config = await get_proxmox_connection(user_id)
+        # Use provided ssh_host if available, otherwise try to get IP from guest agent
+        vm_ip = getattr(location, 'ssh_host', None)
         
-        # Find VM to get its IP
-        vm_info = None
-        for node in proxmox.nodes.get():
-            node_name = node['node']
+        if not vm_ip:
+            # Get VM IP from Proxmox guest agent
+            proxmox, config = await get_proxmox_connection(user_id)
+            
+            # Find VM to get its IP
+            vm_info = None
+            node_name = None
+            for node in proxmox.nodes.get():
+                node_name = node['node']
+                try:
+                    qemu_vms = proxmox.nodes(node_name).qemu.get()
+                    for vm in qemu_vms:
+                        if str(vm['vmid']) == location.id:
+                            vm_info = vm
+                            break
+                except:
+                    pass
+                if vm_info:
+                    break
+            
+            if not vm_info:
+                raise HTTPException(status_code=404, detail=f"VM {location.id} not found")
+            
+            # Try to get IP from agent
             try:
-                qemu_vms = proxmox.nodes(node_name).qemu.get()
-                for vm in qemu_vms:
-                    if str(vm['vmid']) == location.id:
-                        vm_info = vm
+                agent_info = proxmox.nodes(node_name).qemu(location.id).agent('network-get-interfaces').get()
+                for iface in agent_info.get('result', []):
+                    if iface.get('name') not in ['lo']:
+                        for ip_info in iface.get('ip-addresses', []):
+                            if ip_info.get('ip-address-type') == 'ipv4':
+                                vm_ip = ip_info.get('ip-address')
+                                break
+                    if vm_ip:
                         break
             except:
                 pass
-            if vm_info:
-                break
-        
-        if not vm_info:
-            raise HTTPException(status_code=404, detail=f"VM {location.id} not found")
-        
-        # Try to get IP from agent
-        vm_ip = None
-        try:
-            agent_info = proxmox.nodes(node_name).qemu(location.id).agent('network-get-interfaces').get()
-            for iface in agent_info.get('result', []):
-                if iface.get('name') not in ['lo']:
-                    for ip_info in iface.get('ip-addresses', []):
-                        if ip_info.get('ip-address-type') == 'ipv4':
-                            vm_ip = ip_info.get('ip-address')
-                            break
-                if vm_ip:
-                    break
-        except:
-            pass
-        
-        if not vm_ip:
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Could not determine IP for VM {location.id}. Ensure QEMU guest agent is installed and running."
-            )
+            
+            if not vm_ip:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Could not determine IP for VM {location.id}. Please provide SSH host/IP in credentials."
+                )
         
         # Connect to VM via SSH
         try:

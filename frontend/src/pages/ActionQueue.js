@@ -149,35 +149,41 @@ function ActionQueue({ onLogout }) {
                   )}
 
                   {/* Actions */}
-                  {action.status === "pending" && (
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        onClick={() => executeAction(action.id, true)}
-                        variant="outline"
-                        className="bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
-                        data-testid={`dry-run-button-${idx}`}
-                      >
-                        <AlertCircle className="w-4 h-4 mr-2" />
-                        Dry Run
-                      </Button>
-                      <Button
-                        onClick={() => executeAction(action.id, false)}
-                        className="bg-cyan-600 hover:bg-cyan-700 text-white"
-                        data-testid={`execute-button-${idx}`}
-                      >
-                        <Play className="w-4 h-4 mr-2" />
-                        Execute
-                      </Button>
-                      <Button
-                        onClick={() => deleteAction(action.id)}
-                        variant="destructive"
-                        className="ml-auto"
-                        data-testid={`delete-button-${idx}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
+                  <div className="flex gap-2 pt-2">
+                    {action.status === "pending" && (
+                      <>
+                        <Button
+                          onClick={() => executeAction(action.id, true)}
+                          variant="outline"
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
+                          data-testid={`dry-run-button-${idx}`}
+                        >
+                          <AlertCircle className="w-4 h-4 mr-2" />
+                          Dry Run
+                        </Button>
+                        <Button
+                          onClick={() => executeAction(action.id, false)}
+                          className="bg-cyan-600 hover:bg-cyan-700 text-white"
+                          data-testid={`execute-button-${idx}`}
+                        >
+                          <Play className="w-4 h-4 mr-2" />
+                          Execute
+                        </Button>
+                      </>
+                    )}
+                    
+                    {/* Delete button always visible for all statuses */}
+                    <Button
+                      onClick={() => deleteAction(action.id, action.action_type)}
+                      variant="destructive"
+                      className={action.status === "pending" ? "ml-auto" : ""}
+                      data-testid={`delete-button-${idx}`}
+                      title={`Delete ${action.action_type.replace(/_/g, " ")} action`}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete
+                    </Button>
+                  </div>
 
                   {/* Timestamp */}
                   <div className="text-xs text-slate-500 pt-2 border-t border-slate-800">

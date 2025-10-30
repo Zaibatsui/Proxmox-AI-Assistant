@@ -495,11 +495,7 @@ function Settings({ onLogout }) {
                   </div>
                   <div className="flex items-center gap-3">
                     {!loadingConnections && proxmoxLocations.length > 0 && (
-                      <span className={`flex items-center gap-2 px-3 py-1 rounded-full border text-sm ${
-                        connectionsStatus === 'success'
-                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                          : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
-                      }`}>
+                      <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-sm">
                         <CheckCircle className="w-4 h-4" />
                         {proxmoxLocations.length} Locations
                       </span>

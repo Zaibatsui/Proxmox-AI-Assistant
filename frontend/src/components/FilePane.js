@@ -44,6 +44,7 @@ function FilePane({
   
   // Credentials modal states
   const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credentialsHost, setCredentialsHost] = useState('');
   const [credentialsUsername, setCredentialsUsername] = useState('');
   const [credentialsPassword, setCredentialsPassword] = useState('');
   const [credentialsSaving, setCredentialsSaving] = useState(false);

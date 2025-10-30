@@ -574,6 +574,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                     {connections.filter(c => c.source === 'profile').map((conn) => {
                       const ConnIcon = Server;
                       const isSelected = currentConnection?.id === conn.id;
+                      const isSelecting = selectedId === conn.id;
                       
                       return (
                         <button

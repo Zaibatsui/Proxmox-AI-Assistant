@@ -196,9 +196,14 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   };
 
   const reconnect = () => {
-    if (terminalInstance.current) {
-      terminalInstance.current.clear();
-      connectWebSocket(terminalInstance.current);
+    if (terminalInstance.current && isMounted.current) {
+      try {
+        terminalInstance.current.clear();
+        connectWebSocket(terminalInstance.current);
+      } catch (err) {
+        console.error('Reconnect failed:', err);
+        setError('Failed to reconnect');
+      }
     }
   };
 

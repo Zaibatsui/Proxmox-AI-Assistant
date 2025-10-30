@@ -897,7 +897,7 @@ function Settings({ onLogout }) {
                                     {profile.connection_type.toUpperCase()} • {profile.host}:{profile.port}
                                   </div>
                                 </div>
-                                <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30">
+                                <span className="px-3 py-1 text-sm bg-purple-500/20 text-purple-400 rounded border border-purple-500/30">
                                   Profile
                                 </span>
                               </div>

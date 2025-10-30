@@ -223,7 +223,16 @@ function FileBrowserNew({ onLogout }) {
             <div className="text-xs text-slate-500 mb-1">Left Pane:</div>
             {leftConnection ? (
               <div className="flex items-center justify-between">
-                <span className="text-sm text-slate-200">{leftConnection.name}</span>
+                <div className="flex flex-col">
+                  <span className="text-sm text-slate-200">{leftConnection.name}</span>
+                  {leftConnection.vmid && (
+                    <span className="text-xs text-slate-500">
+                      {leftConnection.type} ID: {leftConnection.vmid}
+                      {leftConnection.ssh_username && ` • SSH: ${leftConnection.ssh_username}`}
+                      {!leftConnection.ssh_username && ' • No SSH credentials'}
+                    </span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   {(leftConnection.type === 'vm' || leftConnection.type === 'lxc' || leftConnection.type === 'qemu') && (
                     <button

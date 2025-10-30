@@ -7088,34 +7088,11 @@ async def websocket_terminal(websocket: WebSocket):
             ssh_password = connection_data.get('ssh_password')
             
             if not all([ssh_host, ssh_username, ssh_password]):
-                await websocket.send_json({'error': 'SSH credentials required'})
+                await websocket.send_json({'type': 'error', 'data': 'SSH credentials required for VM/LXC connection'})
                 await websocket.close()
                 return
             
-            ssh_client = paramiko.SSHClient()
-            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh_client.connect(
-                hostname=ssh_host,
-                port=ssh_port,
-                username=ssh_username,
-                password=ssh_password,
-                timeout=10
-            )
-            
-            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
-            
-        # For Proxmox host
-        else:
-            ssh_host = os.environ.get('PROXMOX_HOST')
-            ssh_username = os.environ.get('PROXMOX_SSH_USER', 'root')
-            ssh_password = os.environ.get('PROXMOX_SSH_PASSWORD')
-            
-            if not ssh_host:
-                error_msg = "Terminal not configured: PROXMOX_HOST environment variable not set. Terminal connections via WebSocket are not yet fully integrated with the SSH configuration system."
-                logger.error(error_msg)
-                await websocket.send_json({'type': 'error', 'data': error_msg})
-                await websocket.close()
-                return
+            logger.info(f"Connecting to {conn_type.upper()} {vmid} via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
             
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -7123,12 +7100,70 @@ async def websocket_terminal(websocket: WebSocket):
             try:
                 ssh_client.connect(
                     hostname=ssh_host,
+                    port=ssh_port,
                     username=ssh_username,
                     password=ssh_password,
                     timeout=10
                 )
             except Exception as conn_err:
-                error_msg = f"SSH connection failed: {str(conn_err)}"
+                error_msg = f"SSH connection to {conn_type.upper()} {vmid} failed: {str(conn_err)}"
+                logger.error(error_msg)
+                await websocket.send_json({'type': 'error', 'data': error_msg})
+                await websocket.close()
+                return
+            
+            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
+            
+        # For Proxmox host
+        else:
+            # Get Proxmox host SSH credentials from database
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+            if not proxmox_config:
+                await websocket.send_json({'type': 'error', 'data': 'Proxmox configuration not found. Please configure in Settings.'})
+                await websocket.close()
+                return
+            
+            # Extract hostname from Proxmox config
+            host = proxmox_config['host']
+            if '://' in host:
+                host = host.split('://', 1)[1]
+            host = host.split(':')[0].rstrip('/')
+            
+            # Get SSH config for this host
+            ssh_config = await db.ssh_configs.find_one({
+                "user_id": user_id,
+                "host": host
+            })
+            
+            if not ssh_config:
+                # Try to find any SSH config for this user
+                ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+            
+            if not ssh_config:
+                await websocket.send_json({'type': 'error', 'data': 'No SSH configuration found. Please configure SSH credentials in Settings → SSH Configuration.'})
+                await websocket.close()
+                return
+            
+            ssh_host = ssh_config.get('host')
+            ssh_username = ssh_config.get('username', 'root')
+            ssh_password = ssh_config.get('password')
+            ssh_port = ssh_config.get('port', 22)
+            
+            logger.info(f"Connecting to Proxmox host via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
+            
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            
+            try:
+                ssh_client.connect(
+                    hostname=ssh_host,
+                    port=ssh_port,
+                    username=ssh_username,
+                    password=ssh_password,
+                    timeout=10
+                )
+            except Exception as conn_err:
+                error_msg = f"SSH connection to Proxmox host failed: {str(conn_err)}"
                 logger.error(error_msg)
                 await websocket.send_json({'type': 'error', 'data': error_msg})
                 await websocket.close()

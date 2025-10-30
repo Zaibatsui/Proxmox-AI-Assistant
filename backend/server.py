@@ -24,6 +24,7 @@ from ftplib import FTP
 import io
 import stat
 import base64
+import socket
 
 # Import Portainer Agent client for Docker container management
 from portainer_agent_client import PortainerAgentClient

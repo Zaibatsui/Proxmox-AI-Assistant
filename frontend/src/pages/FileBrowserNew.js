@@ -253,8 +253,11 @@ function FileBrowserNew({ onLogout }) {
                       </button>
                       <button
                         onClick={() => {
+                          console.log('Edit SSH clicked, editor function:', leftCredentialsEditor);
                           if (leftCredentialsEditor) {
                             leftCredentialsEditor();
+                          } else {
+                            console.error('No credential editor function set for left pane');
                           }
                         }}
                         className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"

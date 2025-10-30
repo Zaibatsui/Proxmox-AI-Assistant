@@ -335,16 +335,17 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       {/* Terminal container */}
       <div 
         ref={terminalRef} 
-        className="flex-1 overflow-auto"
+        className="flex-1 overflow-hidden"
         style={{ 
-          minHeight: '200px',
-          maxHeight: '100%',
-          width: '100%'
+          minHeight: 0,
+          height: '100%',
+          width: '100%',
+          position: 'relative'
         }}
       />
 
       {/* Connection info footer */}
-      <div className="px-3 py-1.5 bg-slate-800 border-t border-slate-700 flex items-center justify-between text-xs text-slate-500">
+      <div className="px-3 py-1.5 bg-slate-800 border-t border-slate-700 flex items-center justify-between text-xs text-slate-500 flex-shrink-0">
         <span>
           {connection?.name || connection?.host || 'Unknown'} 
           {connection?.vmid && ` (${connection.type?.toUpperCase()} ${connection.vmid})`}

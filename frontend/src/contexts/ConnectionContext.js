@@ -198,25 +198,59 @@ export const ConnectionProvider = ({ children }) => {
     return { success: true, connection };
   };
 
-  // Connect to any connection (auto-detect type)
-  const connect = async (connectionId) => {
-    // Check if it's a Proxmox location (with safety check)
-    if (Array.isArray(proxmoxLocations)) {
-      const proxmoxLoc = proxmoxLocations.find(loc => loc.id === connectionId);
-      if (proxmoxLoc) {
-        return await quickConnectProxmox(connectionId);
+  // Connect to any connection (auto-detect type) with retry logic
+  const connect = async (connectionId, retryCount = 0) => {
+    const MAX_RETRIES = 2;
+    const RETRY_DELAY = 1500; // 1.5 seconds
+    
+    try {
+      // Check if it's a Proxmox location (with safety check)
+      if (Array.isArray(proxmoxLocations)) {
+        const proxmoxLoc = proxmoxLocations.find(loc => loc.id === connectionId);
+        if (proxmoxLoc) {
+          const result = await quickConnectProxmox(connectionId);
+          
+          // If failed and retries available, try again
+          if (!result.success && retryCount < MAX_RETRIES) {
+            console.log(`Connection failed, retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+            await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+            return await connect(connectionId, retryCount + 1);
+          }
+          
+          return result;
+        }
       }
-    }
 
-    // Check if it's a connection profile (with safety check)
-    if (Array.isArray(connectionProfiles)) {
-      const profile = connectionProfiles.find(p => p.id === connectionId);
-      if (profile) {
-        return connectToProfile(profile);
+      // Check if it's a connection profile (with safety check)
+      if (Array.isArray(connectionProfiles)) {
+        const profile = connectionProfiles.find(p => p.id === connectionId);
+        if (profile) {
+          return connectToProfile(profile);
+        }
       }
-    }
 
-    return { success: false, error: 'Connection not found' };
+      return { success: false, error: 'Connection not found' };
+    } catch (error) {
+      console.error('Connection error:', error);
+      
+      // Retry on network errors
+      if (retryCount < MAX_RETRIES && (
+        error.code === 'ECONNREFUSED' || 
+        error.code === 'ETIMEDOUT' ||
+        error.message?.includes('timeout') ||
+        error.message?.includes('network')
+      )) {
+        console.log(`Network error, retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+        await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
+        return await connect(connectionId, retryCount + 1);
+      }
+      
+      return { 
+        success: false, 
+        error: error.message || 'Connection failed',
+        canRetry: retryCount < MAX_RETRIES
+      };
+    }
   };
 
   // Disconnect

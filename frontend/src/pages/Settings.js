@@ -463,6 +463,429 @@ function Settings({ onLogout }) {
         </div>
 
         <div className="space-y-6">
+        
+        {/* Connections Management - Collapsible - FIRST SECTION */}
+        <Collapsible open={connectionsOpen} onOpenChange={setConnectionsOpen}>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-cyan-500/10">
+                      <Network className="w-5 h-5 text-cyan-400" />
+                    </div>
+                    <div className="text-left">
+                      <CardTitle className="text-slate-100">Connections Management</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Manage SSH credentials for all Proxmox locations and connection profiles
+                      </CardDescription>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {!loadingConnections && proxmoxLocations.length > 0 && (
+                      <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        {proxmoxLocations.length} Locations
+                      </span>
+                    )}
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${connectionsOpen ? 'rotate-180' : ''}`} />
+                  </div>
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                {loadingConnections ? (
+                  <div className="text-center py-8 text-slate-400">Loading connections...</div>
+                ) : (
+                  <>
+                    {/* Proxmox Host */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                        <Server className="w-4 h-4" />
+                        Proxmox Host
+                      </h3>
+                      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className={`w-3 h-3 rounded-full ${
+                              apiTestStatus?.status === 'success' ? 'bg-emerald-500' : 'bg-red-500'
+                            }`}></div>
+                            <div>
+                              <div className="text-slate-200 font-medium">Proxmox Server</div>
+                              <div className="text-xs text-slate-500 mt-1">
+                                Configured via Proxmox API & SSH Configuration below
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs px-2 py-1 rounded border ${
+                              apiTestStatus?.status === 'success' 
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : 'bg-red-500/20 text-red-400 border-red-500/30'
+                            }`}>
+                              {apiTestStatus?.status === 'success' ? 'Running' : 'Stopped'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* VMs - Grouped by Running/Stopped */}
+                    {proxmoxLocations.filter(loc => loc.type === 'vm').length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <HardDrive className="w-4 h-4" />
+                          Virtual Machines ({proxmoxLocations.filter(loc => loc.type === 'vm').length})
+                        </h3>
+                        
+                        {/* Running VMs */}
+                        {(() => {
+                          const runningVMs = proxmoxLocations
+                            .filter(loc => loc.type === 'vm' && loc.status === 'running')
+                            .sort((a, b) => a.name.localeCompare(b.name));
+                          
+                          return runningVMs.length > 0 ? (
+                            <Collapsible open={vmRunningOpen} onOpenChange={setVmRunningOpen} className="mb-2">
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-lg border border-emerald-500/20 transition-colors">
+                                  <ChevronDown className={`w-4 h-4 text-emerald-400 transition-transform ${vmRunningOpen ? 'rotate-180' : ''}`} />
+                                  <span className="text-sm font-medium text-emerald-400">Running ({runningVMs.length})</span>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="space-y-2 mt-2">
+                                  {runningVMs.map(location => {
+                                    const key = `${location.type}_${location.vmid}`;
+                                    const hasCreds = locationCredentials[key];
+                                    return (
+                                      <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3 flex-1">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                            <div className="flex-1">
+                                              <div className="text-slate-200 font-medium">{location.name}</div>
+                                              <div className="text-xs text-slate-500 mt-1">
+                                                VM ID: {location.vmid} • Status: running
+                                                {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            {hasCreds ? (
+                                              <>
+                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                  SSH Configured
+                                                </span>
+                                                <button
+                                                  onClick={() => handleEditCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                                  title="Edit SSH credentials"
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleDeleteCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                                  title="Delete SSH credentials"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <button
+                                                onClick={() => handleEditCredentials(location)}
+                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                              >
+                                                <Key className="w-3 h-3" />
+                                                Add SSH
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ) : null;
+                        })()}
+                        
+                        {/* Stopped VMs */}
+                        {(() => {
+                          const stoppedVMs = proxmoxLocations
+                            .filter(loc => loc.type === 'vm' && loc.status !== 'running')
+                            .sort((a, b) => a.name.localeCompare(b.name));
+                          
+                          return stoppedVMs.length > 0 ? (
+                            <Collapsible open={vmStoppedOpen} onOpenChange={setVmStoppedOpen}>
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg border border-red-500/20 transition-colors">
+                                  <ChevronDown className={`w-4 h-4 text-red-400 transition-transform ${vmStoppedOpen ? 'rotate-180' : ''}`} />
+                                  <span className="text-sm font-medium text-red-400">Stopped ({stoppedVMs.length})</span>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="space-y-2 mt-2">
+                                  {stoppedVMs.map(location => {
+                                    const key = `${location.type}_${location.vmid}`;
+                                    const hasCreds = locationCredentials[key];
+                                    return (
+                                      <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3 flex-1">
+                                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                            <div className="flex-1">
+                                              <div className="text-slate-200 font-medium">{location.name}</div>
+                                              <div className="text-xs text-slate-500 mt-1">
+                                                VM ID: {location.vmid} • Status: {location.status}
+                                                {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            {hasCreds ? (
+                                              <>
+                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                  SSH Configured
+                                                </span>
+                                                <button
+                                                  onClick={() => handleEditCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                                  title="Edit SSH credentials"
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleDeleteCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                                  title="Delete SSH credentials"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <button
+                                                onClick={() => handleEditCredentials(location)}
+                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                              >
+                                                <Key className="w-3 h-3" />
+                                                Add SSH
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    {/* LXC Containers - Grouped by Running/Stopped */}
+                    {proxmoxLocations.filter(loc => loc.type === 'lxc').length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          LXC Containers ({proxmoxLocations.filter(loc => loc.type === 'lxc').length})
+                        </h3>
+                        
+                        {/* Running LXCs */}
+                        {(() => {
+                          const runningLXCs = proxmoxLocations
+                            .filter(loc => loc.type === 'lxc' && loc.status === 'running')
+                            .sort((a, b) => a.name.localeCompare(b.name));
+                          
+                          return runningLXCs.length > 0 ? (
+                            <Collapsible open={lxcRunningOpen} onOpenChange={setLxcRunningOpen} className="mb-2">
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-emerald-500/5 hover:bg-emerald-500/10 rounded-lg border border-emerald-500/20 transition-colors">
+                                  <ChevronDown className={`w-4 h-4 text-emerald-400 transition-transform ${lxcRunningOpen ? 'rotate-180' : ''}`} />
+                                  <span className="text-sm font-medium text-emerald-400">Running ({runningLXCs.length})</span>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="space-y-2 mt-2">
+                                  {runningLXCs.map(location => {
+                                    const key = `${location.type}_${location.vmid}`;
+                                    const hasCreds = locationCredentials[key];
+                                    return (
+                                      <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3 flex-1">
+                                            <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+                                            <div className="flex-1">
+                                              <div className="text-slate-200 font-medium">{location.name}</div>
+                                              <div className="text-xs text-slate-500 mt-1">
+                                                CT ID: {location.vmid} • Status: running
+                                                {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            {hasCreds ? (
+                                              <>
+                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                  SSH Configured
+                                                </span>
+                                                <button
+                                                  onClick={() => handleEditCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                                  title="Edit SSH credentials"
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleDeleteCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                                  title="Delete SSH credentials"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <button
+                                                onClick={() => handleEditCredentials(location)}
+                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                              >
+                                                <Key className="w-3 h-3" />
+                                                Add SSH
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ) : null;
+                        })()}
+                        
+                        {/* Stopped LXCs */}
+                        {(() => {
+                          const stoppedLXCs = proxmoxLocations
+                            .filter(loc => loc.type === 'lxc' && loc.status !== 'running')
+                            .sort((a, b) => a.name.localeCompare(b.name));
+                          
+                          return stoppedLXCs.length > 0 ? (
+                            <Collapsible open={lxcStoppedOpen} onOpenChange={setLxcStoppedOpen}>
+                              <CollapsibleTrigger className="w-full">
+                                <div className="flex items-center gap-2 px-3 py-2 bg-red-500/5 hover:bg-red-500/10 rounded-lg border border-red-500/20 transition-colors">
+                                  <ChevronDown className={`w-4 h-4 text-red-400 transition-transform ${lxcStoppedOpen ? 'rotate-180' : ''}`} />
+                                  <span className="text-sm font-medium text-red-400">Stopped ({stoppedLXCs.length})</span>
+                                </div>
+                              </CollapsibleTrigger>
+                              <CollapsibleContent>
+                                <div className="space-y-2 mt-2">
+                                  {stoppedLXCs.map(location => {
+                                    const key = `${location.type}_${location.vmid}`;
+                                    const hasCreds = locationCredentials[key];
+                                    return (
+                                      <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                        <div className="flex items-center justify-between">
+                                          <div className="flex items-center gap-3 flex-1">
+                                            <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                                            <div className="flex-1">
+                                              <div className="text-slate-200 font-medium">{location.name}</div>
+                                              <div className="text-xs text-slate-500 mt-1">
+                                                CT ID: {location.vmid} • Status: {location.status}
+                                                {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                              </div>
+                                            </div>
+                                          </div>
+                                          <div className="flex items-center gap-2">
+                                            {hasCreds ? (
+                                              <>
+                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                  SSH Configured
+                                                </span>
+                                                <button
+                                                  onClick={() => handleEditCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                                  title="Edit SSH credentials"
+                                                >
+                                                  <Edit className="w-4 h-4" />
+                                                </button>
+                                                <button
+                                                  onClick={() => handleDeleteCredentials(location)}
+                                                  className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                                  title="Delete SSH credentials"
+                                                >
+                                                  <Trash2 className="w-4 h-4" />
+                                                </button>
+                                              </>
+                                            ) : (
+                                              <button
+                                                onClick={() => handleEditCredentials(location)}
+                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                              >
+                                                <Key className="w-3 h-3" />
+                                                Add SSH
+                                              </button>
+                                            )}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </CollapsibleContent>
+                            </Collapsible>
+                          ) : null;
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Connection Profiles (SFTP/FTP/SSH) */}
+                    {connectionProfiles.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <Network className="w-4 h-4" />
+                          Connection Profiles ({connectionProfiles.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {connectionProfiles.map(profile => (
+                            <div key={profile.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-slate-200 font-medium">{profile.name}</div>
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    {profile.connection_type.toUpperCase()} • {profile.host}:{profile.port}
+                                  </div>
+                                </div>
+                                <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30">
+                                  Profile
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-3">
+                          Manage connection profiles in File Browser → Manage Connections
+                        </div>
+                      </div>
+                    )}
+
+                    {proxmoxLocations.length === 0 && (
+                      <div className="text-center py-8 text-slate-400">
+                        <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No Proxmox locations found</p>
+                        <p className="text-xs mt-2">Configure Proxmox API below to see VMs and containers</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
             
             {/* Proxmox API Configuration Card - Collapsible */}
             <Collapsible open={apiConfigOpen} onOpenChange={setApiConfigOpen}>

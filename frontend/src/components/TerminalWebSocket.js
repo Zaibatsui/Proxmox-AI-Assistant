@@ -267,7 +267,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   };
 
   return (
-    <div className={`flex flex-col bg-slate-900 border-t border-slate-700 ${
+    <div className={`flex flex-col bg-slate-900 border-t border-slate-700 overflow-hidden ${
       isExpanded ? 'h-full' : 'h-64'
     }`}>
       {/* Header */}

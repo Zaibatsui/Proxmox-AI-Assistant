@@ -830,6 +830,7 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
             )
         
         # Run lspci command
+        logger.info("Running lspci -nnk command...")
         stdin, stdout, stderr = ssh_client.exec_command('lspci -nnk')
         lspci_output = stdout.read().decode()
         stderr_output = stderr.read().decode()
@@ -837,14 +838,25 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         if stderr_output:
             logger.warning(f"lspci stderr: {stderr_output}")
         
-        logger.info(f"lspci output length: {len(lspci_output)} bytes")
+        logger.info(f"lspci raw output length: {len(lspci_output)} bytes")
+        
+        if len(lspci_output) < 100:
+            logger.error(f"lspci output too short, might indicate command failure. Output: {lspci_output}")
+            raise Exception("lspci command returned insufficient data. Check if lspci is installed on Proxmox host.")
         
         # Parse devices
         devices = parse_lspci_output(lspci_output)
-        logger.info(f"Parsed {len(devices)} devices")
+        logger.info(f"Successfully parsed {len(devices)} PCI devices from lspci output")
+        
+        if len(devices) == 0:
+            logger.error("No devices parsed from lspci output. Raw output sample (first 500 chars):")
+            logger.error(lspci_output[:500])
+            raise Exception("Failed to parse any devices from lspci output")
         
         # Get IOMMU groups
+        logger.info("Fetching IOMMU group information...")
         devices = await get_iommu_groups(ssh_client, devices)
+        logger.info(f"IOMMU groups assigned to {sum(1 for d in devices if d.iommu_group)} devices")
         
         ssh_client.close()
         

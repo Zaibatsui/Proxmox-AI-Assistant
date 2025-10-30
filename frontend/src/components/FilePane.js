@@ -77,15 +77,26 @@ function FilePane({
           locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
         }
         
+        const requestBody = {
+          path,
+          location: {
+            type: connection.type || 'host',
+            id: locationId
+          }
+        };
+        
+        console.log(`[FilePane ${paneId}] Loading directory for:`, {
+          connectionName: connection.name,
+          connectionType: connection.type,
+          vmid: connection.vmid,
+          locationId,
+          path,
+          requestBody
+        });
+        
         response = await axios.post(
           `${API}/api/files/list`,
-          {
-            path,
-            location: {
-              type: connection.type || 'host',
-              id: locationId
-            }
-          }
+          requestBody
         );
       } else {
         // Use the connection profile endpoint

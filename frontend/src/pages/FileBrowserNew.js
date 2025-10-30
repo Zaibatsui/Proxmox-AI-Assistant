@@ -311,7 +311,16 @@ function FileBrowserNew({ onLogout }) {
             {rightPaneMode === 'files' ? (
               rightConnection ? (
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-200">{rightConnection.name}</span>
+                  <div className="flex flex-col">
+                    <span className="text-sm text-slate-200">{rightConnection.name}</span>
+                    {rightConnection.vmid && (
+                      <span className="text-xs text-slate-500">
+                        {rightConnection.type} ID: {rightConnection.vmid}
+                        {rightConnection.ssh_username && ` • SSH: ${rightConnection.ssh_username}`}
+                        {!rightConnection.ssh_username && ' • No SSH credentials'}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2">
                     {(rightConnection.type === 'vm' || rightConnection.type === 'lxc' || rightConnection.type === 'qemu') && (
                       <button

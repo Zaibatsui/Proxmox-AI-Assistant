@@ -156,6 +156,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
     // Build connection data
     const connectionData = {
+      token: localStorage.getItem('token'), // Add JWT token for authentication
       type: connection.type || 'host',
       vmid: connection.vmid,
       container_id: containerId || connection.container_id,

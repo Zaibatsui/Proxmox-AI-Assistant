@@ -55,6 +55,33 @@ function ActionQueue({ onLogout }) {
     }
   };
 
+  const clearCompleted = async () => {
+    const completedActions = actions.filter(a => a.status === "executed" || a.status === "failed");
+    
+    if (completedActions.length === 0) {
+      toast.info("No completed actions to clear");
+      return;
+    }
+    
+    if (!window.confirm(`Clear ${completedActions.length} completed/failed action(s)?\n\nThis will remove them from the queue.`)) {
+      return;
+    }
+    
+    try {
+      // Delete all completed/failed actions
+      await Promise.all(
+        completedActions.map(action => 
+          axios.delete(`${API}/actions/${action.id}`)
+        )
+      );
+      toast.success(`Cleared ${completedActions.length} action(s)`);
+      fetchActions();
+    } catch (error) {
+      toast.error("Failed to clear some actions");
+      fetchActions(); // Refresh to show which ones were deleted
+    }
+  };
+
   const getStatusColor = (status) => {
     switch (status) {
       case "executed":

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Server, Plus, Edit2, Trash2, Check, X, Loader2, TestTube } from 'lucide-react';
+import { Server, Plus, Edit2, Trash2, Check, X, Loader2, TestTube, RefreshCw, HardDrive, Package, Box } from 'lucide-react';
 import { toast } from 'sonner';
+import { useConnections } from '../contexts/ConnectionContext';
 
 const API = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 

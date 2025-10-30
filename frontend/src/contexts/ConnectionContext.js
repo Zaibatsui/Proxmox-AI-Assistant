@@ -18,6 +18,9 @@ export const ConnectionProvider = ({ children }) => {
   const [connectionProfiles, setConnectionProfiles] = useState([]);
   const [currentConnection, setCurrentConnection] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [connectionsStatus, setConnectionsStatus] = useState('loading'); // 'loading', 'success', 'failed', 'empty'
+  const [connectionsCached, setConnectionsCached] = useState(false);
+  const [connectionsLastUpdated, setConnectionsLastUpdated] = useState(null);
 
   // Load all available connections on mount (only if authenticated)
   useEffect(() => {
@@ -29,27 +32,90 @@ export const ConnectionProvider = ({ children }) => {
     }
   }, []);
 
-  const loadAllConnections = async () => {
+  const loadAllConnections = async (forceRefresh = false) => {
+    // Check cache first (unless force refresh)
+    const CACHE_KEY = 'proxmox_connections_cache';
+    const CACHE_TIMESTAMP_KEY = 'proxmox_connections_timestamp';
+    
+    if (!forceRefresh) {
+      try {
+        const cached = sessionStorage.getItem(CACHE_KEY);
+        const timestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
+        
+        if (cached && timestamp) {
+          const cacheAge = Date.now() - parseInt(timestamp);
+          // Use cache if less than 5 minutes old
+          if (cacheAge < 5 * 60 * 1000) {
+            const cachedData = JSON.parse(cached);
+            console.log('Using cached connections data (from ConnectionContext)');
+            setProxmoxLocations(cachedData.locations || []);
+            setConnectionProfiles(cachedData.profiles || []);
+            
+            // Set status
+            if (cachedData.locations.length === 0 && cachedData.profiles.length === 0) {
+              setConnectionsStatus('empty');
+            } else {
+              setConnectionsStatus('success');
+            }
+            setConnectionsCached(true);
+            setConnectionsLastUpdated(new Date(parseInt(timestamp)));
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (error) {
+        console.log('Cache read failed, loading fresh data');
+      }
+    }
+    
+    // Load fresh data
     setLoading(true);
+    setConnectionsCached(false);
+    setConnectionsStatus('loading');
+    
     try {
       const token = localStorage.getItem('token');
       if (!token) {
         console.log('No token found, skipping connection load');
         setProxmoxLocations([]);
         setConnectionProfiles([]);
+        setConnectionsStatus('empty');
         setLoading(false);
         return;
       }
 
+      console.log('Loading fresh connections data...');
+
       // Load Proxmox locations
       const proxmoxResponse = await axios.get(`${API}/api/proxmox-locations`);
-      setProxmoxLocations(proxmoxResponse.data.locations || []);
+      const locations = proxmoxResponse.data.locations || [];
+      setProxmoxLocations(locations);
 
       // Load connection profiles
       const profilesResponse = await axios.get(`${API}/api/connection-profiles`);
-      setConnectionProfiles(profilesResponse.data.profiles || []);
+      const profiles = profilesResponse.data.profiles || [];
+      setConnectionProfiles(profiles);
+      
+      // Cache the data
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ locations, profiles }));
+        sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+      } catch (error) {
+        console.warn('Failed to cache connections data:', error);
+      }
+      
+      // Set status
+      if (locations.length === 0 && profiles.length === 0) {
+        setConnectionsStatus('empty');
+      } else {
+        setConnectionsStatus('success');
+      }
+      
+      setConnectionsLastUpdated(new Date());
+      console.log(`Loaded ${locations.length} locations and ${profiles.length} profiles`);
     } catch (error) {
       console.error('Failed to load connections:', error);
+      setConnectionsStatus('failed');
       // Set empty arrays on error
       setProxmoxLocations([]);
       setConnectionProfiles([]);

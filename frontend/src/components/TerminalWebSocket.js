@@ -197,13 +197,13 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       console.error('WebSocket error:', err);
       setStatus('error');
       setError('WebSocket connection error');
-      term.write('\r\n\x1b[1;31mConnection error\x1b[0m\r\n');
+      safeWrite('\r\n\x1b[1;31mConnection error\x1b[0m\r\n');
     };
 
     websocket.onclose = () => {
       console.log('Terminal WebSocket disconnected');
       setStatus('disconnected');
-      term.write('\r\n\x1b[1;33mConnection closed\x1b[0m\r\n');
+      safeWrite('\r\n\x1b[1;33mConnection closed\x1b[0m\r\n');
     };
 
     // Handle terminal input

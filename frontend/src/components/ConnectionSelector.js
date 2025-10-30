@@ -102,10 +102,30 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
           <div className="absolute top-full right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
             {/* Header */}
             <div className="p-3 border-b border-slate-700">
-              <h4 className="text-sm font-semibold text-slate-200">Select Connection</h4>
-              <p className="text-xs text-slate-500 mt-1">
-                {connections.length} location{connections.length !== 1 ? 's' : ''} available
-              </p>
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-slate-200">Select Connection</h4>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {connections.length} location{connections.length !== 1 ? 's' : ''} available
+                  </p>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    reloadConnections(true);
+                  }}
+                  disabled={loading}
+                  className="p-1.5 hover:bg-slate-700 rounded transition-colors disabled:opacity-50"
+                  title="Refresh connections"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+              {connectionsCached && connectionsLastUpdated && (
+                <div className="text-xs text-slate-500 mt-2">
+                  Cached • {connectionsLastUpdated.toLocaleTimeString()}
+                </div>
+              )}
             </div>
 
             {/* Connections List */}

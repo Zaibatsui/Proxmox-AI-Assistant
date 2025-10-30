@@ -19,7 +19,7 @@ import { ConnectionProvider, useConnections } from "./contexts/ConnectionContext
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 export const API = `${BACKEND_URL}/api`;
 
-// Axios interceptor for auth
+// Axios request interceptor for auth
 axios.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -29,6 +29,23 @@ axios.interceptors.request.use(
     return config;
   },
   (error) => Promise.reject(error)
+);
+
+// Axios response interceptor to handle session expiration
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Check if error is 401 (Unauthorized) - session expired
+    if (error.response && error.response.status === 401) {
+      // Clear auth data
+      localStorage.removeItem("token");
+      localStorage.removeItem("username");
+      
+      // Redirect to login page
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
 );
 
 // Inner component that has access to ConnectionContext

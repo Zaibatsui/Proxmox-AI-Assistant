@@ -56,6 +56,7 @@ function FilePane({
     console.log(`Opening credentials modal for ${paneId}, connection:`, connection);
     // Pre-fill with existing credentials if available
     if (connection?.ssh_host) setCredentialsHost(connection.ssh_host);
+    if (connection?.ssh_port) setCredentialsPort(connection.ssh_port.toString());
     if (connection?.ssh_username) setCredentialsUsername(connection.ssh_username);
     setShowCredentialsModal(true);
   }, [connection, paneId]);

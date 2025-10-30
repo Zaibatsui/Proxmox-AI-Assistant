@@ -201,6 +201,7 @@ function Settings({ onLogout }) {
               setConnectionsStatus('success');
             }
             setConnectionsCached(true);
+            setConnectionsLastUpdated(new Date(parseInt(timestamp)));
             return;
           }
         }

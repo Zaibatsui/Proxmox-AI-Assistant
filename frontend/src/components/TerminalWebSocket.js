@@ -227,13 +227,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       {/* Terminal container with fixed dimensions */}
       <div 
         ref={containerRef}
-        className="flex-1 bg-slate-900"
-        style={{
-          minHeight: 0,
-          overflow: 'hidden',
-          width: '100%',
-          height: '100%'
-        }}
+        className="terminal-container flex-1 bg-slate-900"
       />
 
       {/* Footer */}

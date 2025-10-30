@@ -764,10 +764,27 @@ function FilePane({
               SSH Credentials Required
             </h3>
             <p className="text-sm text-slate-400 mb-4">
-              Enter SSH credentials to access {connection?.name}
+              Enter SSH connection details to access {connection?.name}
             </p>
             
             <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Host / IP Address
+                </label>
+                <input
+                  type="text"
+                  value={credentialsHost}
+                  onChange={(e) => setCredentialsHost(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
+                  placeholder="192.168.1.100 or vm.local"
+                  autoFocus
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  The IP address or hostname where this {connection?.type === 'vm' ? 'VM' : 'container'} can be reached via SSH
+                </p>
+              </div>
+              
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-2">
                   Username
@@ -778,7 +795,6 @@ function FilePane({
                   onChange={(e) => setCredentialsUsername(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
                   placeholder="root"
-                  autoFocus
                 />
               </div>
               
@@ -805,6 +821,7 @@ function FilePane({
               <button
                 onClick={() => {
                   setShowCredentialsModal(false);
+                  setCredentialsHost('');
                   setCredentialsUsername('');
                   setCredentialsPassword('');
                 }}

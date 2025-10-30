@@ -190,17 +190,54 @@ function FilePane({
         ssh_password: credentialsPassword
       });
       
-      // Update connection object with credentials
-      connection.ssh_username = credentialsUsername;
-      connection.ssh_password = credentialsPassword;
-      
       toast.success('Credentials saved successfully');
       setShowCredentialsModal(false);
       setCredentialsUsername('');
       setCredentialsPassword('');
       
-      // Retry loading directory
-      loadDirectory(currentPath);
+      // Force reload by temporarily setting connection to null then back
+      // This triggers the useEffect that loads the directory
+      const updatedConnection = {
+        ...connection,
+        ssh_username: credentialsUsername,
+        ssh_password: credentialsPassword
+      };
+      
+      // Directly reload with credentials in the request
+      setLoading(true);
+      const path = currentPath;
+      
+      try {
+        let locationId = null;
+        if (connection.type !== 'host') {
+          locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
+        }
+        
+        const requestBody = {
+          path,
+          location: {
+            type: connection.type || 'host',
+            id: locationId,
+            ssh_username: credentialsUsername,
+            ssh_password: credentialsPassword
+          }
+        };
+        
+        const response = await axios.post(
+          `${API}/api/files/list`,
+          requestBody
+        );
+        
+        setFiles(response.data.files || response.data || []);
+        setCurrentPath(path);
+        console.log(`Loaded ${(response.data.files || response.data || []).length} files after credentials saved`);
+      } catch (error) {
+        console.error('Failed to reload after credentials:', error);
+        toast.error('Saved credentials but failed to load files. Please try refreshing.');
+      } finally {
+        setLoading(false);
+      }
+      
     } catch (error) {
       console.error('Failed to save credentials:', error);
       toast.error(error.response?.data?.detail || 'Failed to save credentials');

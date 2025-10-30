@@ -119,10 +119,12 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
     // Handle window resize with safety checks
     const handleResize = () => {
-      if (!isMounted.current) return;
+      if (!isMounted.current || !isTerminalReady.current) return;
       
       try {
-        if (fitAddon.current && terminalInstance.current && terminalInstance.current.element) {
+        if (fitAddon.current && terminalInstance.current && 
+            terminalInstance.current.element && 
+            terminalInstance.current.buffer) {
           fitAddon.current.fit();
           // Send resize event to backend
           if (ws.current?.readyState === WebSocket.OPEN) {

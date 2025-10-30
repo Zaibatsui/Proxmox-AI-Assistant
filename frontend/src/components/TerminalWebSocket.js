@@ -59,18 +59,27 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
     // Open terminal
     term.open(terminalRef.current);
     
-    // Safe fit with error handling
-    try {
-      fit.fit();
-    } catch (err) {
-      console.warn('Initial fit failed:', err);
-    }
-
     terminalInstance.current = term;
     fitAddon.current = fit;
-
-    // Connect WebSocket
-    connectWebSocket(term);
+    
+    // Wait for terminal to be ready before fitting and connecting
+    setTimeout(() => {
+      if (!isMounted.current) return;
+      
+      // Safe fit with error handling
+      try {
+        fit.fit();
+      } catch (err) {
+        console.warn('Initial fit failed:', err);
+      }
+      
+      // Connect WebSocket after terminal is ready
+      setTimeout(() => {
+        if (isMounted.current) {
+          connectWebSocket(term);
+        }
+      }, 50);
+    }, 50);
 
     // Handle window resize with safety checks
     const handleResize = () => {

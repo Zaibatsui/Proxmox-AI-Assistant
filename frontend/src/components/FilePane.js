@@ -41,6 +41,12 @@ function FilePane({
   const [fileContent, setFileContent] = useState('');
   const [uploadProgress, setUploadProgress] = useState(null);
   const fileInputRef = useRef(null);
+  
+  // Credentials modal states
+  const [showCredentialsModal, setShowCredentialsModal] = useState(false);
+  const [credentialsUsername, setCredentialsUsername] = useState('');
+  const [credentialsPassword, setCredentialsPassword] = useState('');
+  const [credentialsSaving, setCredentialsSaving] = useState(false);
 
   useEffect(() => {
     // Reset state when connection changes

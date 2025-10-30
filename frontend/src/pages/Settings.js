@@ -158,12 +158,12 @@ function Settings({ onLogout }) {
       console.log('Loading all connections...');
       
       // Load Proxmox locations
-      const locationsRes = await axios.get(`${API}/api/proxmox-locations`);
+      const locationsRes = await axios.get(`${API}/proxmox-locations`);
       console.log('Proxmox locations response:', locationsRes.data);
       setProxmoxLocations(locationsRes.data.locations || []);
       
       // Load connection profiles
-      const profilesRes = await axios.get(`${API}/api/connection-profiles`);
+      const profilesRes = await axios.get(`${API}/connection-profiles`);
       console.log('Connection profiles response:', profilesRes.data);
       setConnectionProfiles(profilesRes.data.profiles || []);
       

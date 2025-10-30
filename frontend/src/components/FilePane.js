@@ -337,8 +337,26 @@ function FilePane({
     try {
       let response;
       
+      // Handle Docker containers
+      if (connection.type === 'docker' && connection.container_id) {
+        response = await axios.post(
+          `${API}/api/containers/files/read`,
+          {
+            container_id: connection.container_id,
+            path: filePath
+          },
+          {
+            params: {
+              location: JSON.stringify({
+                type: 'host',
+                id: null
+              })
+            }
+          }
+        );
+      }
       // Check if this is a Proxmox location or a connection profile
-      if (connection.source === 'proxmox' || connection.vmid || connection.type === 'host') {
+      else if (connection.source === 'proxmox' || connection.vmid || connection.type === 'host') {
         // Use the generic files endpoint with location in request body
         // Ensure vmid/id is always a string, but null for host type
         let locationId = null;

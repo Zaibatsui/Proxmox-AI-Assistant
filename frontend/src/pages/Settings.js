@@ -219,7 +219,7 @@ function Settings({ onLogout }) {
       toast.success('Credentials saved successfully');
       setShowCredentialModal(false);
       setEditingLocation(null);
-      loadAllConnections(true); // Force refresh, invalidating cache
+      reloadConnections(true); // Force refresh from ConnectionContext
     } catch (error) {
       console.error('Failed to save credentials:', error);
       toast.error(error.response?.data?.detail || 'Failed to save credentials');
@@ -232,7 +232,7 @@ function Settings({ onLogout }) {
     try {
       await axios.delete(`${API}/location-credentials/${location.type}/${location.vmid}`);
       toast.success('Credentials deleted');
-      loadAllConnections(true); // Force refresh, invalidating cache
+      reloadConnections(true); // Force refresh from ConnectionContext
     } catch (error) {
       console.error('Failed to delete credentials:', error);
       toast.error('Failed to delete credentials');

@@ -476,6 +476,33 @@ class DirectoryCreateRequest(BaseModel):
 class RestoreRequest(BaseModel):
     backup_id: str
 
+class ContainerExecCommand(BaseModel):
+    """Command execution inside a container."""
+    container_id: str
+    command: str
+    location: Optional[FileLocation] = None
+
+# ==================== LOCATION CREDENTIALS MODELS ====================
+
+class LocationCredentials(BaseModel):
+    """SSH credentials for a Proxmox location (VM/LXC)."""
+    model_config = ConfigDict(extra="ignore")
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_id: str
+    location_type: str  # "vm", "lxc"
+    location_id: str  # VM ID or LXC ID
+    ssh_username: str
+    ssh_password: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LocationCredentialsCreate(BaseModel):
+    """Create or update credentials for a location."""
+    location_type: str
+    location_id: str
+    ssh_username: str
+    ssh_password: str
+
 # ==================== HELPER FUNCTIONS ====================
 
 def hash_password(password: str) -> str:

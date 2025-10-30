@@ -14,6 +14,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   const ws = useRef(null);
   const isMounted = useRef(true);
   const isTerminalReady = useRef(false);
+  const isFitting = useRef(false);
   const resizeTimeout = useRef(null);
   const [status, setStatus] = useState('disconnected'); // disconnected, connecting, connected, error
   const [error, setError] = useState(null);

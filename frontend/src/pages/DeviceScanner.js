@@ -47,7 +47,9 @@ function DeviceScanner({ onLogout }) {
       setLastScan(response.data.scan_timestamp);
       toast.success(`Scan complete! Found ${response.data.devices.length} devices`);
     } catch (error) {
-      toast.error("Failed to scan devices");
+      const errorMessage = error.response?.data?.detail || "Failed to scan devices";
+      toast.error(errorMessage, { duration: 6000 });
+      console.error("Device scan error:", error);
     } finally {
       setLoading(false);
     }

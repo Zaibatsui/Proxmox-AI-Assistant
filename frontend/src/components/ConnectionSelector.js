@@ -392,6 +392,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                 </>
               )}
             </div>
+            </div>
 
             {/* Disconnect Button */}
             {currentConnection && (

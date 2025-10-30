@@ -152,6 +152,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
     // Cleanup
     return () => {
       isMounted.current = false;
+      isTerminalReady.current = false;
       window.removeEventListener('resize', handleResize);
       
       if (resizeTimeout.current) {

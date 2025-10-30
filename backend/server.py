@@ -1635,7 +1635,14 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                     except:
                         pass
                     
-                    locations.append({
+                    # Check if we have stored credentials for this VM
+                    stored_creds = await db.location_credentials.find_one({
+                        "user_id": current_user["user_id"],
+                        "location_type": "vm",
+                        "location_id": str(vm['vmid'])
+                    })
+                    
+                    vm_location = {
                         "id": f"vm_{vm['vmid']}",
                         "name": f"VM {vm['vmid']}: {vm.get('name', 'Unnamed')}",
                         "type": "vm",
@@ -1646,14 +1653,28 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                         "has_guest_agent": has_agent,
                         "agent_status": agent_status,
                         "agent_warning": agent_warning
-                    })
+                    }
+                    
+                    # Add credentials if they exist
+                    if stored_creds:
+                        vm_location["ssh_username"] = stored_creds["ssh_username"]
+                        vm_location["ssh_password"] = stored_creds["ssh_password"]
+                    
+                    locations.append(vm_location)
             except:
                 pass
             
             # Get LXC Containers
             try:
                 for ct in proxmox.nodes(node_name).lxc.get():
-                    locations.append({
+                    # Check if we have stored credentials for this LXC
+                    stored_creds = await db.location_credentials.find_one({
+                        "user_id": current_user["user_id"],
+                        "location_type": "lxc",
+                        "location_id": str(ct['vmid'])
+                    })
+                    
+                    ct_location = {
                         "id": f"lxc_{ct['vmid']}",
                         "name": f"CT {ct['vmid']}: {ct.get('name', 'Unnamed')}",
                         "type": "lxc",
@@ -1661,7 +1682,14 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                         "node": node_name,
                         "icon": "Package",
                         "status": ct.get('status', 'unknown')
-                    })
+                    }
+                    
+                    # Add credentials if they exist
+                    if stored_creds:
+                        ct_location["ssh_username"] = stored_creds["ssh_username"]
+                        ct_location["ssh_password"] = stored_creds["ssh_password"]
+                    
+                    locations.append(ct_location)
             except:
                 pass
         

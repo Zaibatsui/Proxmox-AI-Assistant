@@ -30,7 +30,7 @@ This file tracks the testing status of features in the application.
 metadata:
   created_by: "main_agent"
   version: "3.0.0"
-  test_sequence: 0
+  test_sequence: 1
   run_ui: false
 
 ## Test Plan

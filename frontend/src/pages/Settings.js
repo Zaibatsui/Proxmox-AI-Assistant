@@ -603,8 +603,12 @@ function Settings({ onLogout }) {
                 {/* Refresh Button */}
                 <div className="flex justify-between items-center pb-2 border-b border-slate-700">
                   <div className="text-xs text-slate-500">
-                    {connectionsCached && "Using cached data • "}
-                    Last updated: {new Date().toLocaleTimeString()}
+                    {connectionsCached && connectionsLastUpdated && (
+                      <>Using cached data • </>
+                    )}
+                    {connectionsLastUpdated && (
+                      <>Last updated: {connectionsLastUpdated.toLocaleTimeString()}</>
+                    )}
                   </div>
                   <Button
                     onClick={() => loadAllConnections(true)}

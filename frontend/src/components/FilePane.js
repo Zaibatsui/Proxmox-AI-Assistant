@@ -396,11 +396,54 @@ function FilePane({
     const filePath = currentPath === '/' ? `/${editingFile.name}` : `${currentPath}/${editingFile.name}`;
     
     try {
-      await axios.post(
-        `${API}/api/connection-profiles/${connection.id}/files/write`,
-        null,
-        { params: { path: filePath, content: fileContent } }
-      );
+      // Handle Docker containers
+      if (connection.type === 'docker' && connection.container_id) {
+        await axios.post(
+          `${API}/api/containers/files/write`,
+          {
+            container_id: connection.container_id,
+            path: filePath,
+            content: fileContent
+          },
+          {
+            params: {
+              location: JSON.stringify({
+                type: 'host',
+                id: null
+              })
+            }
+          }
+        );
+      }
+      // Handle Proxmox locations
+      else if (connection.source === 'proxmox' || connection.vmid || connection.type === 'host') {
+        let locationId = null;
+        if (connection.type !== 'host') {
+          locationId = connection.vmid ? String(connection.vmid) : (connection.id ? String(connection.id) : null);
+        }
+        
+        await axios.post(
+          `${API}/api/files/write`,
+          {
+            path: filePath,
+            content: fileContent,
+            location: {
+              type: connection.type || 'host',
+              id: locationId,
+              ssh_username: connection.ssh_username || connection.username,
+              ssh_password: connection.ssh_password || connection.password
+            }
+          }
+        );
+      }
+      // Handle connection profiles
+      else {
+        await axios.post(
+          `${API}/api/connection-profiles/${connection.id}/files/write`,
+          null,
+          { params: { path: filePath, content: fileContent } }
+        );
+      }
       
       toast.success('File saved successfully');
       setEditingFile(null);

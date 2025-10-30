@@ -711,6 +711,82 @@ function FilePane({
           </div>
         </div>
       )}
+      
+      {/* SSH Credentials Modal */}
+      {showCredentialsModal && (
+        <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+          <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-slate-200 mb-4">
+              SSH Credentials Required
+            </h3>
+            <p className="text-sm text-slate-400 mb-4">
+              Enter SSH credentials to access {connection?.name}
+            </p>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Username
+                </label>
+                <input
+                  type="text"
+                  value={credentialsUsername}
+                  onChange={(e) => setCredentialsUsername(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
+                  placeholder="root"
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={credentialsPassword}
+                  onChange={(e) => setCredentialsPassword(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleSubmitCredentials();
+                    }
+                  }}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6 flex gap-3 justify-end">
+              <button
+                onClick={() => {
+                  setShowCredentialsModal(false);
+                  setCredentialsUsername('');
+                  setCredentialsPassword('');
+                }}
+                disabled={credentialsSaving}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-sm disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSubmitCredentials}
+                disabled={credentialsSaving || !credentialsUsername || !credentialsPassword}
+                className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {credentialsSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save & Connect'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </>
       )}
     </div>

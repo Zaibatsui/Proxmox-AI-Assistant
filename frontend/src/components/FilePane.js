@@ -137,6 +137,23 @@ function FilePane({
       console.error('Failed to load directory:', error);
       setFiles([]); // Ensure files are cleared on error
       
+      // Check if error is due to missing credentials
+      const errorDetail = error.response?.data?.detail || '';
+      const needsCredentials = (
+        error.response?.status === 400 &&
+        (errorDetail.includes('SSH credentials required') || 
+         errorDetail.includes('Could not determine IP') ||
+         errorDetail.includes('QEMU Guest Agent not available'))
+      );
+      
+      if (needsCredentials && (connection.type === 'vm' || connection.type === 'lxc') && !connection.ssh_username) {
+        // Show credentials modal
+        setShowCredentialsModal(true);
+        toast.info('SSH credentials required to access this location');
+        setLoading(false);
+        return;
+      }
+      
       // Better error message handling
       let errorMessage = 'Failed to load directory. Connection may be unavailable.';
       if (error.response?.data?.detail) {

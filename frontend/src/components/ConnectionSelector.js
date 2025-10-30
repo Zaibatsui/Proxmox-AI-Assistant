@@ -63,9 +63,15 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
       <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setShowDropdown(!showDropdown)}
-          className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm"
+          disabled={selecting}
+          className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors text-sm disabled:opacity-50"
         >
-          {currentConnection ? (
+          {selecting ? (
+            <>
+              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
+              <span className="text-slate-400">Connecting...</span>
+            </>
+          ) : currentConnection ? (
             <>
               <Icon className="w-4 h-4 text-cyan-400" />
               <span className="text-slate-200 max-w-[150px] truncate">

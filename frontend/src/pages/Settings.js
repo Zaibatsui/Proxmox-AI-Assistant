@@ -834,13 +834,24 @@ function Settings({ onLogout }) {
             <CollapsibleTrigger className="w-full">
               <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-slate-100">Connections Management</CardTitle>
-                    <CardDescription className="text-slate-400">
-                      Manage SSH credentials for all Proxmox locations and connection profiles
-                    </CardDescription>
+                  <div className="flex items-center gap-3">
+                    <Network className="w-5 h-5 text-slate-400" />
+                    <div>
+                      <CardTitle className="text-slate-100">Connections Management</CardTitle>
+                      <CardDescription className="text-slate-400">
+                        Manage SSH credentials for all Proxmox locations and connection profiles
+                      </CardDescription>
+                    </div>
                   </div>
-                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${connectionsOpen ? 'transform rotate-180' : ''}`} />
+                  <div className="flex items-center gap-3">
+                    {!loadingConnections && proxmoxLocations.length > 0 && (
+                      <span className="flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-full border border-green-500/20 text-sm">
+                        <CheckCircle className="w-4 h-4" />
+                        {proxmoxLocations.length} Locations
+                      </span>
+                    )}
+                    <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${connectionsOpen ? 'transform rotate-180' : ''}`} />
+                  </div>
                 </div>
               </CardHeader>
             </CollapsibleTrigger>

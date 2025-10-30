@@ -4687,6 +4687,8 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                 allow_agent=False,
                 look_for_keys=False
             )
+            # Mark this as a direct SSH connection so exec_in_location knows
+            location.direct_ssh = True
             return ssh_client
         except Exception as e:
             raise HTTPException(status_code=500, detail=f"Failed to connect to VM via SSH: {str(e)}")

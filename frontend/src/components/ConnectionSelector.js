@@ -41,8 +41,17 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
     // Show toast notification
     toast.loading(`Connecting to ${connection.name}...`, { id: 'connection-toast' });
     
+    // Add timeout protection (30 seconds)
+    const timeout = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Connection timeout (30s)')), 30000)
+    );
+    
     try {
-      const result = await connect(connection.id);
+      const result = await Promise.race([
+        connect(connection.id),
+        timeout
+      ]);
+      
       if (result.success) {
         toast.success(`Connected to ${connection.name}`, { id: 'connection-toast' });
         if (onConnectionChange) {
@@ -51,10 +60,23 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
         // Close dropdown after successful connection
         setTimeout(() => setShowDropdown(false), 500);
       } else {
-        toast.error(`Failed to connect to ${connection.name}`, { id: 'connection-toast' });
+        // Show error with retry option if available
+        const errorMsg = result.error || 'Connection failed';
+        toast.error(
+          result.canRetry 
+            ? `${errorMsg} (Retried 2 times)` 
+            : errorMsg,
+          { id: 'connection-toast', duration: 5000 }
+        );
       }
     } catch (error) {
-      toast.error(`Connection error: ${error.message}`, { id: 'connection-toast' });
+      const isTimeout = error.message?.includes('timeout');
+      toast.error(
+        isTimeout 
+          ? `Connection timeout - ${connection.name} didn't respond` 
+          : `Connection error: ${error.message}`,
+        { id: 'connection-toast', duration: 5000 }
+      );
     } finally {
       setSelecting(false);
       setSelectedId(null);

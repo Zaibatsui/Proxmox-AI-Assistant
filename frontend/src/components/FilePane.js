@@ -274,7 +274,17 @@ function FilePane({
       
     } catch (error) {
       console.error('Failed to save credentials:', error);
-      toast.error(error.response?.data?.detail || 'Failed to save credentials');
+      console.error('Error response:', error.response);
+      const errorDetail = error.response?.data?.detail;
+      let errorMessage = 'Failed to save credentials';
+      if (errorDetail) {
+        if (typeof errorDetail === 'string') {
+          errorMessage = errorDetail;
+        } else if (Array.isArray(errorDetail)) {
+          errorMessage = errorDetail.map(e => e.msg || e.message).join(', ');
+        }
+      }
+      toast.error(errorMessage);
     } finally {
       setCredentialsSaving(false);
     }

@@ -275,7 +275,10 @@ class BackendTester:
         # Test 3: Connection Test (to see current SSH status)
         test_results['connection_test'] = self.test_connection_test_endpoint()
         
-        # Test 4: Device Scanner with SSH Config (main test)
+        # Test 4: Analyze backend logs for evidence of fix working
+        test_results['log_analysis'] = self.analyze_backend_logs()
+        
+        # Test 5: Device Scanner with SSH Config (main test)
         test_results['device_scanner'] = self.test_device_scanner_with_ssh_config()
         
         # Summary

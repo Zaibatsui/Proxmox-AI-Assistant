@@ -34,6 +34,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const [editingProfile, setEditingProfile] = useState(null);
   const [testingConnection, setTestingConnection] = useState(null);
   const [showProxmoxTab, setShowProxmoxTab] = useState(true);
+  const [connectingTo, setConnectingTo] = useState(null); // Track which location is being connected
   
   const [formData, setFormData] = useState({
     name: '',

@@ -1203,6 +1203,7 @@ async def save_location_credentials(credentials: LocationCredentialsCreate, curr
                 {
                     "$set": {
                         "ssh_host": credentials.ssh_host,
+                        "ssh_port": credentials.ssh_port,
                         "ssh_username": credentials.ssh_username,
                         "ssh_password": credentials.ssh_password,
                         "updated_at": datetime.now(timezone.utc).isoformat()
@@ -1218,6 +1219,7 @@ async def save_location_credentials(credentials: LocationCredentialsCreate, curr
                 "location_type": credentials.location_type,
                 "location_id": credentials.location_id,
                 "ssh_host": credentials.ssh_host,
+                "ssh_port": credentials.ssh_port,
                 "ssh_username": credentials.ssh_username,
                 "ssh_password": credentials.ssh_password,
                 "created_at": datetime.now(timezone.utc).isoformat(),

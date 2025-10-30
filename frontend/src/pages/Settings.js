@@ -94,6 +94,8 @@ function Settings({ onLogout }) {
     fetchConfig();
     fetchAPIKeys();
     fetchSSHConfigs();
+    // Auto-test connections on page load
+    testConnection();
   }, []);
   
   // Load connections when section is opened

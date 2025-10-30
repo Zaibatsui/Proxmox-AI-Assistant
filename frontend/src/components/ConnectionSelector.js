@@ -28,12 +28,19 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
   }, []);
 
   const handleSelect = async (connection) => {
-    const result = await connect(connection.id);
-    if (result.success) {
-      setShowDropdown(false);
-      if (onConnectionChange) {
-        onConnectionChange(result.connection);
+    // Close dropdown immediately for snappy feel
+    setShowDropdown(false);
+    setSelecting(true);
+    
+    try {
+      const result = await connect(connection.id);
+      if (result.success) {
+        if (onConnectionChange) {
+          onConnectionChange(result.connection);
+        }
       }
+    } finally {
+      setSelecting(false);
     }
   };
 

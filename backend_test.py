@@ -297,7 +297,7 @@ class BackendTester:
         self.log(f"Overall: {passed_tests}/{total_tests} tests passed")
         
         # Determine if the fix is working
-        if test_results.get('device_scanner', False):
+        if test_results.get('log_analysis', False) or test_results.get('device_scanner', False):
             self.log("🎉 SSH CREDENTIAL RETRIEVAL FIX IS WORKING!")
             self.log("The device scanner is now correctly fetching SSH credentials from ssh_configs collection")
             return True

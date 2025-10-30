@@ -175,8 +175,8 @@ function FilePane({
   };
   
   const handleSubmitCredentials = async () => {
-    if (!credentialsUsername || !credentialsPassword) {
-      toast.error('Please enter both username and password');
+    if (!credentialsHost || !credentialsUsername || !credentialsPassword) {
+      toast.error('Please enter host/IP, username, and password');
       return;
     }
     
@@ -187,12 +187,14 @@ function FilePane({
       await axios.post(`${API}/api/location-credentials`, {
         location_type: connection.type,
         location_id: connection.vmid.toString(),
+        ssh_host: credentialsHost,
         ssh_username: credentialsUsername,
         ssh_password: credentialsPassword
       });
       
       toast.success('Credentials saved successfully');
       setShowCredentialsModal(false);
+      setCredentialsHost('');
       setCredentialsUsername('');
       setCredentialsPassword('');
       

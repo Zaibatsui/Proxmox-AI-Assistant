@@ -455,7 +455,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleDelete(profile.id);
+                      handleDelete(profile.id, profile.name);
                     }}
                     className="p-1 hover:bg-red-900/50 rounded transition-colors"
                     title="Delete"

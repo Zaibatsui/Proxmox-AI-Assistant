@@ -177,6 +177,59 @@ function Settings({ onLogout }) {
     }
   };
 
+  const handleEditCredentials = (location) => {
+    setEditingLocation(location);
+    const key = `${location.type}_${location.vmid}`;
+    const existingCreds = locationCredentials[key];
+    
+    setCredentialForm({
+      ssh_host: existingCreds?.ssh_host || '',
+      ssh_port: existingCreds?.ssh_port || 22,
+      ssh_username: existingCreds?.ssh_username || 'root',
+      ssh_password: ''
+    });
+    setShowCredentialModal(true);
+  };
+
+  const handleSaveCredentials = async () => {
+    if (!credentialForm.ssh_host || !credentialForm.ssh_username || !credentialForm.ssh_password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/api/location-credentials`, {
+        location_type: editingLocation.type,
+        location_id: editingLocation.vmid.toString(),
+        ssh_host: credentialForm.ssh_host,
+        ssh_port: credentialForm.ssh_port,
+        ssh_username: credentialForm.ssh_username,
+        ssh_password: credentialForm.ssh_password
+      });
+
+      toast.success('Credentials saved successfully');
+      setShowCredentialModal(false);
+      setEditingLocation(null);
+      loadAllConnections(); // Reload to show updated credentials
+    } catch (error) {
+      console.error('Failed to save credentials:', error);
+      toast.error(error.response?.data?.detail || 'Failed to save credentials');
+    }
+  };
+
+  const handleDeleteCredentials = async (location) => {
+    if (!confirm(`Delete SSH credentials for ${location.name}?`)) return;
+
+    try {
+      await axios.delete(`${API}/api/location-credentials/${location.type}/${location.vmid}`);
+      toast.success('Credentials deleted');
+      loadAllConnections();
+    } catch (error) {
+      console.error('Failed to delete credentials:', error);
+      toast.error('Failed to delete credentials');
+    }
+  };
+
   const testApiConnection = async () => {
     setTestingApi(true);
     try {

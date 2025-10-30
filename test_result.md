@@ -85,9 +85,9 @@ metadata:
 ## Test Plan
 test_plan:
   current_focus:
-    - "Phase 4: Docker containers in global selector"
-    - "Phase 3: Container file browsing"
-    - "Phase 2: Persistent terminal sessions"
+    - "E2E Testing: Docker containers, file browsing, terminal sessions"
+    - "Connection management caching verification"
+    - "Visual feedback on all selection points"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

@@ -143,14 +143,15 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
         </button>
 
         {showDropdown && (
-          <div className="absolute top-full right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 max-h-96 overflow-y-auto">
+          <div className="absolute top-full right-0 mt-2 w-80 bg-slate-900 border border-slate-700 rounded-lg shadow-xl z-50 max-h-96 flex flex-col">
             {/* Header */}
             <div className="p-3 border-b border-slate-700">
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-slate-200">Select Connection</h4>
                   <p className="text-xs text-slate-500 mt-1">
-                    {connections.length} location{connections.length !== 1 ? 's' : ''} available
+                    {filteredConnections.length} location{filteredConnections.length !== 1 ? 's' : ''} 
+                    {searchQuery && ` (filtered from ${connections.length})`}
                   </p>
                 </div>
                 <button
@@ -165,12 +166,25 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                   <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${loading ? 'animate-spin' : ''}`} />
                 </button>
               </div>
+              
+              {/* Search input */}
+              <input
+                type="text"
+                placeholder="Search connections..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full px-3 py-1.5 bg-slate-800 border border-slate-600 rounded text-sm text-slate-300 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
+              />
+              
               {connectionsCached && connectionsLastUpdated && (
                 <div className="text-xs text-slate-500 mt-2">
                   Cached • {connectionsLastUpdated.toLocaleTimeString()}
                 </div>
               )}
             </div>
+            
+            {/* Scrollable content */}
+            <div className="overflow-y-auto flex-1">
 
             {/* Connections List */}
             <div className="p-2">

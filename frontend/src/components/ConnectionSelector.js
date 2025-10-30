@@ -190,14 +190,14 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
             <div className="p-2">
               {loading ? (
                 <div className="text-center py-4 text-slate-500 text-sm">Loading...</div>
-              ) : connections.length === 0 ? (
+              ) : filteredConnections.length === 0 ? (
                 <div className="text-center py-4 text-slate-500 text-sm">
-                  No connections available
+                  {searchQuery ? `No connections matching "${searchQuery}"` : 'No connections available'}
                 </div>
               ) : (
                 <>
                   {/* Group by type: Host, VMs/LXCs, Docker */}
-                  {connections.filter(c => c.source === 'proxmox' && c.type === 'host').length > 0 && (
+                  {filteredConnections.filter(c => c.source === 'proxmox' && c.type === 'host').length > 0 && (
                     <div className="mb-2">
                       <div className="text-xs font-medium text-slate-400 px-2 py-1">PROXMOX HOST</div>
                       {connections.filter(c => c.source === 'proxmox' && c.type === 'host').map((conn) => {

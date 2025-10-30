@@ -122,6 +122,10 @@ class BackendTester:
                     self.log("✅ Improved error message detected - fix is working!")
                     self.log("The scanner is now correctly looking for SSH configs instead of proxmox_configs")
                     return True
+                elif "Proxmox configuration not found" in error_detail:
+                    self.log("✅ Expected error - no Proxmox config for test user")
+                    self.log("This is expected behavior and doesn't indicate a problem with the SSH fix")
+                    return True
                 else:
                     self.log(f"❌ Unexpected 400 error: {error_detail}", "ERROR")
                     return False

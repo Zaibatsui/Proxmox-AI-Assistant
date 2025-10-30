@@ -31,6 +31,7 @@ function Settings({ onLogout }) {
   const [apiConfigOpen, setApiConfigOpen] = useState(false);
   const [sshConfigOpen, setSshConfigOpen] = useState(false);
   const [aiConfigOpen, setAiConfigOpen] = useState(false);
+  const [connectionsOpen, setConnectionsOpen] = useState(false);
   const [formData, setFormData] = useState({
     host: "",
     api_token_name: "",

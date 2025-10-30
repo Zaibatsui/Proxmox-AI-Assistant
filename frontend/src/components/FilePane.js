@@ -212,14 +212,21 @@ function FilePane({
     
     try {
       // Save credentials to backend
-      await axios.post(`${API}/api/location-credentials`, {
+      const payload = {
         location_type: connection.type,
         location_id: connection.vmid.toString(),
         ssh_host: credentialsHost,
         ssh_port: port,
         ssh_username: credentialsUsername,
         ssh_password: credentialsPassword
+      };
+      
+      console.log('Saving credentials payload:', {
+        ...payload,
+        ssh_password: '***'
       });
+      
+      await axios.post(`${API}/api/location-credentials`, payload);
       
       toast.success('Credentials saved successfully');
       setShowCredentialsModal(false);

@@ -84,7 +84,10 @@ metadata:
 
 ## Test Plan
 test_plan:
-  current_focus: []
+  current_focus:
+    - "Phase 4: Docker containers in global selector"
+    - "Phase 3: Container file browsing"
+    - "Phase 2: Persistent terminal sessions"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

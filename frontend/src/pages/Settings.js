@@ -145,6 +145,38 @@ function Settings({ onLogout }) {
     }
   };
 
+  const loadAllConnections = async () => {
+    setLoadingConnections(true);
+    try {
+      // Load Proxmox locations
+      const locationsRes = await axios.get(`${API}/api/proxmox-locations`);
+      setProxmoxLocations(locationsRes.data.locations || []);
+      
+      // Load connection profiles
+      const profilesRes = await axios.get(`${API}/api/connection-profiles`);
+      setConnectionProfiles(profilesRes.data.profiles || []);
+      
+      // Build credentials map for quick lookup
+      const credsMap = {};
+      (locationsRes.data.locations || []).forEach(loc => {
+        if (loc.ssh_username) {
+          credsMap[`${loc.type}_${loc.vmid}`] = {
+            ssh_host: loc.ssh_host,
+            ssh_port: loc.ssh_port || 22,
+            ssh_username: loc.ssh_username,
+            hasPassword: !!loc.ssh_password
+          };
+        }
+      });
+      setLocationCredentials(credsMap);
+    } catch (error) {
+      console.error('Failed to load connections:', error);
+      toast.error('Failed to load connections');
+    } finally {
+      setLoadingConnections(false);
+    }
+  };
+
   const testApiConnection = async () => {
     setTestingApi(true);
     try {

@@ -143,6 +143,21 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     }
   };
 
+  const handleDelete = async (profileId, profileName) => {
+    if (!window.confirm(`Delete connection profile "${profileName}"?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await axios.delete(`${API}/api/connection-profiles/${profileId}`);
+      toast.success(`Profile "${profileName}" deleted`);
+      loadProfiles(); // Reload to update cache
+    } catch (error) {
+      console.error('Failed to delete profile:', error);
+      toast.error(error.response?.data?.detail || 'Failed to delete profile');
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     

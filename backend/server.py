@@ -4958,8 +4958,9 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                     logger.error(f"Direct SSH to CT also failed: {str(e2)}")
                     raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}. Also tried direct connection: {str(e2)}")
         else:
-            # Use user's configured SSH credentials for pct exec
-            return await get_ssh_client(user_id)
+            # No SSH credentials provided for LXC - require them for direct access
+            # (Could fall back to pct exec, but user wants to be prompted)
+            raise HTTPException(status_code=400, detail="LXC SSH credentials required for direct access")
     
     elif location.type == "qemu":
         # For QEMU VMs, we use qm guest exec via host SSH (no direct VM SSH needed)

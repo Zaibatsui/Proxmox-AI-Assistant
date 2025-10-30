@@ -459,6 +459,7 @@ function FileBrowserNew({ onLogout }) {
                 setContainerBrowserFor('right');
                 setShowContainerBrowser(true);
               }}
+              onEditCredentials={setRightCredentialsEditor}
               style={{
                 width: rightPaneExpanded ? '95%' : (leftPaneExpanded ? '5%' : '50%'),
                 transition: 'width 0.3s ease-in-out'

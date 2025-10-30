@@ -35,7 +35,11 @@ metadata:
 
 ## Test Plan
 test_plan:
-  current_focus: []
+  current_focus: 
+    - "Settings page: Connections Management section enhancements"
+    - "Auto-test connections on page load"
+    - "Status indicators with color coding (green/red)"
+    - "Alphabetical sorting and running/stopped grouping"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

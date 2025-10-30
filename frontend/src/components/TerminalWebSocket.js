@@ -23,12 +23,12 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
     const initTerminal = () => {
       try {
-        // Create terminal with explicit fixed size
+        // Create terminal with smaller dimensions that fit container
         terminal = new Terminal({
-          cols: 100,
-          rows: 30,
+          cols: 80,
+          rows: 20,  // Reduced from 30 to fit better
           cursorBlink: true,
-          fontSize: 13,
+          fontSize: 14,
           fontFamily: 'Menlo, Monaco, "Courier New", monospace',
           theme: {
             background: '#0f172a',

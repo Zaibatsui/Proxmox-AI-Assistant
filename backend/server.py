@@ -491,6 +491,7 @@ class LocationCredentials(BaseModel):
     user_id: str
     location_type: str  # "vm", "lxc"
     location_id: str  # VM ID or LXC ID
+    ssh_host: str  # IP address or hostname
     ssh_username: str
     ssh_password: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -500,6 +501,7 @@ class LocationCredentialsCreate(BaseModel):
     """Create or update credentials for a location."""
     location_type: str
     location_id: str
+    ssh_host: str  # IP address or hostname
     ssh_username: str
     ssh_password: str
 

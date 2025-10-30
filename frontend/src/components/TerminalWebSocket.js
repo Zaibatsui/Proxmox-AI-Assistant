@@ -64,58 +64,44 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
     terminalInstance.current = term;
     fitAddon.current = fit;
     
-    // Helper to check if terminal is truly ready
-    const checkTerminalReady = () => {
-      return term && 
-             term.element && 
-             term.buffer && 
-             term.buffer.active && 
-             terminalRef.current &&
-             terminalRef.current.querySelector('.xterm-screen');
-    };
-    
-    // Wait for terminal to be fully ready with multiple checks
-    let readyCheckAttempts = 0;
-    const maxAttempts = 20; // 200ms total wait time
-    
-    const waitForReady = () => {
+    // Use requestAnimationFrame for better timing with browser rendering
+    requestAnimationFrame(() => {
       if (!isMounted.current) return;
       
-      if (checkTerminalReady()) {
-        console.log('Terminal ready after', readyCheckAttempts * 10, 'ms');
-        isTerminalReady.current = true;
+      requestAnimationFrame(() => {
+        if (!isMounted.current) return;
         
-        // Now safe to fit
-        try {
-          fit.fit();
-          console.log('Terminal fitted successfully');
-        } catch (err) {
-          console.warn('Initial fit failed:', err);
+        // Check if terminal is ready
+        if (term && term.element && term.buffer && term.buffer.active) {
+          isTerminalReady.current = true;
+          console.log('Terminal ready, skipping initial fit to avoid race conditions');
+          
+          // Connect WebSocket without fitting first
+          // Let the terminal render at natural size first
+          setTimeout(() => {
+            if (isMounted.current && isTerminalReady.current) {
+              connectWebSocket(term);
+              
+              // Fit after connection is established and terminal has rendered content
+              setTimeout(() => {
+                if (isMounted.current && isTerminalReady.current && fitAddon.current) {
+                  try {
+                    fitAddon.current.fit();
+                    console.log('Terminal fitted after content load');
+                  } catch (err) {
+                    console.warn('Delayed fit failed:', err);
+                  }
+                }
+              }, 500);
+            }
+          }, 100);
+        } else {
+          console.warn('Terminal not ready after RAF, proceeding anyway');
+          isTerminalReady.current = true;
+          connectWebSocket(term);
         }
-        
-        // Connect WebSocket after terminal is fully ready
-        setTimeout(() => {
-          if (isMounted.current && isTerminalReady.current) {
-            connectWebSocket(term);
-          }
-        }, 100);
-      } else if (readyCheckAttempts < maxAttempts) {
-        readyCheckAttempts++;
-        setTimeout(waitForReady, 10);
-      } else {
-        console.warn('Terminal ready check timed out, attempting to proceed anyway');
-        isTerminalReady.current = true;
-        try {
-          fit.fit();
-        } catch (err) {
-          console.error('Fit failed after timeout:', err);
-        }
-        connectWebSocket(term);
-      }
-    };
-    
-    // Start ready check
-    setTimeout(waitForReady, 10);
+      });
+    });
 
     // Handle window resize with safety checks
     const handleResize = () => {

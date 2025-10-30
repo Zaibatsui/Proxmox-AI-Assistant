@@ -65,6 +65,8 @@ function Settings({ onLogout }) {
     ssh_password: ''
   });
   const [loadingConnections, setLoadingConnections] = useState(false);
+  const [connectionsStatus, setConnectionsStatus] = useState('loading'); // 'loading', 'success', 'failed', 'empty'
+  const [connectionsCached, setConnectionsCached] = useState(false);
   
   // Collapsible subsection state for connections
   const [vmRunningOpen, setVmRunningOpen] = useState(true);

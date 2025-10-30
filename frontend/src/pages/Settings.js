@@ -155,12 +155,16 @@ function Settings({ onLogout }) {
   const loadAllConnections = async () => {
     setLoadingConnections(true);
     try {
+      console.log('Loading all connections...');
+      
       // Load Proxmox locations
       const locationsRes = await axios.get(`${API}/api/proxmox-locations`);
+      console.log('Proxmox locations response:', locationsRes.data);
       setProxmoxLocations(locationsRes.data.locations || []);
       
       // Load connection profiles
       const profilesRes = await axios.get(`${API}/api/connection-profiles`);
+      console.log('Connection profiles response:', profilesRes.data);
       setConnectionProfiles(profilesRes.data.profiles || []);
       
       // Build credentials map for quick lookup
@@ -176,9 +180,12 @@ function Settings({ onLogout }) {
         }
       });
       setLocationCredentials(credsMap);
+      
+      console.log(`Loaded ${locationsRes.data.locations?.length || 0} locations and ${profilesRes.data.profiles?.length || 0} profiles`);
     } catch (error) {
       console.error('Failed to load connections:', error);
-      toast.error('Failed to load connections');
+      console.error('Error response:', error.response);
+      toast.error(error.response?.data?.detail || 'Failed to load connections');
     } finally {
       setLoadingConnections(false);
     }

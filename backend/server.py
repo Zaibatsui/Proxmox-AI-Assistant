@@ -4833,6 +4833,7 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
         
         # Connect to VM via SSH
         try:
+            logger.info(f"Attempting SSH connection to VM {location.id} at {vm_ip} with user {location.ssh_username}")
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
             ssh_client.connect(
@@ -4843,11 +4844,22 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                 allow_agent=False,
                 look_for_keys=False
             )
+            logger.info(f"Successfully connected to VM {location.id} at {vm_ip}")
             # Mark this as a direct SSH connection so exec_in_location knows
             location.direct_ssh = True
             return ssh_client
+        except paramiko.AuthenticationException as e:
+            logger.error(f"SSH authentication failed for VM {location.id} at {vm_ip}: {str(e)}")
+            raise HTTPException(status_code=401, detail=f"SSH authentication failed. Please check username and password.")
+        except paramiko.SSHException as e:
+            logger.error(f"SSH connection error for VM {location.id} at {vm_ip}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"SSH connection error: {str(e)}")
+        except socket.timeout as e:
+            logger.error(f"SSH connection timeout for VM {location.id} at {vm_ip}")
+            raise HTTPException(status_code=504, detail=f"Connection timeout. Cannot reach {vm_ip} on port 22. Check if VM is running and SSH is enabled.")
         except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to connect to VM via SSH: {str(e)}")
+            logger.error(f"Failed to connect to VM {location.id} at {vm_ip}: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Failed to connect to VM via SSH at {vm_ip}: {str(e)}")
     
     elif location.type == "lxc":
         # For LXC, we have two scenarios:

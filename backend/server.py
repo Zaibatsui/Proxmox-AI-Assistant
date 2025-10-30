@@ -4879,21 +4879,23 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
             if lxc_ip:
                 # Use provided host/IP directly
                 try:
+                    ssh_port = getattr(location, 'ssh_port', 22)
                     ssh_client = paramiko.SSHClient()
                     ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
                     ssh_client.connect(
                         lxc_ip,
+                        port=ssh_port,
                         username=location.ssh_username,
                         password=location.ssh_password,
                         timeout=10,
                         allow_agent=False,
                         look_for_keys=False
                     )
-                    logger.info(f"Successfully connected directly to LXC {location.id} at {lxc_ip}")
+                    logger.info(f"Successfully connected directly to LXC {location.id} at {lxc_ip}:{ssh_port}")
                     location.direct_ssh = True
                     return ssh_client
                 except Exception as e:
-                    raise HTTPException(status_code=500, detail=f"Failed to connect to LXC via SSH at {lxc_ip}: {str(e)}")
+                    raise HTTPException(status_code=500, detail=f"Failed to connect to LXC via SSH at {lxc_ip}:{ssh_port}: {str(e)}")
             
             # Connect directly to the LXC container using provided SSH credentials
             # First, try to get the LXC container's IP address from Proxmox

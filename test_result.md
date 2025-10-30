@@ -162,6 +162,7 @@ frontend:
 ## Test Plan
 test_plan:
   current_focus:
+    - "Device Scanner SSH credential fix verified and working"
     - "E2E Testing Complete: All major features verified"
     - "Docker container support confirmed"
     - "Caching and visual feedback working"

@@ -19,6 +19,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
   const [showDropdown, setShowDropdown] = useState(false);
   const [selecting, setSelecting] = useState(false);
   const [selectedId, setSelectedId] = useState(null); // Track which item is being selected
+  const [searchQuery, setSearchQuery] = useState('');
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside

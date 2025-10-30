@@ -1,3 +1,76 @@
+# Proxmox AI Assistant - Version 3.1.0
+
+## Release Notes - v3.1.0
+
+### Major Features Added
+
+#### Persistent Terminal Sessions
+- **WebSocket-Based Terminal**: True persistent shell sessions using WebSocket connections
+- **xterm.js Integration**: Professional terminal emulator with full escape sequence support
+- **Connection Status Indicators**: Visual feedback for Connected/Connecting/Disconnected states
+- **Session Persistence**: Terminal sessions persist across navigation and pane switching
+
+#### Enhanced Connection Management
+- **Unified Caching System**: Centralized connection data caching across all components
+- **Auto-Refresh**: Connections automatically tested and updated on page load
+- **Connection Selector Improvements**: 
+  - Instant visual feedback with loading spinners
+  - Toast notifications for connection changes
+  - Debounced search/filter functionality
+  - Refresh button for manual cache updates
+- **Status Indicators**: Color-coded badges (green=running, red=stopped/failed)
+- **Alphabetical Sorting**: Organized connection lists with running/stopped grouping
+- **Collapsible Sections**: Clean UI with expandable groups for better organization
+
+#### Docker Integration Enhancements
+- **Global Selector Integration**: Docker containers appear in global connection dropdown
+- **Visual Differentiation**: Purple Box icons for Docker containers
+- **Container File Browser**: Direct file browsing within Docker containers
+- **SSH Credential Management**: Save, edit, and delete SSH credentials for VMs/LXCs
+
+#### Settings Page Overhaul
+- **Connections Management Section**: Comprehensive connection overview as first section
+- **Real-Time Status**: Auto-test connections on page load with visual status
+- **Badge Standardization**: Consistent badge sizes across all sections
+- **Header Alignment**: Properly aligned section headers
+
+### UI/UX Improvements
+- Immediate visual feedback for all connection operations
+- Retry logic with exponential backoff for network operations
+- Enhanced error handling with descriptive messages
+- Consistent styling and theming throughout
+- Delete functionality for connection profiles and action queue items
+- "Clear All Completed" bulk action for queue management
+
+### Technical Improvements
+- Replaced legacy Terminal component with modern WebSocket implementation
+- Implemented centralized ConnectionContext for state management
+- Fixed SSH password persistence issues
+- Enhanced Docker container listing with better error handling
+- Improved credential lookup across multiple config collections
+- Optimized API calls with caching and retry mechanisms
+- Code cleanup and removal of deprecated components
+
+### Infrastructure
+- **Version Bump**: Updated to 3.1.0 across frontend and backend
+- **Codebase Cleanup**: Removed all test files, backup files, and junk
+- **Clean .gitignore**: Updated to exclude test results and temporary files
+- **GitHub Ready**: Prepared for fresh export with minimum junk
+- **Documentation Updates**: Updated test_result.md and configuration docs
+
+### Bug Fixes
+- Fixed Docker containers not appearing due to SSH credential mismatches
+- Resolved SSH password non-persistence in VM/LXC credential updates
+- Corrected field name mismatch (password vs ssh_password)
+- Fixed duplicate sections and syntax errors in ConnectionSelector
+- Resolved cache invalidation issues across components
+
+### Breaking Changes
+None - this release is backward compatible with v3.0.0 configurations.
+
+---
+
+
 # Proxmox AI Assistant - Version 3.0.0
 
 ## Release Notes - v3.0.0

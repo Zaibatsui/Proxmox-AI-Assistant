@@ -34,6 +34,10 @@ function FileBrowserNew({ onLogout }) {
   const [selectedContainer, setSelectedContainer] = useState(null);
   const [showContainerBrowser, setShowContainerBrowser] = useState(false);
   const [containerBrowserFor, setContainerBrowserFor] = useState(null); // 'left' or 'right'
+  
+  // Credential editing callbacks
+  const [leftCredentialsEditor, setLeftCredentialsEditor] = useState(null);
+  const [rightCredentialsEditor, setRightCredentialsEditor] = useState(null);
 
   // Auto-set left pane when global connection changes
   useEffect(() => {

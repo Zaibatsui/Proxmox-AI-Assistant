@@ -7048,14 +7048,29 @@ async def websocket_terminal(websocket: WebSocket):
             ssh_username = os.environ.get('PROXMOX_SSH_USER', 'root')
             ssh_password = os.environ.get('PROXMOX_SSH_PASSWORD')
             
+            if not ssh_host:
+                error_msg = "Terminal not configured: PROXMOX_HOST environment variable not set. Terminal connections via WebSocket are not yet fully integrated with the SSH configuration system."
+                logger.error(error_msg)
+                await websocket.send_json({'type': 'error', 'data': error_msg})
+                await websocket.close()
+                return
+            
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh_client.connect(
-                hostname=ssh_host,
-                username=ssh_username,
-                password=ssh_password,
-                timeout=10
-            )
+            
+            try:
+                ssh_client.connect(
+                    hostname=ssh_host,
+                    username=ssh_username,
+                    password=ssh_password,
+                    timeout=10
+                )
+            except Exception as conn_err:
+                error_msg = f"SSH connection failed: {str(conn_err)}"
+                logger.error(error_msg)
+                await websocket.send_json({'type': 'error', 'data': error_msg})
+                await websocket.close()
+                return
             
             shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
         

@@ -54,7 +54,7 @@ function FilePane({
       setCurrentPath(connection.base_path || '/');
       loadDirectory(connection.base_path || '/');
     }
-  }, [connection?.id]); // Track by ID to ensure proper updates
+  }, [connection?.id, connection?.vmid, connection?.type]); // Track by ID, vmid, and type to ensure proper updates
 
   const loadDirectory = async (path) => {
     if (!connection) {

@@ -621,6 +621,14 @@ function FilePane({
                 }}
                 className="flex-1 flex items-center gap-1"
               >
+                {/* Docker container indicator */}
+                {connection.type === 'docker' && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded text-xs text-purple-400">
+                    <Box className="w-3 h-3" />
+                    <span>Container</span>
+                  </div>
+                )}
+                
                 <input
                   name="pathInput"
                   type="text"

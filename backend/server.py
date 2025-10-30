@@ -783,11 +783,7 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         
         node_name = nodes[0]['node']
         
-        # SSH to the node and run lspci
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        # Extract hostname from config
+        # Extract hostname from Proxmox API config
         host = config['host']
         # Remove protocol if present
         if '://' in host:
@@ -795,10 +791,33 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         # Remove port and trailing slash
         host = host.split(':')[0].rstrip('/')
         
-        ssh_username = config.get('ssh_username', 'root')
-        ssh_password = config.get('ssh_password')
+        # Fetch SSH credentials from ssh_configs collection
+        # Look for an SSH config matching the Proxmox host
+        ssh_config = await db.ssh_configs.find_one({
+            "user_id": user_id,
+            "host": host
+        })
         
-        logger.info(f"Attempting SSH connection to {host} as {ssh_username}")
+        if not ssh_config:
+            # Try to find any SSH config for this user (fallback to first one)
+            ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+        
+        if not ssh_config:
+            raise HTTPException(
+                status_code=400,
+                detail="No SSH configuration found. Please configure SSH credentials in Settings → SSH Configuration section."
+            )
+        
+        ssh_username = ssh_config.get('username', 'root')
+        ssh_password = ssh_config.get('password')
+        ssh_port = ssh_config.get('port', 22)
+        
+        logger.info(f"Attempting SSH connection to {host}:{ssh_port} as {ssh_username}")
+        logger.info(f"SSH config found: {ssh_config.get('name', 'Unnamed config')}")
+        
+        # SSH to the node and run lspci
+        ssh_client = paramiko.SSHClient()
+        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         try:
             # Try password auth first if password provided

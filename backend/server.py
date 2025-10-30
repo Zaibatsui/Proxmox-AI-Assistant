@@ -1096,8 +1096,19 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
     if not existing_config:
         raise HTTPException(status_code=404, detail="SSH configuration not found")
     
-    # Update only provided fields
-    update_data = {k: v for k, v in config.model_dump().items() if v is not None}
+    # Update only provided fields - exclude None values and empty strings
+    update_data = {k: v for k, v in config.model_dump(exclude_unset=True).items() if v is not None and v != ""}
+    
+    # CRITICAL: Never update password to None or empty string
+    # If password field exists but is empty/None, remove it from update
+    if 'password' in update_data and not update_data['password']:
+        del update_data['password']
+        logger.info(f"Preserving existing password for SSH config {config_id}")
+    elif 'password' in update_data:
+        logger.info(f"Updating password for SSH config {config_id}")
+        # Rename to match database field name
+        update_data['ssh_password'] = update_data.pop('password')
+    
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     
     if update_data:

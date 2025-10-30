@@ -208,54 +208,106 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
           Profiles ({profiles.length})
         </button>
       </div>
+      
+      {/* Cache status and refresh button */}
+      <div className="flex justify-between items-center mb-3 pb-2 border-b border-slate-700">
+        <div className="text-xs text-slate-500">
+          {connectionsCached && connectionsLastUpdated && (
+            <>Cached • {connectionsLastUpdated.toLocaleTimeString()}</>
+          )}
+          {!connectionsCached && connectionsLastUpdated && (
+            <>Updated: {connectionsLastUpdated.toLocaleTimeString()}</>
+          )}
+        </div>
+        <button
+          onClick={() => reloadConnections(true)}
+          disabled={loadingConnections}
+          className="p-1 hover:bg-slate-700 rounded transition-colors disabled:opacity-50"
+          title="Refresh connections"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 text-slate-400 ${loadingConnections ? 'animate-spin' : ''}`} />
+        </button>
+      </div>
 
       {showProxmoxTab ? (
         // Proxmox Locations
-        proxmoxLocations.length === 0 ? (
+        loadingConnections ? (
+          <div className="text-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-cyan-400 mx-auto" />
+          </div>
+        ) : proxmoxLocations.length === 0 ? (
           <div className="text-center py-4 text-slate-500 text-sm">
             No Proxmox locations. Configure Proxmox in Settings.
           </div>
         ) : (
-          <div className="space-y-2">
-            {proxmoxLocations.map((location) => (
-              <div
-                key={location.id}
-                className={`p-3 rounded-lg border transition-all cursor-pointer ${
-                  selectedConnection?.id?.includes(location.id)
-                    ? 'bg-amber-500/10 border-amber-500/30'
-                    : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
-                }`}
-                onClick={() => handleQuickConnect(location)}
-              >
-                <div className="flex items-start gap-2">
-                  <Server className="w-4 h-4 text-cyan-400 flex-shrink-0 mt-0.5" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium text-slate-200 truncate">
-                      {location.name}
-                    </div>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-slate-400">
-                        {location.type.toUpperCase()}
-                      </span>
-                      {location.status && (
-                        <span className={`text-xs px-1.5 py-0.5 rounded ${
-                          location.status === 'running' || location.status === 'available'
-                            ? 'bg-green-500/20 text-green-400'
-                            : 'bg-slate-600/20 text-slate-400'
-                        }`}>
-                          {location.status}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
+          <div className="space-y-3">
+            {/* Group by type and status */}
+            {/* Proxmox Host */}
+            {proxmoxLocations.filter(l => l.type === 'host').length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-slate-400 mb-2 px-1">PROXMOX HOST</div>
+                {proxmoxLocations.filter(l => l.type === 'host').map(renderLocation)}
               </div>
-            ))}
+            )}
+            
+            {/* VMs & LXCs - Running */}
+            {proxmoxLocations.filter(l => (l.type === 'vm' || l.type === 'lxc') && l.status === 'running').length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-emerald-400 mb-2 px-1">VMs & CONTAINERS - RUNNING</div>
+                {proxmoxLocations
+                  .filter(l => (l.type === 'vm' || l.type === 'lxc') && l.status === 'running')
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(renderLocation)}
+              </div>
+            )}
+            
+            {/* VMs & LXCs - Stopped */}
+            {proxmoxLocations.filter(l => (l.type === 'vm' || l.type === 'lxc') && l.status !== 'running').length > 0 && (
+              <details className="group">
+                <summary className="text-xs font-semibold text-red-400 mb-2 px-1 cursor-pointer hover:text-red-300 flex items-center gap-1">
+                  <span className="transform transition-transform group-open:rotate-90">▶</span>
+                  VMs & CONTAINERS - STOPPED
+                </summary>
+                <div className="space-y-2 mt-2">
+                  {proxmoxLocations
+                    .filter(l => (l.type === 'vm' || l.type === 'lxc') && l.status !== 'running')
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(renderLocation)}
+                </div>
+              </details>
+            )}
+            
+            {/* Docker Containers - Running */}
+            {proxmoxLocations.filter(l => l.type === 'docker' && l.status === 'running').length > 0 && (
+              <div>
+                <div className="text-xs font-semibold text-purple-400 mb-2 px-1">DOCKER - RUNNING</div>
+                {proxmoxLocations
+                  .filter(l => l.type === 'docker' && l.status === 'running')
+                  .sort((a, b) => a.name.localeCompare(b.name))
+                  .map(renderLocation)}
+              </div>
+            )}
+            
+            {/* Docker Containers - Stopped */}
+            {proxmoxLocations.filter(l => l.type === 'docker' && l.status !== 'running').length > 0 && (
+              <details className="group">
+                <summary className="text-xs font-semibold text-purple-400/70 mb-2 px-1 cursor-pointer hover:text-purple-300 flex items-center gap-1">
+                  <span className="transform transition-transform group-open:rotate-90">▶</span>
+                  DOCKER - STOPPED
+                </summary>
+                <div className="space-y-2 mt-2">
+                  {proxmoxLocations
+                    .filter(l => l.type === 'docker' && l.status !== 'running')
+                    .sort((a, b) => a.name.localeCompare(b.name))
+                    .map(renderLocation)}
+                </div>
+              </details>
+            )}
           </div>
         )
       ) : (
         // Connection Profiles
-        loading ? (
+        loadingConnections ? (
           <div className="text-center py-4">
             <Loader2 className="w-5 h-5 animate-spin text-amber-400 mx-auto" />
           </div>

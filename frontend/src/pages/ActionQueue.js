@@ -98,9 +98,23 @@ function ActionQueue({ onLogout }) {
   return (
     <Layout onLogout={onLogout} currentPage="actions">
       <div className="space-y-6" data-testid="action-queue">
-        <div>
-          <h1 className="text-4xl font-bold text-slate-100 mb-2">Action Queue</h1>
-          <p className="text-slate-400">Review and execute pending hardware operations safely</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <h1 className="text-4xl font-bold text-slate-100 mb-2">Action Queue</h1>
+            <p className="text-slate-400">Review and execute pending hardware operations safely</p>
+          </div>
+          
+          {/* Clear Completed Button */}
+          {actions.some(a => a.status === "executed" || a.status === "failed") && (
+            <Button
+              onClick={clearCompleted}
+              variant="outline"
+              className="bg-slate-800 hover:bg-slate-700 text-slate-100 border-slate-700"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Clear Completed ({actions.filter(a => a.status === "executed" || a.status === "failed").length})
+            </Button>
+          )}
         </div>
 
         {loading ? (

@@ -632,7 +632,7 @@ function Settings({ onLogout }) {
                                             ) : (
                                               <button
                                                 onClick={() => handleEditCredentials(location)}
-                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded flex items-center gap-1"
                                               >
                                                 <Key className="w-3 h-3" />
                                                 Add SSH
@@ -705,7 +705,7 @@ function Settings({ onLogout }) {
                                             ) : (
                                               <button
                                                 onClick={() => handleEditCredentials(location)}
-                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded flex items-center gap-1"
                                               >
                                                 <Key className="w-3 h-3" />
                                                 Add SSH
@@ -788,7 +788,7 @@ function Settings({ onLogout }) {
                                             ) : (
                                               <button
                                                 onClick={() => handleEditCredentials(location)}
-                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded flex items-center gap-1"
                                               >
                                                 <Key className="w-3 h-3" />
                                                 Add SSH
@@ -861,7 +861,7 @@ function Settings({ onLogout }) {
                                             ) : (
                                               <button
                                                 onClick={() => handleEditCredentials(location)}
-                                                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded flex items-center gap-1"
                                               >
                                                 <Key className="w-3 h-3" />
                                                 Add SSH

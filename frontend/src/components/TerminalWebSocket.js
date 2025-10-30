@@ -144,18 +144,12 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
     };
 
     window.addEventListener('resize', handleResize);
-    
-    // Initial fit with delay and cleanup check
-    resizeTimeout.current = setTimeout(() => {
-      if (isMounted.current) {
-        handleResize();
-      }
-    }, 100);
 
     // Cleanup
     return () => {
       isMounted.current = false;
       isTerminalReady.current = false;
+      isFitting.current = false;
       window.removeEventListener('resize', handleResize);
       
       if (resizeTimeout.current) {

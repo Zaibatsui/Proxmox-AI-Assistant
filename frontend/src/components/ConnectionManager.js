@@ -70,19 +70,26 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   const renderLocation = (location) => {
     const Icon = getLocationIcon(location.type);
     const iconColor = location.type === 'docker' ? 'text-purple-400' : 'text-cyan-400';
+    const isConnecting = connectingTo === location.id;
     
     return (
       <div
         key={location.id}
-        className={`p-3 rounded-lg border transition-all cursor-pointer ${
-          selectedConnection?.id?.includes(location.id)
+        className={`p-3 rounded-lg border transition-all cursor-pointer relative ${
+          isConnecting
+            ? 'bg-cyan-500/20 border-cyan-500/30'
+            : selectedConnection?.id?.includes(location.id)
             ? 'bg-amber-500/10 border-amber-500/30'
             : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
         }`}
-        onClick={() => handleQuickConnect(location)}
+        onClick={() => !isConnecting && handleQuickConnect(location)}
       >
         <div className="flex items-start gap-2">
-          <Icon className={`w-4 h-4 ${iconColor} flex-shrink-0 mt-0.5`} />
+          {isConnecting ? (
+            <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0 mt-0.5" />
+          ) : (
+            <Icon className={`w-4 h-4 ${iconColor} flex-shrink-0 mt-0.5`} />
+          )}
           <div className="flex-1 min-w-0">
             <div className="text-sm font-medium text-slate-200 truncate">
               {location.name}
@@ -102,6 +109,9 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
                 }`}>
                   {location.status}
                 </span>
+              )}
+              {isConnecting && (
+                <span className="text-xs text-cyan-400">Connecting...</span>
               )}
             </div>
           </div>

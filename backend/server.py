@@ -1741,13 +1741,16 @@ async def quick_connect_proxmox_location(location_id: str, current_user: dict = 
             "id": f"temp_{location_id}_{current_user['user_id']}",
             "name": location_data["name"],  # Use actual name from location data
             "connection_type": "ssh",
+            "type": location_type,  # Add type for frontend compatibility
             "location_type": location_type,
             "vmid": vmid,
             "container_id": container_id,
             "user_id": current_user["user_id"],
             "is_temporary": True,
             "status": location_data.get("status"),
-            "icon": location_data.get("icon")
+            "icon": location_data.get("icon"),
+            "ssh_username": location_data.get("ssh_username"),  # Include stored credentials
+            "ssh_password": location_data.get("ssh_password")   # Include stored credentials
         }
         
         return {

@@ -235,7 +235,7 @@ function Settings({ onLogout }) {
     if (!confirm(`Delete SSH credentials for ${location.name}?`)) return;
 
     try {
-      await axios.delete(`${API}/api/location-credentials/${location.type}/${location.vmid}`);
+      await axios.delete(`${API}/location-credentials/${location.type}/${location.vmid}`);
       toast.success('Credentials deleted');
       loadAllConnections();
     } catch (error) {

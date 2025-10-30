@@ -200,7 +200,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                   {filteredConnections.filter(c => c.source === 'proxmox' && c.type === 'host').length > 0 && (
                     <div className="mb-2">
                       <div className="text-xs font-medium text-slate-400 px-2 py-1">PROXMOX HOST</div>
-                      {connections.filter(c => c.source === 'proxmox' && c.type === 'host').map((conn) => {
+                      {filteredConnections.filter(c => c.source === 'proxmox' && c.type === 'host').map((conn) => {
                         const ConnIcon = getIcon(conn.type);
                         const isSelected = currentConnection?.id === conn.id;
                         const isSelecting = selectedId === conn.id;

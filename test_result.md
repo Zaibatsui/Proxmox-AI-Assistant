@@ -43,6 +43,19 @@ backend:
 ## Frontend Features
 
 frontend:
+  - task: "Fix Terminal WebSocket component dimension errors"
+    implemented: true
+    working: "pending_test"
+    file: "frontend/src/components/TerminalWebSocket.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "Fixed xterm.js runtime errors 'Cannot read properties of undefined (reading dimensions)'. Added: 1) isMounted ref to track component lifecycle 2) Try-catch blocks around fit() calls 3) Proper cleanup of timeouts 4) Safety checks for terminal.element existence before fitting 5) Improved error handling in reconnect function 6) Set refs to null after disposal. These changes prevent operations on unmounted/disposed terminal instances."
+
+frontend:
   - task: "Settings page: Connections Management section enhancements"
     implemented: true
     working: true

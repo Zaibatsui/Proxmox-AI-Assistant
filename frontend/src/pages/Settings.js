@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { Server, Save, Trash2, CheckCircle, Palette, Check, ChevronDown, Key, Edit, HardDrive, Package, Box, Network } from "lucide-react";
+import { Server, Save, Trash2, CheckCircle, Palette, Check, ChevronDown, Key, Edit, HardDrive, Package, Box, Network, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "../contexts/ThemeContext";
 

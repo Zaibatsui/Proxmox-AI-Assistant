@@ -1707,20 +1707,27 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
         # Try to get Docker containers from Proxmox host
         try:
             ssh_client = await get_ssh_client(current_user["user_id"])
-            docker_result = await docker_list_containers_func(ssh_client, None, True)
-            ssh_client.close()
-            
-            if docker_result.get("containers"):
-                for container in docker_result["containers"]:
-                    locations.append({
-                        "id": f"docker_{container.get('ID', container.get('Names', 'unknown'))}",
-                        "name": f"Docker: {container.get('Names', container.get('ID', 'Unnamed'))}",
-                        "type": "docker",
-                        "container_id": container.get("ID"),
-                        "icon": "Package",
-                        "status": container.get('State', 'unknown')
-                    })
-        except:
+            if ssh_client:
+                docker_result = await docker_list_containers_func(ssh_client, None, True)
+                ssh_client.close()
+                
+                if docker_result.get("containers"):
+                    for container in docker_result["containers"]:
+                        locations.append({
+                            "id": f"docker_{container.get('ID', container.get('Names', 'unknown'))}",
+                            "name": f"Docker: {container.get('Names', container.get('ID', 'Unnamed'))}",
+                            "type": "docker",
+                            "container_id": container.get("ID"),
+                            "icon": "Box",
+                            "status": container.get('State', 'unknown')
+                        })
+                    logger.info(f"Found {len(docker_result['containers'])} Docker containers")
+                else:
+                    logger.info("No Docker containers found on host")
+            else:
+                logger.warning("SSH client not available - Docker containers will not be listed. Configure SSH in Settings.")
+        except Exception as e:
+            logger.warning(f"Failed to fetch Docker containers: {str(e)}")
             pass
         
         return {"locations": locations, "total": len(locations)}

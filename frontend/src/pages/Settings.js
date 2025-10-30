@@ -67,6 +67,7 @@ function Settings({ onLogout }) {
   const [loadingConnections, setLoadingConnections] = useState(false);
   const [connectionsStatus, setConnectionsStatus] = useState('loading'); // 'loading', 'success', 'failed', 'empty'
   const [connectionsCached, setConnectionsCached] = useState(false);
+  const [connectionsLastUpdated, setConnectionsLastUpdated] = useState(null);
   
   // Collapsible subsection state for connections
   const [vmRunningOpen, setVmRunningOpen] = useState(true);

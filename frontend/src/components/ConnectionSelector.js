@@ -528,6 +528,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                     {connections.filter(c => c.source === 'proxmox' && c.type === 'docker').map((conn) => {
                       const ConnIcon = getIcon(conn.type);
                       const isSelected = currentConnection?.id === conn.id;
+                      const isSelecting = selectedId === conn.id;
                       
                       return (
                         <button

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Server, HardDrive, Package, ChevronDown, Check, Wifi, WifiOff, Box, Loader2, RefreshCw } from 'lucide-react';
 import { useConnections } from '../contexts/ConnectionContext';
+import { toast } from 'sonner';
 
 function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
   const { 

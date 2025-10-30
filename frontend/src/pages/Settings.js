@@ -19,6 +19,18 @@ function Settings({ onLogout }) {
     primaryColor, secondaryColor, sidebarBgColor, headerBgColor,
     layoutDensity, borderRadius, shadowIntensity, sidebarWidth
   } = useTheme();
+  
+  // Use centralized connection state from ConnectionContext
+  const {
+    proxmoxLocations,
+    connectionProfiles,
+    loadAllConnections: reloadConnections,
+    connectionsStatus,
+    connectionsCached,
+    connectionsLastUpdated,
+    loading: loadingConnections
+  } = useConnections();
+  
   const [config, setConfig] = useState(null);
   const [themeOpen, setThemeOpen] = useState(false);
   const [apiKeys, setApiKeys] = useState(null);

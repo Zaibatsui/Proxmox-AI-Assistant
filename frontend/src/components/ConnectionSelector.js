@@ -41,7 +41,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
       case 'host': return Server;
       case 'vm': return HardDrive;
       case 'lxc': return Package;
-      case 'docker': return Package;
+      case 'docker': return Box;
       default: return Server;
     }
   };

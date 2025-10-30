@@ -377,9 +377,11 @@ function FileBrowserNew({ onLogout }) {
                         setSelectingForPane('right');
                         setShowConnectionManager(true);
                       }}
-                      className="text-xs text-amber-400 hover:text-amber-300"
+                      className="px-2 py-1 bg-slate-800/80 hover:bg-amber-600/20 border border-slate-700 hover:border-amber-500/50 rounded flex items-center gap-1.5 text-xs text-slate-300 hover:text-amber-400 transition-all"
+                      title="Switch to a different location"
                     >
-                      Change
+                      <ArrowRightLeft className="w-3.5 h-3.5" />
+                      <span>Switch</span>
                     </button>
                   </div>
                 </div>

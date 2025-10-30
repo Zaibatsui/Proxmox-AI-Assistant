@@ -199,20 +199,28 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                       {connections.filter(c => c.source === 'proxmox' && (c.type === 'vm' || c.type === 'lxc')).map((conn) => {
                         const ConnIcon = getIcon(conn.type);
                         const isSelected = currentConnection?.id === conn.id;
+                        const isSelecting = selectedId === conn.id;
                         
                         return (
                           <button
                             key={conn.id}
                             onClick={() => handleSelect(conn)}
-                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left ${
-                              isSelected
+                            disabled={selecting}
+                            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors text-left disabled:opacity-50 ${
+                              isSelecting
+                                ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                                : isSelected
                                 ? 'bg-amber-500/10 text-amber-400'
                                 : 'hover:bg-slate-800 text-slate-300'
                             }`}
                           >
-                            <ConnIcon className={`w-4 h-4 flex-shrink-0 ${
-                              isSelected ? 'text-amber-400' : 'text-cyan-400'
-                            }`} />
+                            {isSelecting ? (
+                              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin flex-shrink-0" />
+                            ) : (
+                              <ConnIcon className={`w-4 h-4 flex-shrink-0 ${
+                                isSelected ? 'text-amber-400' : 'text-cyan-400'
+                              }`} />
+                            )}
                             <div className="flex-1 min-w-0">
                               <div className="text-sm font-medium truncate">{conn.name}</div>
                               <div className="flex items-center gap-2 mt-0.5">

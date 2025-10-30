@@ -251,6 +251,7 @@ function FilePane({
             type: connection.type || 'host',
             id: locationId,
             ssh_host: credentialsHost,
+            ssh_port: port,
             ssh_username: credentialsUsername,
             ssh_password: credentialsPassword
           }

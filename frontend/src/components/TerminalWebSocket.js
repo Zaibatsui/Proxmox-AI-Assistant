@@ -104,27 +104,43 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       });
     });
 
-    // Handle window resize with safety checks
+    // Handle window resize with safety checks and debounce
     const handleResize = () => {
-      if (!isMounted.current || !isTerminalReady.current) return;
+      if (!isMounted.current || !isTerminalReady.current || isFitting.current) return;
       
-      try {
-        if (fitAddon.current && terminalInstance.current && 
-            terminalInstance.current.element && 
-            terminalInstance.current.buffer) {
-          fitAddon.current.fit();
-          // Send resize event to backend
-          if (ws.current?.readyState === WebSocket.OPEN) {
-            ws.current.send(JSON.stringify({
-              type: 'resize',
-              cols: term.cols,
-              rows: term.rows
-            }));
-          }
-        }
-      } catch (err) {
-        console.warn('Terminal resize failed:', err);
+      // Clear any pending resize
+      if (resizeTimeout.current) {
+        clearTimeout(resizeTimeout.current);
       }
+      
+      // Debounce resize to prevent rapid calls
+      resizeTimeout.current = setTimeout(() => {
+        if (!isMounted.current || !isTerminalReady.current || isFitting.current) return;
+        
+        try {
+          if (fitAddon.current && terminalInstance.current && 
+              terminalInstance.current.element && 
+              terminalInstance.current.buffer &&
+              terminalInstance.current.buffer.active) {
+            
+            isFitting.current = true;
+            fitAddon.current.fit();
+            isFitting.current = false;
+            
+            // Send resize event to backend
+            if (ws.current?.readyState === WebSocket.OPEN) {
+              ws.current.send(JSON.stringify({
+                type: 'resize',
+                cols: term.cols,
+                rows: term.rows
+              }));
+            }
+          }
+        } catch (err) {
+          isFitting.current = false;
+          console.warn('Terminal resize failed:', err);
+        }
+      }, 100);
     };
 
     window.addEventListener('resize', handleResize);

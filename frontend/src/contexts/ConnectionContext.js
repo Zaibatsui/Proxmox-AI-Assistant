@@ -248,6 +248,9 @@ export const ConnectionProvider = ({ children }) => {
     connectionProfiles,
     currentConnection,
     loading,
+    connectionsStatus,
+    connectionsCached,
+    connectionsLastUpdated,
     
     // Actions
     loadAllConnections,

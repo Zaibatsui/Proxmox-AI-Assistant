@@ -300,8 +300,12 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       {/* Terminal container */}
       <div 
         ref={terminalRef} 
-        className="flex-1 p-2 overflow-hidden"
-        style={{ minHeight: '200px' }}
+        className="flex-1 overflow-auto"
+        style={{ 
+          minHeight: '200px',
+          maxHeight: '100%',
+          width: '100%'
+        }}
       />
 
       {/* Connection info footer */}

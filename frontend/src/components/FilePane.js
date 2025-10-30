@@ -832,7 +832,7 @@ function FilePane({
               </button>
               <button
                 onClick={handleSubmitCredentials}
-                disabled={credentialsSaving || !credentialsUsername || !credentialsPassword}
+                disabled={credentialsSaving || !credentialsHost || !credentialsUsername || !credentialsPassword}
                 className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded text-sm disabled:opacity-50 flex items-center gap-2"
               >
                 {credentialsSaving ? (

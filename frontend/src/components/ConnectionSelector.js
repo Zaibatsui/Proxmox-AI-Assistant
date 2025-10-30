@@ -12,6 +12,7 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
   } = useConnections();
   
   const [showDropdown, setShowDropdown] = useState(false);
+  const [selecting, setSelecting] = useState(false);
   const dropdownRef = useRef(null);
 
   // Close dropdown when clicking outside

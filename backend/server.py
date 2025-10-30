@@ -1106,8 +1106,6 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
         logger.info(f"Preserving existing password for SSH config {config_id}")
     elif 'password' in update_data:
         logger.info(f"Updating password for SSH config {config_id}")
-        # Rename to match database field name
-        update_data['ssh_password'] = update_data.pop('password')
     
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
     

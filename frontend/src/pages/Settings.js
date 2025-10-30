@@ -168,78 +168,11 @@ function Settings({ onLogout }) {
     }
   };
 
-  const loadAllConnections = async (forceRefresh = false) => {
-    // Check cache first (unless force refresh)
-    const CACHE_KEY = 'proxmox_connections_cache';
-    const CACHE_TIMESTAMP_KEY = 'proxmox_connections_timestamp';
-    
-    if (!forceRefresh) {
-      try {
-        const cached = sessionStorage.getItem(CACHE_KEY);
-        const timestamp = sessionStorage.getItem(CACHE_TIMESTAMP_KEY);
-        
-        if (cached && timestamp) {
-          const cacheAge = Date.now() - parseInt(timestamp);
-          // Use cache if less than 5 minutes old
-          if (cacheAge < 5 * 60 * 1000) {
-            const cachedData = JSON.parse(cached);
-            console.log('Using cached connections data');
-            setProxmoxLocations(cachedData.locations || []);
-            setConnectionProfiles(cachedData.profiles || []);
-            
-            // Build credentials map
-            const credsMap = {};
-            (cachedData.locations || []).forEach(loc => {
-              if (loc.ssh_username) {
-                credsMap[`${loc.type}_${loc.vmid}`] = {
-                  ssh_host: loc.ssh_host,
-                  ssh_port: loc.ssh_port || 22,
-                  ssh_username: loc.ssh_username,
-                  hasPassword: !!loc.ssh_password
-                };
-              }
-            });
-            setLocationCredentials(credsMap);
-            
-            // Set status based on cached data
-            if (cachedData.locations.length === 0) {
-              setConnectionsStatus('empty');
-            } else {
-              setConnectionsStatus('success');
-            }
-            setConnectionsCached(true);
-            setConnectionsLastUpdated(new Date(parseInt(timestamp)));
-            return;
-          }
-        }
-      } catch (error) {
-        console.log('Cache read failed, loading fresh data');
-      }
-    }
-    
-    // Load fresh data
-    setLoadingConnections(true);
-    setConnectionsCached(false);
-    setConnectionsStatus('loading');
-    
-    try {
-      console.log('Loading fresh connections data...');
-      
-      // Load Proxmox locations
-      const locationsRes = await axios.get(`${API}/proxmox-locations`);
-      console.log('Proxmox locations response:', locationsRes.data);
-      const locations = locationsRes.data.locations || [];
-      setProxmoxLocations(locations);
-      
-      // Load connection profiles
-      const profilesRes = await axios.get(`${API}/connection-profiles`);
-      console.log('Connection profiles response:', profilesRes.data);
-      const profiles = profilesRes.data.profiles || [];
-      setConnectionProfiles(profiles);
-      
-      // Build credentials map for quick lookup
+  // Build credentials map from proxmoxLocations
+  useEffect(() => {
+    if (proxmoxLocations && Array.isArray(proxmoxLocations)) {
       const credsMap = {};
-      locations.forEach(loc => {
+      proxmoxLocations.forEach(loc => {
         if (loc.ssh_username) {
           credsMap[`${loc.type}_${loc.vmid}`] = {
             ssh_host: loc.ssh_host,
@@ -250,34 +183,8 @@ function Settings({ onLogout }) {
         }
       });
       setLocationCredentials(credsMap);
-      
-      // Cache the data
-      try {
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify({ locations, profiles }));
-        sessionStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
-      } catch (error) {
-        console.warn('Failed to cache connections data:', error);
-      }
-      
-      // Set status
-      if (locations.length === 0 && profiles.length === 0) {
-        setConnectionsStatus('empty');
-      } else {
-        setConnectionsStatus('success');
-      }
-      
-      setConnectionsLastUpdated(new Date());
-      
-      console.log(`Loaded ${locations.length} locations and ${profiles.length} profiles`);
-    } catch (error) {
-      console.error('Failed to load connections:', error);
-      console.error('Error response:', error.response);
-      setConnectionsStatus('failed');
-      toast.error(error.response?.data?.detail || 'Failed to load connections');
-    } finally {
-      setLoadingConnections(false);
     }
-  };
+  }, [proxmoxLocations]);
 
   const handleEditCredentials = (location) => {
     setEditingLocation(location);

@@ -85,13 +85,28 @@ function FilePane({
           }
         };
         
+        // Add SSH credentials if available (for direct VM/LXC access)
+        if (connection.ssh_username || connection.username) {
+          requestBody.location.ssh_username = connection.ssh_username || connection.username;
+        }
+        if (connection.ssh_password || connection.password) {
+          requestBody.location.ssh_password = connection.ssh_password || connection.password;
+        }
+        
         console.log(`[FilePane ${paneId}] Loading directory for:`, {
           connectionName: connection.name,
           connectionType: connection.type,
           vmid: connection.vmid,
           locationId,
+          hasCredentials: !!(connection.ssh_username || connection.username),
           path,
-          requestBody
+          requestBody: {
+            ...requestBody,
+            location: {
+              ...requestBody.location,
+              ssh_password: requestBody.location.ssh_password ? '***' : undefined
+            }
+          }
         });
         
         response = await axios.post(

@@ -4504,8 +4504,8 @@ async def get_ssh_client(user_id: str):
     if not ssh_username or not ssh_password:
         ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
         if ssh_config:
-            ssh_username = ssh_config.get('ssh_username', 'root')
-            ssh_password = ssh_config.get('ssh_password')
+            ssh_username = ssh_config.get('username', 'root')  # Changed from ssh_username
+            ssh_password = ssh_config.get('password')  # Changed from ssh_password
             logger.info(f"Using SSH credentials from ssh_configs collection for user {user_id}")
         else:
             ssh_username = ssh_username or 'root'

@@ -53,6 +53,61 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
       setProfiles(connectionProfiles);
     }
   }, [connectionProfiles]);
+  
+  // Helper to get icon for location type
+  const getLocationIcon = (type) => {
+    switch (type) {
+      case 'host': return Server;
+      case 'vm': return HardDrive;
+      case 'lxc': return Package;
+      case 'docker': return Box;
+      default: return Server;
+    }
+  };
+  
+  // Helper to render a location card
+  const renderLocation = (location) => {
+    const Icon = getLocationIcon(location.type);
+    const iconColor = location.type === 'docker' ? 'text-purple-400' : 'text-cyan-400';
+    
+    return (
+      <div
+        key={location.id}
+        className={`p-3 rounded-lg border transition-all cursor-pointer ${
+          selectedConnection?.id?.includes(location.id)
+            ? 'bg-amber-500/10 border-amber-500/30'
+            : 'bg-slate-800/50 border-slate-700 hover:bg-slate-800'
+        }`}
+        onClick={() => handleQuickConnect(location)}
+      >
+        <div className="flex items-start gap-2">
+          <Icon className={`w-4 h-4 ${iconColor} flex-shrink-0 mt-0.5`} />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-slate-200 truncate">
+              {location.name}
+            </div>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs text-slate-400">
+                {location.type.toUpperCase()}
+                {location.vmid && ` ${location.vmid}`}
+              </span>
+              {location.status && (
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  location.status === 'running'
+                    ? 'bg-green-500/20 text-green-400'
+                    : location.status === 'exited'
+                    ? 'bg-red-500/20 text-red-400'
+                    : 'bg-slate-600/20 text-slate-400'
+                }`}>
+                  {location.status}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const loadProfiles = async () => {
     // Reload profiles after creating/updating

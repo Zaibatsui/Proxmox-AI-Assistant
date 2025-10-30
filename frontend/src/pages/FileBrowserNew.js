@@ -239,17 +239,31 @@ function FileBrowserNew({ onLogout }) {
                 </div>
                 <div className="flex items-center gap-2">
                   {(leftConnection.type === 'vm' || leftConnection.type === 'lxc' || leftConnection.type === 'qemu') && (
-                    <button
-                      onClick={() => {
-                        setContainerBrowserFor('left');
-                        setShowContainerBrowser(true);
-                      }}
-                      className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                      title="View Docker containers"
-                    >
-                      <Box className="w-3 h-3" />
-                      Containers
-                    </button>
+                    <>
+                      <button
+                        onClick={() => {
+                          setContainerBrowserFor('left');
+                          setShowContainerBrowser(true);
+                        }}
+                        className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                        title="View Docker containers"
+                      >
+                        <Box className="w-3 h-3" />
+                        Containers
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (leftCredentialsEditor) {
+                            leftCredentialsEditor();
+                          }
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
+                        title="Edit SSH credentials"
+                      >
+                        <Key className="w-3 h-3" />
+                        Edit SSH
+                      </button>
+                    </>
                   )}
                   <button
                     onClick={() => {

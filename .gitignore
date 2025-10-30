@@ -65,7 +65,14 @@ ENV/
 *.pack
 *.deb
 *.dylib
+
+# Test files
+*test_results.json
+*_test_results.json
+test_*.py
+*.test.js
+*.spec.js
+*_report.md
 frontend/node_modules/.cache/default-development/9.pack
-frontend/node_modules/.cache/default-development/4.pack
 frontend/node_modules/.cache/default-development/7.pack
 frontend/node_modules/.cache/default-development/0.pack

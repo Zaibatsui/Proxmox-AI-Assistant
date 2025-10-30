@@ -24,6 +24,19 @@ This file tracks the testing status of features in the application.
 
 ## Backend Features
 
+backend:
+  - task: "Device Scanner - Fix scan returning only 4 devices instead of 20+"
+    implemented: true
+    working: "pending_test"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "Fixed device scanner to properly report SSH connection errors instead of silently falling back to mock data with only 4 devices. Removed mock data fallback - now throws proper HTTPException with detailed error messages. Added enhanced logging to debug lspci parsing and device detection. Updated frontend to display detailed error messages to user."
+
 ## Frontend Features
 
 frontend:

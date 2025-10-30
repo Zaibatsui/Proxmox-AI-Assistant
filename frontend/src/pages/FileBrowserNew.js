@@ -4,7 +4,7 @@ import ConnectionManager from '../components/ConnectionManager';
 import FilePane from '../components/FilePane';
 import Terminal from '../components/Terminal';
 import ContainerBrowser from '../components/ContainerBrowser';
-import { ArrowRightLeft, X, Monitor, Terminal as TerminalIcon, Box } from 'lucide-react';
+import { ArrowRightLeft, X, Monitor, Terminal as TerminalIcon, Box, Key } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useConnections } from '../contexts/ConnectionContext';

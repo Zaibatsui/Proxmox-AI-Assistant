@@ -207,21 +207,6 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     }
   };
 
-  const handleDelete = async (profileId) => {
-    if (!window.confirm('Are you sure you want to delete this connection profile?')) {
-      return;
-    }
-    
-    try {
-      await axios.delete(`${API}/api/connection-profiles/${profileId}`);
-      toast.success('Connection profile deleted');
-      loadProfiles();
-    } catch (error) {
-      console.error('Failed to delete profile:', error);
-      toast.error('Failed to delete connection profile');
-    }
-  };
-
   const testConnection = async (profileId) => {
     setTestingConnection(profileId);
     try {

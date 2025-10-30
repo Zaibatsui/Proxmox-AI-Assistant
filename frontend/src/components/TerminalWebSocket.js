@@ -12,11 +12,15 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   const terminalInstance = useRef(null);
   const fitAddon = useRef(null);
   const ws = useRef(null);
+  const isMounted = useRef(true);
+  const resizeTimeout = useRef(null);
   const [status, setStatus] = useState('disconnected'); // disconnected, connecting, connected, error
   const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!connection || !terminalRef.current) return;
+
+    isMounted.current = true;
 
     // Initialize xterm.js
     const term = new Terminal({
@@ -54,7 +58,13 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
     // Open terminal
     term.open(terminalRef.current);
-    fit.fit();
+    
+    // Safe fit with error handling
+    try {
+      fit.fit();
+    } catch (err) {
+      console.warn('Initial fit failed:', err);
+    }
 
     terminalInstance.current = term;
     fitAddon.current = fit;
@@ -62,34 +72,59 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
     // Connect WebSocket
     connectWebSocket(term);
 
-    // Handle window resize
+    // Handle window resize with safety checks
     const handleResize = () => {
-      if (fitAddon.current && terminalInstance.current) {
-        fitAddon.current.fit();
-        // Send resize event to backend
-        if (ws.current?.readyState === WebSocket.OPEN) {
-          ws.current.send(JSON.stringify({
-            type: 'resize',
-            cols: term.cols,
-            rows: term.rows
-          }));
+      if (!isMounted.current) return;
+      
+      try {
+        if (fitAddon.current && terminalInstance.current && terminalInstance.current.element) {
+          fitAddon.current.fit();
+          // Send resize event to backend
+          if (ws.current?.readyState === WebSocket.OPEN) {
+            ws.current.send(JSON.stringify({
+              type: 'resize',
+              cols: term.cols,
+              rows: term.rows
+            }));
+          }
         }
+      } catch (err) {
+        console.warn('Terminal resize failed:', err);
       }
     };
 
     window.addEventListener('resize', handleResize);
-    // Initial fit
-    setTimeout(() => handleResize(), 100);
+    
+    // Initial fit with delay and cleanup check
+    resizeTimeout.current = setTimeout(() => {
+      if (isMounted.current) {
+        handleResize();
+      }
+    }, 100);
 
     // Cleanup
     return () => {
+      isMounted.current = false;
       window.removeEventListener('resize', handleResize);
+      
+      if (resizeTimeout.current) {
+        clearTimeout(resizeTimeout.current);
+      }
+      
       if (ws.current) {
         ws.current.close();
       }
+      
       if (terminalInstance.current) {
-        terminalInstance.current.dispose();
+        try {
+          terminalInstance.current.dispose();
+        } catch (err) {
+          console.warn('Terminal dispose error:', err);
+        }
+        terminalInstance.current = null;
       }
+      
+      fitAddon.current = null;
     };
   }, [connection, containerId]);
 

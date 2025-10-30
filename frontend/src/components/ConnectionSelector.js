@@ -96,6 +96,14 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
 
   const connections = getAllConnections(true); // Only show available connections
   const Icon = currentConnection ? getIcon(currentConnection.type) : Wifi;
+  
+  // Filter connections based on search query
+  const filteredConnections = searchQuery 
+    ? connections.filter(conn => 
+        conn.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        conn.type.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : connections;
 
   if (showInHeader) {
     // Compact header version

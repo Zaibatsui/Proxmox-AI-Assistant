@@ -95,7 +95,7 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "3.1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: true
 
 frontend:

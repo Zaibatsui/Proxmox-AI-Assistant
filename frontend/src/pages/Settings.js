@@ -522,7 +522,7 @@ function Settings({ onLogout }) {
                     )}
                   </div>
                   <Button
-                    onClick={() => loadAllConnections(true)}
+                    onClick={() => reloadConnections(true)}
                     disabled={loadingConnections}
                     variant="outline"
                     size="sm"

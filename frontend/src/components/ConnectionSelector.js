@@ -238,10 +238,10 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                   )}
                   
                   {/* VMs and LXCs */}
-                  {connections.filter(c => c.source === 'proxmox' && (c.type === 'vm' || c.type === 'lxc')).length > 0 && (
+                  {filteredConnections.filter(c => c.source === 'proxmox' && (c.type === 'vm' || c.type === 'lxc')).length > 0 && (
                     <div className="mb-2">
                       <div className="text-xs font-medium text-slate-400 px-2 py-1">VMs & CONTAINERS</div>
-                      {connections.filter(c => c.source === 'proxmox' && (c.type === 'vm' || c.type === 'lxc')).map((conn) => {
+                      {filteredConnections.filter(c => c.source === 'proxmox' && (c.type === 'vm' || c.type === 'lxc')).map((conn) => {
                         const ConnIcon = getIcon(conn.type);
                         const isSelected = currentConnection?.id === conn.id;
                         const isSelecting = selectedId === conn.id;

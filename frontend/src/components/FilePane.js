@@ -31,7 +31,8 @@ function FilePane({
   onToggleExpand,
   style,
   onTransferFile,  // New prop for transfer functionality
-  onShowContainers  // New prop to trigger container browser
+  onShowContainers,  // New prop to trigger container browser
+  onEditCredentials  // New prop to expose credential editing
 }) {
   const [currentPath, setCurrentPath] = useState('/');
   const [files, setFiles] = useState([]);

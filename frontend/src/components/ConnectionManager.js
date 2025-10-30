@@ -55,25 +55,8 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   }, [connectionProfiles]);
 
   const loadProfiles = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API}/api/connection-profiles`);
-      setProfiles(response.data.profiles || []);
-    } catch (error) {
-      console.error('Failed to load profiles:', error);
-      toast.error('Failed to load connection profiles');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const loadProxmoxLocations = async () => {
-    try {
-      const response = await axios.get(`${API}/api/proxmox-locations`);
-      setProxmoxLocations(response.data.locations || []);
-    } catch (error) {
-      console.error('Failed to load Proxmox locations:', error);
-    }
+    // Reload profiles after creating/updating
+    await reloadConnections(true);
   };
   
   const handleQuickConnect = async (location) => {

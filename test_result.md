@@ -25,20 +25,17 @@ This file tracks the testing status of features in the application.
 ## Backend Features
 
 backend:
-  - task: "Device Scanner - Fix SSH credential retrieval from ssh_configs collection"
+  - task: "Terminal WebSocket integration with SSH configs collection"
     implemented: true
-    working: true
+    working: "pending_test"
     file: "backend/server.py"
     stuck_count: 0
-    priority: "critical"
-    needs_retesting: false
+    priority: "high"
+    needs_retesting: true
     status_history:
       - working: "pending_test"
         agent: "main"
-        comment: "CRITICAL FIX: Device scanner was looking for SSH credentials in proxmox_configs (which only has API credentials) instead of ssh_configs collection. Updated scan_proxmox_devices to: 1) Fetch SSH config from ssh_configs collection matching the host 2) Use username, password, and port from SSH config 3) Enhanced error messages to guide user to SSH Configuration section 4) Added detailed logging for connection attempts. This fixes the 'No authentication methods available' error."
-      - working: true
-        agent: "testing"
-        comment: "✅ SSH CREDENTIAL RETRIEVAL FIX VERIFIED WORKING - Comprehensive testing confirms the fix is successful: 1) Backend logs show 'Using SSH credentials from ssh_configs collection' (4 occurrences) indicating proper collection usage 2) SSH connections now succeed (4 successful connections logged) vs previous 'No authentication methods available' errors (7 old errors found) 3) GET /api/ssh/configs endpoint working correctly 4) Device scanner now properly fetches SSH credentials from ssh_configs instead of proxmox_configs 5) Enhanced error messages guide users to SSH Configuration section 6) The critical 'No authentication methods available' error has been eliminated. Fix is production-ready."
+        comment: "MAJOR INTEGRATION: Terminal WebSocket endpoint now fully integrated with SSH configs database. Changes: 1) Added JWT token authentication to WebSocket endpoint 2) Validates token and extracts user_id 3) Fetches SSH credentials from ssh_configs collection based on connection type 4) For Proxmox host: Gets SSH config matching Proxmox host from database 5) For Docker: Fetches host SSH credentials from database to run docker exec 6) For VM/LXC: Enhanced error handling and logging 7) Removed dependency on environment variables (PROXMOX_HOST, PROXMOX_SSH_USER, PROXMOX_SSH_PASSWORD) 8) All connection types now use database credentials. Frontend updated to pass JWT token in connection_data."
 
 ## Frontend Features
 

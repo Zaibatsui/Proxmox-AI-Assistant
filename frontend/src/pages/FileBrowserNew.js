@@ -37,7 +37,7 @@ function FileBrowserNew({ onLogout }) {
 
   // Auto-set left pane when global connection changes
   useEffect(() => {
-    if (currentConnection && !leftConnection) {
+    if (currentConnection) {
       setLeftConnection(currentConnection);
     }
   }, [currentConnection]);

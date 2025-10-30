@@ -138,8 +138,21 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   }, [connection, containerId]);
 
   const connectWebSocket = (term) => {
+    if (!term || !isMounted.current) return;
+    
     setStatus('connecting');
     setError(null);
+
+    // Helper to safely write to terminal
+    const safeWrite = (data) => {
+      if (term && term.element && isMounted.current) {
+        try {
+          term.write(data);
+        } catch (err) {
+          console.warn('Terminal write failed:', err);
+        }
+      }
+    };
 
     // Build connection data
     const connectionData = {
@@ -161,7 +174,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       setStatus('connected');
       // Send connection info
       websocket.send(JSON.stringify(connectionData));
-      term.write('\r\n\x1b[1;32mConnected to terminal session\x1b[0m\r\n');
+      safeWrite('\r\n\x1b[1;32mConnected to terminal session\x1b[0m\r\n');
     };
 
     websocket.onmessage = (event) => {
@@ -169,9 +182,9 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
         const message = JSON.parse(event.data);
         
         if (message.type === 'output') {
-          term.write(message.data);
+          safeWrite(message.data);
         } else if (message.type === 'error') {
-          term.write(`\r\n\x1b[1;31mError: ${message.data}\x1b[0m\r\n`);
+          safeWrite(`\r\n\x1b[1;31mError: ${message.data}\x1b[0m\r\n`);
           setError(message.data);
           setStatus('error');
         }

@@ -34,19 +34,30 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
   }, []);
 
   const handleSelect = async (connection) => {
-    // Close dropdown immediately for snappy feel
-    setShowDropdown(false);
+    // Set selected ID immediately for visual feedback
+    setSelectedId(connection.id);
     setSelecting(true);
+    
+    // Show toast notification
+    toast.loading(`Connecting to ${connection.name}...`, { id: 'connection-toast' });
     
     try {
       const result = await connect(connection.id);
       if (result.success) {
+        toast.success(`Connected to ${connection.name}`, { id: 'connection-toast' });
         if (onConnectionChange) {
           onConnectionChange(result.connection);
         }
+        // Close dropdown after successful connection
+        setTimeout(() => setShowDropdown(false), 500);
+      } else {
+        toast.error(`Failed to connect to ${connection.name}`, { id: 'connection-toast' });
       }
+    } catch (error) {
+      toast.error(`Connection error: ${error.message}`, { id: 'connection-toast' });
     } finally {
       setSelecting(false);
+      setSelectedId(null);
     }
   };
 

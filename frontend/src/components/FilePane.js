@@ -201,6 +201,13 @@ function FilePane({
       return;
     }
     
+    // Validate port number
+    const port = parseInt(credentialsPort);
+    if (isNaN(port) || port < 1 || port > 65535) {
+      toast.error('Please enter a valid port number (1-65535)');
+      return;
+    }
+    
     setCredentialsSaving(true);
     
     try {
@@ -209,6 +216,7 @@ function FilePane({
         location_type: connection.type,
         location_id: connection.vmid.toString(),
         ssh_host: credentialsHost,
+        ssh_port: port,
         ssh_username: credentialsUsername,
         ssh_password: credentialsPassword
       });

@@ -1,0 +1,47 @@
+/* Terminal container constraints */
+.terminal-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Override xterm.js default styles */
+.terminal-container .xterm {
+  height: 100% !important;
+  width: 100% !important;
+  padding: 8px;
+}
+
+.terminal-container .xterm-viewport {
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+
+.terminal-container .xterm-screen {
+  width: 100% !important;
+}
+
+/* Ensure terminal text doesn't overflow */
+.terminal-container .xterm-rows {
+  width: 100% !important;
+}
+
+/* Hide scrollbar but keep functionality */
+.terminal-container .xterm-viewport::-webkit-scrollbar {
+  width: 8px;
+}
+
+.terminal-container .xterm-viewport::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+
+.terminal-container .xterm-viewport::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.terminal-container .xterm-viewport::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
+}

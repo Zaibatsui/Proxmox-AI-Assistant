@@ -98,14 +98,12 @@ function Settings({ onLogout }) {
     fetchSSHConfigs();
     // Auto-test connections on page load
     testConnection();
+    // Auto-load connections on page load with caching
+    loadAllConnections();
   }, []);
   
-  // Load connections when section is opened
-  useEffect(() => {
-    if (connectionsOpen) {
-      loadAllConnections();
-    }
-  }, [connectionsOpen]);
+  // Remove the old useEffect that only loaded on connectionsOpen
+  // Now connections are always loaded on mount
   
   useEffect(() => {
     // Initialize custom colors from theme context

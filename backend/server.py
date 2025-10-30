@@ -6901,6 +6901,161 @@ async def execute_command_endpoint(request: CommandExecuteRequest, current_user:
         logger.error(f"Failed to execute command: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+# WebSocket endpoint for persistent terminal sessions
+@app.websocket("/api/terminal/ws")
+async def websocket_terminal(websocket: WebSocket):
+    """
+    WebSocket endpoint for persistent terminal sessions.
+    Supports interactive shell with real-time input/output.
+    """
+    await websocket.accept()
+    
+    ssh_client = None
+    shell_channel = None
+    
+    try:
+        # Receive connection info from client
+        connection_data = await websocket.receive_json()
+        logger.info(f"Terminal WebSocket connection: {connection_data}")
+        
+        conn_type = connection_data.get('type', 'host')
+        vmid = connection_data.get('vmid')
+        container_id = connection_data.get('container_id')
+        
+        # For Docker containers, use docker exec
+        if conn_type == 'docker' and container_id:
+            # Get SSH connection to host first
+            ssh_host = os.environ.get('PROXMOX_HOST')
+            ssh_username = os.environ.get('PROXMOX_SSH_USER', 'root')
+            ssh_password = os.environ.get('PROXMOX_SSH_PASSWORD')
+            
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=ssh_host,
+                username=ssh_username,
+                password=ssh_password,
+                timeout=10
+            )
+            
+            # Start interactive docker exec session
+            shell_channel = ssh_client.invoke_shell()
+            shell_channel.send(f'docker exec -it {container_id} /bin/sh\n')
+            await asyncio.sleep(0.5)  # Wait for shell to start
+            
+        # For VMs/LXCs with SSH credentials
+        elif conn_type in ['vm', 'lxc'] and vmid:
+            ssh_host = connection_data.get('ssh_host')
+            ssh_port = connection_data.get('ssh_port', 22)
+            ssh_username = connection_data.get('ssh_username')
+            ssh_password = connection_data.get('ssh_password')
+            
+            if not all([ssh_host, ssh_username, ssh_password]):
+                await websocket.send_json({'error': 'SSH credentials required'})
+                await websocket.close()
+                return
+            
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=ssh_host,
+                port=ssh_port,
+                username=ssh_username,
+                password=ssh_password,
+                timeout=10
+            )
+            
+            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
+            
+        # For Proxmox host
+        else:
+            ssh_host = os.environ.get('PROXMOX_HOST')
+            ssh_username = os.environ.get('PROXMOX_SSH_USER', 'root')
+            ssh_password = os.environ.get('PROXMOX_SSH_PASSWORD')
+            
+            ssh_client = paramiko.SSHClient()
+            ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh_client.connect(
+                hostname=ssh_host,
+                username=ssh_username,
+                password=ssh_password,
+                timeout=10
+            )
+            
+            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
+        
+        # Set non-blocking
+        shell_channel.setblocking(0)
+        
+        # Send initial output
+        await asyncio.sleep(0.3)
+        if shell_channel.recv_ready():
+            output = shell_channel.recv(4096).decode('utf-8', errors='ignore')
+            await websocket.send_json({'type': 'output', 'data': output})
+        
+        # Create tasks for bidirectional communication
+        async def read_from_shell():
+            """Read from SSH shell and send to WebSocket"""
+            while True:
+                try:
+                    if shell_channel.recv_ready():
+                        data = shell_channel.recv(4096).decode('utf-8', errors='ignore')
+                        await websocket.send_json({'type': 'output', 'data': data})
+                    await asyncio.sleep(0.01)
+                except Exception as e:
+                    logger.error(f"Error reading from shell: {e}")
+                    break
+        
+        async def write_to_shell():
+            """Receive from WebSocket and write to SSH shell"""
+            while True:
+                try:
+                    message = await websocket.receive_json()
+                    if message.get('type') == 'input':
+                        data = message.get('data', '')
+                        shell_channel.send(data)
+                    elif message.get('type') == 'resize':
+                        # Handle terminal resize
+                        width = message.get('cols', 120)
+                        height = message.get('rows', 30)
+                        shell_channel.resize_pty(width=width, height=height)
+                except WebSocketDisconnect:
+                    break
+                except Exception as e:
+                    logger.error(f"Error writing to shell: {e}")
+                    break
+        
+        # Run both tasks concurrently
+        await asyncio.gather(
+            read_from_shell(),
+            write_to_shell()
+        )
+        
+    except WebSocketDisconnect:
+        logger.info("Terminal WebSocket disconnected")
+    except Exception as e:
+        logger.error(f"Terminal WebSocket error: {str(e)}")
+        try:
+            await websocket.send_json({'type': 'error', 'data': str(e)})
+        except:
+            pass
+    finally:
+        # Cleanup
+        if shell_channel:
+            try:
+                shell_channel.close()
+            except:
+                pass
+        if ssh_client:
+            try:
+                ssh_client.close()
+            except:
+                pass
+        try:
+            await websocket.close()
+        except:
+            pass
+
 # Include the router in the main app
 app.include_router(api_router)
 

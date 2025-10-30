@@ -815,17 +815,34 @@ function FilePane({
                 </p>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  value={credentialsUsername}
-                  onChange={(e) => setCredentialsUsername(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
-                  placeholder="root"
-                />
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={credentialsUsername}
+                    onChange={(e) => setCredentialsUsername(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
+                    placeholder="root"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Port
+                  </label>
+                  <input
+                    type="number"
+                    value={credentialsPort}
+                    onChange={(e) => setCredentialsPort(e.target.value)}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded text-slate-200 focus:outline-none focus:border-amber-500"
+                    placeholder="22"
+                    min="1"
+                    max="65535"
+                  />
+                </div>
               </div>
               
               <div>

@@ -560,7 +560,8 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                               )}
                             </div>
                           </div>
-                          {isSelected && <Check className="w-4 h-4 text-amber-400" />}
+                          {isSelecting && <span className="text-xs text-cyan-400">Connecting...</span>}
+                          {isSelected && !isSelecting && <Check className="w-4 h-4 text-amber-400" />}
                         </button>
                       );
                     })}

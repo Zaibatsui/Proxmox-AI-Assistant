@@ -6982,16 +6982,39 @@ async def websocket_terminal(websocket: WebSocket):
     """
     WebSocket endpoint for persistent terminal sessions.
     Supports interactive shell with real-time input/output.
+    Integrated with SSH configuration system.
     """
     await websocket.accept()
     
     ssh_client = None
     shell_channel = None
+    user_id = None
     
     try:
         # Receive connection info from client
         connection_data = await websocket.receive_json()
-        logger.info(f"Terminal WebSocket connection: {connection_data}")
+        logger.info(f"Terminal WebSocket connection request: {connection_data.get('type', 'unknown')}")
+        
+        # Validate token and get user_id
+        token = connection_data.get('token')
+        if not token:
+            await websocket.send_json({'type': 'error', 'data': 'Authentication required: No token provided'})
+            await websocket.close()
+            return
+        
+        try:
+            payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            user_id = payload.get("user_id")
+            username = payload.get("username")
+            logger.info(f"Terminal WebSocket authenticated: user={username}")
+        except jwt.ExpiredSignatureError:
+            await websocket.send_json({'type': 'error', 'data': 'Authentication failed: Token expired'})
+            await websocket.close()
+            return
+        except jwt.InvalidTokenError:
+            await websocket.send_json({'type': 'error', 'data': 'Authentication failed: Invalid token'})
+            await websocket.close()
+            return
         
         conn_type = connection_data.get('type', 'host')
         vmid = connection_data.get('vmid')
@@ -6999,17 +7022,40 @@ async def websocket_terminal(websocket: WebSocket):
         
         # For Docker containers, use docker exec
         if conn_type == 'docker' and container_id:
-            # Get SSH connection to host first
-            ssh_host = os.environ.get('PROXMOX_HOST')
-            ssh_username = os.environ.get('PROXMOX_SSH_USER', 'root')
-            ssh_password = os.environ.get('PROXMOX_SSH_PASSWORD')
-            
-            if not ssh_host:
-                error_msg = "Terminal not configured: PROXMOX_HOST environment variable not set. Docker terminal connections are not yet fully integrated with the SSH configuration system."
-                logger.error(error_msg)
-                await websocket.send_json({'type': 'error', 'data': error_msg})
+            # Get Proxmox host SSH credentials from database
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+            if not proxmox_config:
+                await websocket.send_json({'type': 'error', 'data': 'Proxmox configuration not found. Please configure in Settings.'})
                 await websocket.close()
                 return
+            
+            # Extract hostname from Proxmox config
+            host = proxmox_config['host']
+            if '://' in host:
+                host = host.split('://', 1)[1]
+            host = host.split(':')[0].rstrip('/')
+            
+            # Get SSH config for this host
+            ssh_config = await db.ssh_configs.find_one({
+                "user_id": user_id,
+                "host": host
+            })
+            
+            if not ssh_config:
+                # Try to find any SSH config for this user
+                ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+            
+            if not ssh_config:
+                await websocket.send_json({'type': 'error', 'data': 'No SSH configuration found. Please configure SSH credentials in Settings → SSH Configuration.'})
+                await websocket.close()
+                return
+            
+            ssh_host = ssh_config.get('host')
+            ssh_username = ssh_config.get('username', 'root')
+            ssh_password = ssh_config.get('password')
+            ssh_port = ssh_config.get('port', 22)
+            
+            logger.info(f"Connecting to Docker host via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
             
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -7017,6 +7063,7 @@ async def websocket_terminal(websocket: WebSocket):
             try:
                 ssh_client.connect(
                     hostname=ssh_host,
+                    port=ssh_port,
                     username=ssh_username,
                     password=ssh_password,
                     timeout=10

@@ -344,7 +344,7 @@ function FileBrowserNew({ onLogout }) {
                       </span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5">
                     {(rightConnection.type === 'vm' || rightConnection.type === 'lxc' || rightConnection.type === 'qemu') && (
                       <>
                         <button
@@ -352,11 +352,11 @@ function FileBrowserNew({ onLogout }) {
                             setContainerBrowserFor('right');
                             setShowContainerBrowser(true);
                           }}
-                          className="text-xs text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
-                          title="View Docker containers"
+                          className="px-2 py-1 bg-slate-800/80 hover:bg-cyan-600/20 border border-slate-700 hover:border-cyan-500/50 rounded flex items-center gap-1.5 text-xs text-slate-300 hover:text-cyan-400 transition-all"
+                          title="View Docker containers in this VM/CT"
                         >
-                          <Box className="w-3 h-3" />
-                          Containers
+                          <Box className="w-3.5 h-3.5" />
+                          <span>Containers</span>
                         </button>
                         <button
                           onClick={() => {
@@ -364,11 +364,11 @@ function FileBrowserNew({ onLogout }) {
                               rightCredentialsEditor();
                             }
                           }}
-                          className="text-xs text-blue-400 hover:text-blue-300 flex items-center gap-1"
-                          title="Edit SSH credentials"
+                          className="px-2 py-1 bg-slate-800/80 hover:bg-blue-600/20 border border-slate-700 hover:border-blue-500/50 rounded flex items-center gap-1.5 text-xs text-slate-300 hover:text-blue-400 transition-all"
+                          title="Edit SSH connection details (host, port, credentials)"
                         >
-                          <Key className="w-3 h-3" />
-                          Edit SSH
+                          <Key className="w-3.5 h-3.5" />
+                          <span>SSH</span>
                         </button>
                       </>
                     )}

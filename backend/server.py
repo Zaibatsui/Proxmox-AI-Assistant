@@ -4485,14 +4485,29 @@ async def get_ssh_client(user_id: str):
     else:
         hostname = host
     
-    ssh_username = config_doc.get('ssh_username', 'root')
+    # First try to get SSH credentials from proxmox_configs (legacy)
+    ssh_username = config_doc.get('ssh_username')
     ssh_password = config_doc.get('ssh_password')
+    
+    # If not found, try from ssh_configs collection
+    if not ssh_username or not ssh_password:
+        ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+        if ssh_config:
+            ssh_username = ssh_config.get('ssh_username', 'root')
+            ssh_password = ssh_config.get('ssh_password')
+            logger.info(f"Using SSH credentials from ssh_configs collection for user {user_id}")
+        else:
+            ssh_username = ssh_username or 'root'
+    
+    if not ssh_password:
+        logger.warning(f"No SSH password configured for user {user_id}. Configure SSH in Settings > SSH Configuration.")
     
     try:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         
         if ssh_password:
+            logger.info(f"Connecting to {hostname} as {ssh_username}")
             ssh_client.connect(
                 hostname,
                 username=ssh_username,
@@ -4502,6 +4517,7 @@ async def get_ssh_client(user_id: str):
                 look_for_keys=False
             )
         else:
+            logger.info(f"Attempting SSH key authentication to {hostname} as {ssh_username}")
             ssh_client.connect(
                 hostname,
                 username=ssh_username,
@@ -4510,9 +4526,13 @@ async def get_ssh_client(user_id: str):
                 allow_agent=True
             )
         
+        logger.info(f"SSH connection successful to {hostname}")
         return ssh_client
+    except paramiko.AuthenticationException as e:
+        logger.error(f"SSH authentication failed for {hostname}: {str(e)}")
+        raise HTTPException(status_code=401, detail=f"SSH authentication failed. Please configure SSH credentials in Settings > SSH Configuration.")
     except Exception as e:
-        logger.error(f"SSH connection failed: {str(e)}")
+        logger.error(f"SSH connection failed to {hostname}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"SSH connection failed: {str(e)}")
 
 async def ssh_exec_command(ssh_client, command: str) -> tuple[int, str, str]:

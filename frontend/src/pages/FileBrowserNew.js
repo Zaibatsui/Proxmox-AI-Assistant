@@ -479,7 +479,7 @@ function FileBrowserNew({ onLogout }) {
                 transition: 'width 0.3s ease-in-out'
               }}
             >
-              <Terminal
+              <TerminalWebSocket
                 connection={leftConnection}
                 containerId={selectedContainer}
                 isExpanded={!leftPaneExpanded}

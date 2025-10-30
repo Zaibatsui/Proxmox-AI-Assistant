@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as TerminalIcon, X, AlertCircle } from 'lucide-react';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
+import './TerminalWebSocket.css';
 
 const WS_URL = process.env.REACT_APP_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001';
 
@@ -11,6 +12,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   const wsRef = useRef(null);
   const [status, setStatus] = useState('disconnected');
   const [error, setError] = useState(null);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (!connection || !containerRef.current) return;
@@ -21,57 +23,33 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
     const initTerminal = () => {
       try {
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Get container dimensions
-        const rect = container.getBoundingClientRect();
-        const charWidth = 9;  // Approximate character width
-        const charHeight = 17; // Approximate character height
-        
-        // Calculate cols and rows based on container size
-        const cols = Math.floor((rect.width - 20) / charWidth);
-        const rows = Math.floor((rect.height - 20) / charHeight);
-
-        console.log(`Terminal dimensions: ${cols}x${rows} (container: ${rect.width}x${rect.height})`);
-
-        // Create terminal with calculated dimensions
+        // Create terminal with smaller dimensions that fit container
         terminal = new Terminal({
-          cols: Math.max(40, Math.min(cols, 120)),
-          rows: Math.max(10, Math.min(rows, 40)),
+          cols: 80,
+          rows: 20,  // Reduced from 30 to fit better
           cursorBlink: true,
           fontSize: 14,
-          lineHeight: 1.2,
           fontFamily: 'Menlo, Monaco, "Courier New", monospace',
           theme: {
             background: '#0f172a',
             foreground: '#e2e8f0',
             cursor: '#38bdf8',
-            black: '#1e293b',
-            red: '#ef4444',
-            green: '#22c55e',
-            yellow: '#eab308',
-            blue: '#3b82f6',
-            magenta: '#a855f7',
-            cyan: '#06b6d4',
-            white: '#f1f5f9',
           },
           scrollback: 1000,
           convertEol: true,
         });
 
-        // Open terminal
-        terminal.open(container);
+        // Open terminal in container
+        terminal.open(containerRef.current);
         terminalRef.current = terminal;
         
-        console.log('Terminal opened successfully');
-
-        // Connect after a delay
+        // Mark as ready after a short delay
         setTimeout(() => {
           if (mounted) {
+            setIsReady(true);
             connectWebSocket(terminal);
           }
-        }, 150);
+        }, 100);
 
       } catch (err) {
         console.error('Terminal init error:', err);
@@ -101,9 +79,18 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
       websocket.onopen = () => {
         if (!mounted) return;
-        console.log('WebSocket connected');
         setStatus('connected');
         websocket.send(JSON.stringify(connectionData));
+        
+        setTimeout(() => {
+          if (term && mounted) {
+            try {
+              term.write('\r\n\x1b[1;32mConnected to terminal session\x1b[0m\r\n');
+            } catch (e) {
+              console.warn('Write failed:', e);
+            }
+          }
+        }, 100);
       };
 
       websocket.onmessage = (event) => {
@@ -113,11 +100,27 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
           const message = JSON.parse(event.data);
           
           if (message.type === 'output' && term) {
-            term.write(message.data);
+            setTimeout(() => {
+              if (mounted && term) {
+                try {
+                  term.write(message.data);
+                } catch (e) {
+                  console.warn('Write failed:', e);
+                }
+              }
+            }, 0);
           } else if (message.type === 'error') {
             setError(message.data);
             setStatus('error');
-            term.write(`\r\n\x1b[1;31mError: ${message.data}\x1b[0m\r\n`);
+            setTimeout(() => {
+              if (mounted && term) {
+                try {
+                  term.write(`\r\n\x1b[1;31mError: ${message.data}\x1b[0m\r\n`);
+                } catch (e) {
+                  console.warn('Write failed:', e);
+                }
+              }
+            }, 0);
           }
         } catch (err) {
           console.error('Message parse error:', err);
@@ -148,15 +151,12 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       }
     };
 
-    // Wait for container to be sized then initialize
-    const timer = setTimeout(() => {
-      initTerminal();
-    }, 100);
+    // Initialize after a small delay to ensure DOM is ready
+    setTimeout(initTerminal, 50);
 
     // Cleanup
     return () => {
       mounted = false;
-      clearTimeout(timer);
       
       if (websocket) {
         try {
@@ -224,19 +224,20 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
         </div>
       )}
 
-      {/* Terminal container */}
+      {/* Terminal container with fixed dimensions */}
       <div 
         ref={containerRef}
-        className="flex-1 p-2"
-        style={{
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
+        className="terminal-container flex-1 bg-slate-900"
       />
 
       {/* Footer */}
-      <div className="px-3 py-1.5 bg-slate-800 border-t border-slate-700 text-xs text-slate-500 flex-shrink-0">
-        <span>{connection?.name || connection?.host || 'Unknown'}</span>
+      <div className="px-3 py-1.5 bg-slate-800 border-t border-slate-700 flex items-center justify-between text-xs text-slate-500 flex-shrink-0">
+        <span>
+          {connection?.name || connection?.host || 'Unknown'}
+        </span>
+        <span className="text-slate-600">
+          WebSocket Terminal
+        </span>
       </div>
     </div>
   );

@@ -611,7 +611,7 @@ function Settings({ onLogout }) {
                                           <div className="flex items-center gap-2">
                                             {hasCreds ? (
                                               <>
-                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
                                                   SSH Configured
                                                 </span>
                                                 <button
@@ -684,7 +684,7 @@ function Settings({ onLogout }) {
                                           <div className="flex items-center gap-2">
                                             {hasCreds ? (
                                               <>
-                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
                                                   SSH Configured
                                                 </span>
                                                 <button
@@ -767,7 +767,7 @@ function Settings({ onLogout }) {
                                           <div className="flex items-center gap-2">
                                             {hasCreds ? (
                                               <>
-                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
                                                   SSH Configured
                                                 </span>
                                                 <button
@@ -840,7 +840,7 @@ function Settings({ onLogout }) {
                                           <div className="flex items-center gap-2">
                                             {hasCreds ? (
                                               <>
-                                                <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                                <span className="px-3 py-1 text-sm bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
                                                   SSH Configured
                                                 </span>
                                                 <button

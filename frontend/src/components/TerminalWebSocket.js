@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Terminal as TerminalIcon, X, AlertCircle } from 'lucide-react';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
+import './TerminalWebSocket.css';
 
 const WS_URL = process.env.REACT_APP_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001';
 

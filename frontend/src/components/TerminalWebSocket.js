@@ -263,11 +263,11 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   };
 
   return (
-    <div className={`flex flex-col bg-slate-900 border-t border-slate-700 overflow-hidden ${
-      isExpanded ? 'h-full' : 'h-64'
+    <div className={`flex flex-col bg-slate-900 border-t border-slate-700 ${
+      isExpanded ? 'h-full' : 'h-96'
     }`}>
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700">
+      <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700 flex-shrink-0">
         <div className="flex items-center gap-2">
           <TerminalIcon className="w-4 h-4 text-cyan-400" />
           <span className="text-sm font-medium text-slate-200">

@@ -1661,6 +1661,7 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                     
                     # Add credentials if they exist
                     if stored_creds:
+                        vm_location["ssh_host"] = stored_creds.get("ssh_host")
                         vm_location["ssh_username"] = stored_creds["ssh_username"]
                         vm_location["ssh_password"] = stored_creds["ssh_password"]
                     

@@ -259,6 +259,8 @@ function Settings({ onLogout }) {
         setConnectionsStatus('success');
       }
       
+      setConnectionsLastUpdated(new Date());
+      
       console.log(`Loaded ${locations.length} locations and ${profiles.length} profiles`);
     } catch (error) {
       console.error('Failed to load connections:', error);

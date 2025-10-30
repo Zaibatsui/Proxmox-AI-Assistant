@@ -11,6 +11,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Server, Save, Trash2, CheckCircle, Palette, Check, ChevronDown, Key, Edit, HardDrive, Package, Box, Network, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { useTheme } from "../contexts/ThemeContext";
+import { useConnections } from "../contexts/ConnectionContext";
 
 function Settings({ onLogout }) {
   const { 

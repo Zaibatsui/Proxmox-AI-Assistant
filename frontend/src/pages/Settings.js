@@ -90,6 +90,13 @@ function Settings({ onLogout }) {
     fetchSSHConfigs();
   }, []);
   
+  // Load connections when section is opened
+  useEffect(() => {
+    if (connectionsOpen) {
+      loadAllConnections();
+    }
+  }, [connectionsOpen]);
+  
   useEffect(() => {
     // Initialize custom colors from theme context
     if (primaryColor) setCustomPrimary(rgbToHex(primaryColor));

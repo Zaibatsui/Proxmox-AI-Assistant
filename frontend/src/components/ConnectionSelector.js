@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Server, HardDrive, Package, ChevronDown, Check, Wifi, WifiOff, Box } from 'lucide-react';
+import { Server, HardDrive, Package, ChevronDown, Check, Wifi, WifiOff, Box, Loader2 } from 'lucide-react';
 import { useConnections } from '../contexts/ConnectionContext';
 
 function ConnectionSelector({ onConnectionChange, showInHeader = false }) {

@@ -850,11 +850,14 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         
         return devices
         
+    except HTTPException:
+        raise  # Re-raise HTTP exceptions
     except Exception as e:
         logger.error(f"Device scan error: {str(e)}")
-        # Return mock data as fallback
-        logger.info("Returning mock device data as fallback")
-        return get_mock_devices()
+        raise HTTPException(
+            status_code=500,
+            detail=f"Device scan failed: {str(e)}. Please check SSH connectivity and credentials."
+        )
 
 def get_mock_devices() -> List[PCIDevice]:
     """Return mock devices for demo/testing"""

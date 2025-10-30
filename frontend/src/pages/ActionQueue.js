@@ -41,13 +41,17 @@ function ActionQueue({ onLogout }) {
     }
   };
 
-  const deleteAction = async (actionId) => {
+  const deleteAction = async (actionId, actionType) => {
+    if (!window.confirm(`Delete action "${actionType.replace(/_/g, " ").toUpperCase()}"?\n\nThis will remove it from the queue.`)) {
+      return;
+    }
+    
     try {
       await axios.delete(`${API}/actions/${actionId}`);
-      toast.success("Action deleted");
+      toast.success("Action deleted from queue");
       fetchActions();
     } catch (error) {
-      toast.error("Failed to delete action");
+      toast.error(error.response?.data?.detail || "Failed to delete action");
     }
   };
 

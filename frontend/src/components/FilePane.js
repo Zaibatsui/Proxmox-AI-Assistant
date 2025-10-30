@@ -135,6 +135,7 @@ function FilePane({
       console.log(`Loaded ${(response.data.files || response.data || []).length} files from path: ${path}`, response.data);
     } catch (error) {
       console.error('Failed to load directory:', error);
+      console.log('Connection object:', connection); // Debug log
       setFiles([]); // Ensure files are cleared on error
       
       // Check if error is due to missing credentials
@@ -146,8 +147,10 @@ function FilePane({
          errorDetail.includes('QEMU Guest Agent not available'))
       );
       
-      if (needsCredentials && (connection.type === 'vm' || connection.type === 'lxc') && !connection.ssh_username) {
-        // Show credentials modal
+      console.log('Needs credentials:', needsCredentials, 'Type:', connection?.type, 'Has username:', !!connection?.ssh_username);
+      
+      if (needsCredentials && (connection?.type === 'vm' || connection?.type === 'lxc')) {
+        // Show credentials modal even if credentials exist but are wrong
         setShowCredentialsModal(true);
         toast.info('SSH credentials required to access this location');
         setLoading(false);

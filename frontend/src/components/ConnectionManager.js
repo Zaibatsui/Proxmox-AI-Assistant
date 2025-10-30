@@ -116,15 +116,20 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
   };
   
   const handleQuickConnect = async (location) => {
+    setConnectingTo(location.id);
+    toast.loading(`Connecting to ${location.name}...`, { id: 'quick-connect' });
+    
     try {
       const response = await axios.post(`${API}/api/proxmox-locations/${location.id}/quick-connect`);
       if (response.data.success && onSelectConnection) {
         onSelectConnection(response.data.profile);
-        toast.success(`Connected to ${location.name}`);
+        toast.success(`Connected to ${location.name}`, { id: 'quick-connect' });
       }
     } catch (error) {
       console.error('Quick connect failed:', error);
-      toast.error(error.response?.data?.detail || 'Failed to connect');
+      toast.error(error.response?.data?.detail || `Failed to connect to ${location.name}`, { id: 'quick-connect' });
+    } finally {
+      setConnectingTo(null);
     }
   };
 

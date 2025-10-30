@@ -348,10 +348,10 @@ function ConnectionSelector({ onConnectionChange, showInHeader = false }) {
                     </div>
                   )}
 
-                  {connections.filter(c => c.source === 'profile').length > 0 && (
+                  {filteredConnections.filter(c => c.source === 'profile').length > 0 && (
                     <div>
                       <div className="text-xs font-medium text-slate-400 px-2 py-1">PROFILES</div>
-                      {connections.filter(c => c.source === 'profile').map((conn) => {
+                      {filteredConnections.filter(c => c.source === 'profile').map((conn) => {
                         const ConnIcon = Server;
                         const isSelected = currentConnection?.id === conn.id;
                         const isSelecting = selectedId === conn.id;

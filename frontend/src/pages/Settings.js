@@ -596,8 +596,29 @@ function Settings({ onLogout }) {
             </CollapsibleTrigger>
             <CollapsibleContent>
               <CardContent className="space-y-6">
+                {/* Refresh Button */}
+                <div className="flex justify-between items-center pb-2 border-b border-slate-700">
+                  <div className="text-xs text-slate-500">
+                    {connectionsCached && "Using cached data • "}
+                    Last updated: {new Date().toLocaleTimeString()}
+                  </div>
+                  <Button
+                    onClick={() => loadAllConnections(true)}
+                    disabled={loadingConnections}
+                    variant="outline"
+                    size="sm"
+                    className="bg-slate-800 border-slate-700 hover:bg-slate-700 text-slate-300 text-xs"
+                  >
+                    <RefreshCw className={`w-3 h-3 mr-1 ${loadingConnections ? 'animate-spin' : ''}`} />
+                    Refresh
+                  </Button>
+                </div>
+                
                 {loadingConnections ? (
-                  <div className="text-center py-8 text-slate-400">Loading connections...</div>
+                  <div className="text-center py-8 text-slate-400">
+                    <RefreshCw className="w-8 h-8 mx-auto mb-2 animate-spin text-cyan-400" />
+                    Loading connections...
+                  </div>
                 ) : (
                   <>
                     {/* Proxmox Host */}

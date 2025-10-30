@@ -7,7 +7,7 @@ import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 import requests
 
-BACKEND_URL = "https://proxmage.preview.emergentagent.com/api"
+BACKEND_URL = "https://proxmox-explorer.preview.emergentagent.com/api"
 
 async def find_config_user():
     """Find the user who owns the Proxmox configuration"""

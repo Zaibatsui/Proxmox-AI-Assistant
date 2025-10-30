@@ -52,6 +52,20 @@ function Settings({ onLogout }) {
   });
   const [savingSsh, setSavingSsh] = useState(false);
   
+  // Connections Management state
+  const [proxmoxLocations, setProxmoxLocations] = useState([]);
+  const [locationCredentials, setLocationCredentials] = useState({});
+  const [connectionProfiles, setConnectionProfiles] = useState([]);
+  const [editingLocation, setEditingLocation] = useState(null);
+  const [showCredentialModal, setShowCredentialModal] = useState(false);
+  const [credentialForm, setCredentialForm] = useState({
+    ssh_host: '',
+    ssh_port: 22,
+    ssh_username: '',
+    ssh_password: ''
+  });
+  const [loadingConnections, setLoadingConnections] = useState(false);
+  
   // Advanced appearance state
   const [customPrimary, setCustomPrimary] = useState("");
   const [customSecondary, setCustomSecondary] = useState("");

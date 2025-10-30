@@ -535,24 +535,56 @@ function Settings({ onLogout }) {
         
         {/* Connections Management - Collapsible - FIRST SECTION */}
         <Collapsible open={connectionsOpen} onOpenChange={setConnectionsOpen}>
-          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+          <Card className={`border-slate-800 bg-slate-900/50 backdrop-blur-sm ${
+            connectionsStatus === 'success' 
+              ? 'border-l-4 border-l-emerald-500'
+              : connectionsStatus === 'failed'
+              ? 'border-l-4 border-l-red-500'
+              : connectionsStatus === 'empty'
+              ? 'border-l-4 border-l-orange-500'
+              : ''
+          }`}>
             <CollapsibleTrigger className="w-full">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-lg bg-cyan-500/10">
-                      <Network className="w-5 h-5 text-cyan-400" />
+                    <div className={`p-2 rounded-lg ${
+                      connectionsStatus === 'success'
+                        ? 'bg-emerald-500/10'
+                        : connectionsStatus === 'failed'
+                        ? 'bg-red-500/10'
+                        : connectionsStatus === 'empty'
+                        ? 'bg-orange-500/10'
+                        : 'bg-cyan-500/10'
+                    }`}>
+                      <Network className={`w-5 h-5 ${
+                        connectionsStatus === 'success'
+                          ? 'text-emerald-400'
+                          : connectionsStatus === 'failed'
+                          ? 'text-red-400'
+                          : connectionsStatus === 'empty'
+                          ? 'text-orange-400'
+                          : 'text-cyan-400'
+                      }`} />
                     </div>
                     <div className="text-left">
                       <CardTitle className="text-slate-100">Connections Management</CardTitle>
                       <CardDescription className="text-slate-400">
-                        Manage SSH credentials for all Proxmox locations and connection profiles
+                        {connectionsStatus === 'success' && "✅ Connections Loaded"}
+                        {connectionsStatus === 'failed' && "❌ Failed to Load"}
+                        {connectionsStatus === 'empty' && "⚠️ No Connections Configured"}
+                        {connectionsStatus === 'loading' && "Loading connections..."}
+                        {connectionsCached && connectionsStatus !== 'loading' && " (Cached)"}
                       </CardDescription>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     {!loadingConnections && proxmoxLocations.length > 0 && (
-                      <span className="flex items-center gap-2 px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full border border-emerald-500/20 text-sm">
+                      <span className={`flex items-center gap-2 px-3 py-1 rounded-full border text-sm ${
+                        connectionsStatus === 'success'
+                          ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                          : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                      }`}>
                         <CheckCircle className="w-4 h-4" />
                         {proxmoxLocations.length} Locations
                       </span>

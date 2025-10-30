@@ -169,6 +169,42 @@ function FilePane({
       setLoading(false);
     }
   };
+  
+  const handleSubmitCredentials = async () => {
+    if (!credentialsUsername || !credentialsPassword) {
+      toast.error('Please enter both username and password');
+      return;
+    }
+    
+    setCredentialsSaving(true);
+    
+    try {
+      // Save credentials to backend
+      await axios.post(`${API}/api/location-credentials`, {
+        location_type: connection.type,
+        location_id: connection.vmid.toString(),
+        ssh_username: credentialsUsername,
+        ssh_password: credentialsPassword
+      });
+      
+      // Update connection object with credentials
+      connection.ssh_username = credentialsUsername;
+      connection.ssh_password = credentialsPassword;
+      
+      toast.success('Credentials saved successfully');
+      setShowCredentialsModal(false);
+      setCredentialsUsername('');
+      setCredentialsPassword('');
+      
+      // Retry loading directory
+      loadDirectory(currentPath);
+    } catch (error) {
+      console.error('Failed to save credentials:', error);
+      toast.error(error.response?.data?.detail || 'Failed to save credentials');
+    } finally {
+      setCredentialsSaving(false);
+    }
+  };
 
   const handleFileClick = async (file) => {
     if (file.type === 'directory') {

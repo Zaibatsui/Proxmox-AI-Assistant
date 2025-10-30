@@ -493,6 +493,7 @@ class LocationCredentials(BaseModel):
     location_type: str  # "vm", "lxc"
     location_id: str  # VM ID or LXC ID
     ssh_host: str  # IP address or hostname
+    ssh_port: int = 22  # SSH port, default 22
     ssh_username: str
     ssh_password: str
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -503,6 +504,7 @@ class LocationCredentialsCreate(BaseModel):
     location_type: str
     location_id: str
     ssh_host: str  # IP address or hostname
+    ssh_port: int = 22  # SSH port, default 22
     ssh_username: str
     ssh_password: str
 

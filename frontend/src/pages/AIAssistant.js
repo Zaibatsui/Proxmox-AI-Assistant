@@ -76,6 +76,12 @@ function AIAssistant({ onLogout }) {
         contextualQuestion = `[Working on ${currentConnection.name} (location: ${locationStr})] ${userQuestion}`;
         requestPayload.question = contextualQuestion;
       }
+      
+      // Add current connection to context for backend
+      requestPayload.context = {
+        current_location: currentConnection,
+        location_string: locationStr
+      };
     }
 
     // Add user message to conversations

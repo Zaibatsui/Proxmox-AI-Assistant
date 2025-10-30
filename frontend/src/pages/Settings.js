@@ -828,6 +828,287 @@ function Settings({ onLogout }) {
             </Card>
             </Collapsible>
 
+        {/* Connections Management - Collapsible */}
+        <Collapsible open={connectionsOpen} onOpenChange={setConnectionsOpen}>
+          <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">
+            <CollapsibleTrigger className="w-full">
+              <CardHeader className="cursor-pointer hover:bg-slate-800/30 transition-colors">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-slate-100">Connections Management</CardTitle>
+                    <CardDescription className="text-slate-400">
+                      Manage SSH credentials for all Proxmox locations and connection profiles
+                    </CardDescription>
+                  </div>
+                  <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${connectionsOpen ? 'transform rotate-180' : ''}`} />
+                </div>
+              </CardHeader>
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <CardContent className="space-y-6">
+                {loadingConnections ? (
+                  <div className="text-center py-8 text-slate-400">Loading connections...</div>
+                ) : (
+                  <>
+                    {/* Proxmox Host */}
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                        <Server className="w-4 h-4" />
+                        Proxmox Host
+                      </h3>
+                      <div className="bg-slate-800/50 border border-slate-700 rounded-lg p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-slate-200 font-medium">Proxmox Server</div>
+                            <div className="text-xs text-slate-500 mt-1">
+                              Configured via Proxmox API & SSH Configuration above
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs px-2 py-1 bg-green-500/20 text-green-400 rounded border border-green-500/30">
+                              Configured
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* VMs */}
+                    {proxmoxLocations.filter(loc => loc.type === 'vm').length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <HardDrive className="w-4 h-4" />
+                          Virtual Machines ({proxmoxLocations.filter(loc => loc.type === 'vm').length})
+                        </h3>
+                        <div className="space-y-2">
+                          {proxmoxLocations.filter(loc => loc.type === 'vm').map(location => {
+                            const key = `${location.type}_${location.vmid}`;
+                            const hasCreds = locationCredentials[key];
+                            return (
+                              <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="text-slate-200 font-medium">{location.name}</div>
+                                    <div className="text-xs text-slate-500 mt-1">
+                                      VM ID: {location.vmid} • Status: {location.status}
+                                      {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {hasCreds ? (
+                                      <>
+                                        <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                          SSH Configured
+                                        </span>
+                                        <button
+                                          onClick={() => handleEditCredentials(location)}
+                                          className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                          title="Edit SSH credentials"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteCredentials(location)}
+                                          className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                          title="Delete SSH credentials"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleEditCredentials(location)}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                      >
+                                        <Key className="w-3 h-3" />
+                                        Add SSH
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* LXC Containers */}
+                    {proxmoxLocations.filter(loc => loc.type === 'lxc').length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <Package className="w-4 h-4" />
+                          LXC Containers ({proxmoxLocations.filter(loc => loc.type === 'lxc').length})
+                        </h3>
+                        <div className="space-y-2">
+                          {proxmoxLocations.filter(loc => loc.type === 'lxc').map(location => {
+                            const key = `${location.type}_${location.vmid}`;
+                            const hasCreds = locationCredentials[key];
+                            return (
+                              <div key={location.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="text-slate-200 font-medium">{location.name}</div>
+                                    <div className="text-xs text-slate-500 mt-1">
+                                      CT ID: {location.vmid} • Status: {location.status}
+                                      {hasCreds && ` • SSH: ${hasCreds.ssh_username}@${hasCreds.ssh_host}:${hasCreds.ssh_port}`}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {hasCreds ? (
+                                      <>
+                                        <span className="text-xs px-2 py-1 bg-blue-500/20 text-blue-400 rounded border border-blue-500/30">
+                                          SSH Configured
+                                        </span>
+                                        <button
+                                          onClick={() => handleEditCredentials(location)}
+                                          className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-blue-400"
+                                          title="Edit SSH credentials"
+                                        >
+                                          <Edit className="w-4 h-4" />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteCredentials(location)}
+                                          className="p-1.5 hover:bg-slate-700 rounded text-slate-400 hover:text-red-400"
+                                          title="Delete SSH credentials"
+                                        >
+                                          <Trash2 className="w-4 h-4" />
+                                        </button>
+                                      </>
+                                    ) : (
+                                      <button
+                                        onClick={() => handleEditCredentials(location)}
+                                        className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded flex items-center gap-1"
+                                      >
+                                        <Key className="w-3 h-3" />
+                                        Add SSH
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Connection Profiles (SFTP/FTP/SSH) */}
+                    {connectionProfiles.length > 0 && (
+                      <div>
+                        <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                          <Network className="w-4 h-4" />
+                          Connection Profiles ({connectionProfiles.length})
+                        </h3>
+                        <div className="space-y-2">
+                          {connectionProfiles.map(profile => (
+                            <div key={profile.id} className="bg-slate-800/50 border border-slate-700 rounded-lg p-3">
+                              <div className="flex items-center justify-between">
+                                <div>
+                                  <div className="text-slate-200 font-medium">{profile.name}</div>
+                                  <div className="text-xs text-slate-500 mt-1">
+                                    {profile.connection_type.toUpperCase()} • {profile.host}:{profile.port}
+                                  </div>
+                                </div>
+                                <span className="text-xs px-2 py-1 bg-purple-500/20 text-purple-400 rounded border border-purple-500/30">
+                                  Profile
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-3">
+                          Manage connection profiles in File Browser → Manage Connections
+                        </div>
+                      </div>
+                    )}
+
+                    {proxmoxLocations.length === 0 && (
+                      <div className="text-center py-8 text-slate-400">
+                        <Server className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                        <p>No Proxmox locations found</p>
+                        <p className="text-xs mt-2">Configure Proxmox API above to see VMs and containers</p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </CollapsibleContent>
+          </Card>
+        </Collapsible>
+
+        {/* SSH Credential Edit Modal */}
+        {showCredentialModal && (
+          <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50" onClick={() => setShowCredentialModal(false)}>
+            <div className="bg-slate-900 border border-slate-700 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+              <h3 className="text-lg font-semibold text-slate-200 mb-4">
+                SSH Credentials for {editingLocation?.name}
+              </h3>
+              
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-slate-300">Host / IP Address</Label>
+                  <Input
+                    value={credentialForm.ssh_host}
+                    onChange={(e) => setCredentialForm({...credentialForm, ssh_host: e.target.value})}
+                    placeholder="192.168.1.100"
+                    className="bg-slate-800 border-slate-700 text-slate-200"
+                  />
+                </div>
+                
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="col-span-2">
+                    <Label className="text-slate-300">Username</Label>
+                    <Input
+                      value={credentialForm.ssh_username}
+                      onChange={(e) => setCredentialForm({...credentialForm, ssh_username: e.target.value})}
+                      placeholder="root"
+                      className="bg-slate-800 border-slate-700 text-slate-200"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-300">Port</Label>
+                    <Input
+                      type="number"
+                      value={credentialForm.ssh_port}
+                      onChange={(e) => setCredentialForm({...credentialForm, ssh_port: parseInt(e.target.value)})}
+                      placeholder="22"
+                      className="bg-slate-800 border-slate-700 text-slate-200"
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <Label className="text-slate-300">Password</Label>
+                  <Input
+                    type="password"
+                    value={credentialForm.ssh_password}
+                    onChange={(e) => setCredentialForm({...credentialForm, ssh_password: e.target.value})}
+                    placeholder="••••••••"
+                    className="bg-slate-800 border-slate-700 text-slate-200"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowCredentialModal(false)}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveCredentials}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center gap-2"
+                >
+                  <Save className="w-4 h-4" />
+                  Save Credentials
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* AI Configuration - Collapsible */}
         <Collapsible open={aiConfigOpen} onOpenChange={setAiConfigOpen}>
           <Card className="border-slate-800 bg-slate-900/50 backdrop-blur-sm">

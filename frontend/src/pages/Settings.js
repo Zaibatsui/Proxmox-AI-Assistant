@@ -556,7 +556,7 @@ function Settings({ onLogout }) {
                             </div>
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className={`text-xs px-2 py-1 rounded border ${
+                            <span className={`px-3 py-1 text-sm rounded border ${
                               apiTestStatus?.status === 'success' 
                                 ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
                                 : 'bg-red-500/20 text-red-400 border-red-500/30'

@@ -135,13 +135,23 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   }, [connection, containerId]);
 
   const connectWebSocket = (term) => {
-    if (!term || !isMounted.current || !isTerminalReady.current) return;
+    if (!term || !isMounted.current) return;
     
     setStatus('connecting');
     setError(null);
+    
+    // Message queue for buffering writes until terminal is ready
+    const messageQueue = [];
+    let terminalFullyReady = false;
 
-    // Helper to safely write to terminal
+    // Helper to safely write to terminal with queue
     const safeWrite = (data) => {
+      if (!terminalFullyReady) {
+        // Buffer messages until terminal is ready
+        messageQueue.push(data);
+        return;
+      }
+      
       if (term && term.element && term.buffer && isMounted.current && isTerminalReady.current) {
         try {
           term.write(data);
@@ -150,6 +160,31 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
         }
       }
     };
+    
+    // Wait for terminal to be absolutely ready before marking as ready
+    const checkAndEnableWrites = () => {
+      if (term && term.element && term.buffer && term.buffer.active && 
+          term.element.querySelector('.xterm-screen')) {
+        terminalFullyReady = true;
+        console.log('Terminal fully ready, flushing', messageQueue.length, 'buffered messages');
+        
+        // Flush buffered messages
+        messageQueue.forEach(msg => {
+          try {
+            term.write(msg);
+          } catch (err) {
+            console.warn('Failed to write buffered message:', err);
+          }
+        });
+        messageQueue.length = 0; // Clear queue
+      } else {
+        // Keep checking
+        setTimeout(checkAndEnableWrites, 50);
+      }
+    };
+    
+    // Start ready check
+    setTimeout(checkAndEnableWrites, 100);
 
     // Build connection data
     const connectionData = {

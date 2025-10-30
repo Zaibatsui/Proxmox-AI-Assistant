@@ -66,6 +66,12 @@ function Settings({ onLogout }) {
   });
   const [loadingConnections, setLoadingConnections] = useState(false);
   
+  // Collapsible subsection state for connections
+  const [vmRunningOpen, setVmRunningOpen] = useState(true);
+  const [vmStoppedOpen, setVmStoppedOpen] = useState(false);
+  const [lxcRunningOpen, setLxcRunningOpen] = useState(true);
+  const [lxcStoppedOpen, setLxcStoppedOpen] = useState(false);
+  
   // Advanced appearance state
   const [customPrimary, setCustomPrimary] = useState("");
   const [customSecondary, setCustomSecondary] = useState("");

@@ -212,7 +212,7 @@ function Settings({ onLogout }) {
     }
 
     try {
-      await axios.post(`${API}/api/location-credentials`, {
+      await axios.post(`${API}/location-credentials`, {
         location_type: editingLocation.type,
         location_id: editingLocation.vmid.toString(),
         ssh_host: credentialForm.ssh_host,

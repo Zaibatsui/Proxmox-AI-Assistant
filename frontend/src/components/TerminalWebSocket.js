@@ -177,14 +177,14 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   }, [connection, containerId]);
 
   const connectWebSocket = (term) => {
-    if (!term || !isMounted.current) return;
+    if (!term || !isMounted.current || !isTerminalReady.current) return;
     
     setStatus('connecting');
     setError(null);
 
     // Helper to safely write to terminal
     const safeWrite = (data) => {
-      if (term && term.element && isMounted.current) {
+      if (term && term.element && term.buffer && isMounted.current && isTerminalReady.current) {
         try {
           term.write(data);
         } catch (err) {

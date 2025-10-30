@@ -1178,6 +1178,94 @@ async def test_ssh_config(config_id: str, current_user: dict = Depends(get_curre
         }
 
 
+# ==================== LOCATION CREDENTIALS ROUTES ====================
+
+@api_router.post("/location-credentials")
+async def save_location_credentials(credentials: LocationCredentialsCreate, current_user: dict = Depends(get_current_user)):
+    """Save or update SSH credentials for a Proxmox location (VM/LXC)"""
+    try:
+        # Check if credentials already exist
+        existing = await db.location_credentials.find_one({
+            "user_id": current_user["user_id"],
+            "location_type": credentials.location_type,
+            "location_id": credentials.location_id
+        })
+        
+        if existing:
+            # Update existing credentials
+            await db.location_credentials.update_one(
+                {"id": existing["id"]},
+                {
+                    "$set": {
+                        "ssh_username": credentials.ssh_username,
+                        "ssh_password": credentials.ssh_password,
+                        "updated_at": datetime.now(timezone.utc).isoformat()
+                    }
+                }
+            )
+            return {"success": True, "message": "Credentials updated successfully", "id": existing["id"]}
+        else:
+            # Create new credentials
+            creds_obj = {
+                "id": str(uuid.uuid4()),
+                "user_id": current_user["user_id"],
+                "location_type": credentials.location_type,
+                "location_id": credentials.location_id,
+                "ssh_username": credentials.ssh_username,
+                "ssh_password": credentials.ssh_password,
+                "created_at": datetime.now(timezone.utc).isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat()
+            }
+            await db.location_credentials.insert_one(creds_obj)
+            return {"success": True, "message": "Credentials saved successfully", "id": creds_obj["id"]}
+    except Exception as e:
+        logger.error(f"Failed to save location credentials: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to save credentials: {str(e)}")
+
+@api_router.get("/location-credentials/{location_type}/{location_id}")
+async def get_location_credentials(location_type: str, location_id: str, current_user: dict = Depends(get_current_user)):
+    """Get SSH credentials for a specific location"""
+    try:
+        credentials = await db.location_credentials.find_one({
+            "user_id": current_user["user_id"],
+            "location_type": location_type,
+            "location_id": location_id
+        })
+        
+        if not credentials:
+            raise HTTPException(status_code=404, detail="No credentials found for this location")
+        
+        return {
+            "ssh_username": credentials["ssh_username"],
+            "ssh_password": credentials["ssh_password"]
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get location credentials: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get credentials: {str(e)}")
+
+@api_router.delete("/location-credentials/{location_type}/{location_id}")
+async def delete_location_credentials(location_type: str, location_id: str, current_user: dict = Depends(get_current_user)):
+    """Delete SSH credentials for a specific location"""
+    try:
+        result = await db.location_credentials.delete_one({
+            "user_id": current_user["user_id"],
+            "location_type": location_type,
+            "location_id": location_id
+        })
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=404, detail="No credentials found for this location")
+        
+        return {"success": True, "message": "Credentials deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete location credentials: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete credentials: {str(e)}")
+
+
 @api_router.post("/proxmox/test-connection")
 async def test_proxmox_connection(current_user: dict = Depends(get_current_user)):
     """Test Proxmox API and SSH connections"""

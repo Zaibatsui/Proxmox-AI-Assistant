@@ -65,10 +65,8 @@ function Settings({ onLogout }) {
   });
   const [savingSsh, setSavingSsh] = useState(false);
   
-  // Connections Management state
-  const [proxmoxLocations, setProxmoxLocations] = useState([]);
+  // Connections Management state - use data from ConnectionContext
   const [locationCredentials, setLocationCredentials] = useState({});
-  const [connectionProfiles, setConnectionProfiles] = useState([]);
   const [editingLocation, setEditingLocation] = useState(null);
   const [showCredentialModal, setShowCredentialModal] = useState(false);
   const [credentialForm, setCredentialForm] = useState({
@@ -77,10 +75,6 @@ function Settings({ onLogout }) {
     ssh_username: '',
     ssh_password: ''
   });
-  const [loadingConnections, setLoadingConnections] = useState(false);
-  const [connectionsStatus, setConnectionsStatus] = useState('loading'); // 'loading', 'success', 'failed', 'empty'
-  const [connectionsCached, setConnectionsCached] = useState(false);
-  const [connectionsLastUpdated, setConnectionsLastUpdated] = useState(null);
   
   // Collapsible subsection state for connections
   const [vmRunningOpen, setVmRunningOpen] = useState(true);

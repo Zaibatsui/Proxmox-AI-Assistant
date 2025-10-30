@@ -18,9 +18,18 @@ axios.interceptors.request.use(
 );
 
 function ConnectionManager({ onSelectConnection, selectedConnection }) {
+  // Use centralized connection data
+  const {
+    proxmoxLocations,
+    connectionProfiles,
+    loadAllConnections: reloadConnections,
+    loading: loadingConnections,
+    connectionsStatus,
+    connectionsCached,
+    connectionsLastUpdated
+  } = useConnections();
+  
   const [profiles, setProfiles] = useState([]);
-  const [proxmoxLocations, setProxmoxLocations] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingProfile, setEditingProfile] = useState(null);
   const [testingConnection, setTestingConnection] = useState(null);
@@ -38,10 +47,12 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     notes: ''
   });
 
+  // Sync local profiles state with ConnectionContext
   useEffect(() => {
-    loadProfiles();
-    loadProxmoxLocations();
-  }, []);
+    if (connectionProfiles) {
+      setProfiles(connectionProfiles);
+    }
+  }, [connectionProfiles]);
 
   const loadProfiles = async () => {
     try {

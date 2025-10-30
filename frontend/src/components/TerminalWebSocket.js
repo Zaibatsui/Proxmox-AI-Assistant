@@ -258,7 +258,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
   };
 
   const reconnect = () => {
-    if (terminalInstance.current && isMounted.current) {
+    if (terminalInstance.current && isMounted.current && isTerminalReady.current) {
       try {
         terminalInstance.current.clear();
         connectWebSocket(terminalInstance.current);

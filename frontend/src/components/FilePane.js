@@ -50,6 +50,18 @@ function FilePane({
   const [credentialsPassword, setCredentialsPassword] = useState('');
   const [credentialsSaving, setCredentialsSaving] = useState(false);
 
+  // Expose credential modal opening function to parent
+  useEffect(() => {
+    if (onEditCredentials && connection) {
+      onEditCredentials(() => {
+        // Pre-fill with existing credentials if available
+        if (connection.ssh_host) setCredentialsHost(connection.ssh_host);
+        if (connection.ssh_username) setCredentialsUsername(connection.ssh_username);
+        setShowCredentialsModal(true);
+      });
+    }
+  }, [connection, onEditCredentials]);
+
   useEffect(() => {
     // Reset state when connection changes
     setFiles([]);

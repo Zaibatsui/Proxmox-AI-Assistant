@@ -1,90 +1,27 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Terminal as TerminalIcon, X, AlertCircle } from 'lucide-react';
-import { Terminal } from 'xterm';
-import 'xterm/css/xterm.css';
-
-// No addons imported since we're not using them
+import { Terminal as TerminalIcon, X, AlertCircle, Send } from 'lucide-react';
 
 const WS_URL = process.env.REACT_APP_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001';
 
-function TerminalWebSocket({ connection, containerId = null, isExpanded, onRestore }) {
-  const containerRef = useRef(null);
-  const terminalRef = useRef(null);
+function SimpleTerminal({ connection, containerId = null, isExpanded, onRestore }) {
+  const outputRef = useRef(null);
   const wsRef = useRef(null);
   const [status, setStatus] = useState('disconnected');
   const [error, setError] = useState(null);
+  const [input, setInput] = useState('');
+  const [output, setOutput] = useState([]);
+  const [commandHistory, setCommandHistory] = useState([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   useEffect(() => {
-    if (!connection || !containerRef.current) return;
+    if (!connection) return;
 
-    let terminal = null;
     let mounted = true;
     let websocket = null;
 
-    const initTerminal = () => {
-      try {
-        const container = containerRef.current;
-        if (!container) return;
-
-        // Get container dimensions
-        const rect = container.getBoundingClientRect();
-        const charWidth = 9;  // Approximate character width
-        const charHeight = 17; // Approximate character height
-        
-        // Calculate cols and rows based on container size
-        const cols = Math.floor((rect.width - 20) / charWidth);
-        const rows = Math.floor((rect.height - 20) / charHeight);
-
-        console.log(`Terminal dimensions: ${cols}x${rows} (container: ${rect.width}x${rect.height})`);
-
-        // Create terminal with calculated dimensions
-        terminal = new Terminal({
-          cols: Math.max(40, Math.min(cols, 120)),
-          rows: Math.max(10, Math.min(rows, 40)),
-          cursorBlink: true,
-          fontSize: 14,
-          lineHeight: 1.2,
-          fontFamily: 'Menlo, Monaco, "Courier New", monospace',
-          theme: {
-            background: '#0f172a',
-            foreground: '#e2e8f0',
-            cursor: '#38bdf8',
-            black: '#1e293b',
-            red: '#ef4444',
-            green: '#22c55e',
-            yellow: '#eab308',
-            blue: '#3b82f6',
-            magenta: '#a855f7',
-            cyan: '#06b6d4',
-            white: '#f1f5f9',
-          },
-          scrollback: 1000,
-          convertEol: true,
-        });
-
-        // Open terminal
-        terminal.open(container);
-        terminalRef.current = terminal;
-        
-        console.log('Terminal opened successfully');
-
-        // Connect after a delay
-        setTimeout(() => {
-          if (mounted) {
-            connectWebSocket(terminal);
-          }
-        }, 150);
-
-      } catch (err) {
-        console.error('Terminal init error:', err);
-        setError('Failed to initialize terminal');
-      }
-    };
-
-    const connectWebSocket = (term) => {
-      if (!term || !mounted) return;
-
+    const connect = () => {
       setStatus('connecting');
+      setOutput(prev => [...prev, { type: 'system', text: 'Connecting to terminal...' }]);
 
       const token = localStorage.getItem('token');
       const connectionData = {
@@ -103,23 +40,25 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
 
       websocket.onopen = () => {
         if (!mounted) return;
-        console.log('WebSocket connected');
         setStatus('connected');
+        setOutput(prev => [...prev, { type: 'success', text: 'Connected to terminal session' }]);
         websocket.send(JSON.stringify(connectionData));
       };
 
       websocket.onmessage = (event) => {
-        if (!mounted || !term) return;
+        if (!mounted) return;
         
         try {
           const message = JSON.parse(event.data);
           
-          if (message.type === 'output' && term) {
-            term.write(message.data);
+          if (message.type === 'output') {
+            // Strip ANSI codes for simple display
+            const cleanText = message.data.replace(/\x1b\[[0-9;]*m/g, '');
+            setOutput(prev => [...prev, { type: 'output', text: cleanText }]);
           } else if (message.type === 'error') {
             setError(message.data);
             setStatus('error');
-            term.write(`\r\n\x1b[1;31mError: ${message.data}\x1b[0m\r\n`);
+            setOutput(prev => [...prev, { type: 'error', text: message.data }]);
           }
         } catch (err) {
           console.error('Message parse error:', err);
@@ -130,36 +69,20 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
         if (!mounted) return;
         setStatus('error');
         setError('Connection error');
+        setOutput(prev => [...prev, { type: 'error', text: 'Connection error' }]);
       };
 
       websocket.onclose = () => {
         if (!mounted) return;
         setStatus('disconnected');
+        setOutput(prev => [...prev, { type: 'system', text: 'Connection closed' }]);
       };
-
-      // Handle terminal input
-      if (term) {
-        term.onData((data) => {
-          if (websocket && websocket.readyState === WebSocket.OPEN) {
-            websocket.send(JSON.stringify({
-              type: 'input',
-              data: data
-            }));
-          }
-        });
-      }
     };
 
-    // Wait for container to be sized then initialize
-    const timer = setTimeout(() => {
-      initTerminal();
-    }, 100);
+    connect();
 
-    // Cleanup
     return () => {
       mounted = false;
-      clearTimeout(timer);
-      
       if (websocket) {
         try {
           websocket.close();
@@ -167,16 +90,64 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
           console.warn('WebSocket close error:', e);
         }
       }
-      
-      if (terminal) {
-        try {
-          terminal.dispose();
-        } catch (e) {
-          console.warn('Terminal dispose error:', e);
-        }
-      }
     };
   }, [connection, containerId]);
+
+  // Auto-scroll to bottom when new output
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [output]);
+
+  const sendCommand = () => {
+    if (!input.trim() || !wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+
+    // Add to command history
+    setCommandHistory(prev => [...prev, input]);
+    setHistoryIndex(-1);
+
+    // Send to backend
+    wsRef.current.send(JSON.stringify({
+      type: 'input',
+      data: input + '\n'
+    }));
+
+    // Add to output display
+    setOutput(prev => [...prev, { type: 'input', text: `$ ${input}` }]);
+    setInput('');
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendCommand();
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (commandHistory.length > 0) {
+        const newIndex = historyIndex === -1 ? commandHistory.length - 1 : Math.max(0, historyIndex - 1);
+        setHistoryIndex(newIndex);
+        setInput(commandHistory[newIndex]);
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (historyIndex >= 0) {
+        const newIndex = historyIndex + 1;
+        if (newIndex >= commandHistory.length) {
+          setHistoryIndex(-1);
+          setInput('');
+        } else {
+          setHistoryIndex(newIndex);
+          setInput(commandHistory[newIndex]);
+        }
+      }
+    }
+  };
+
+  const clearOutput = () => {
+    setOutput([]);
+    setError(null);
+  };
 
   return (
     <div className="flex flex-col h-full bg-slate-900 border-t border-slate-700">
@@ -184,7 +155,7 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
       <div className="flex items-center justify-between px-3 py-2 bg-slate-800 border-b border-slate-700 flex-shrink-0">
         <div className="flex items-center gap-2">
           <TerminalIcon className="w-4 h-4 text-cyan-400" />
-          <span className="text-sm font-medium text-slate-200">Terminal</span>
+          <span className="text-sm font-medium text-slate-200">Simple Terminal</span>
           
           <div className="flex items-center gap-1.5">
             {status === 'connected' && (
@@ -208,14 +179,22 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
           </div>
         </div>
         
-        {onRestore && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={onRestore}
-            className="p-1 hover:bg-slate-700 rounded transition-colors text-slate-400"
+            onClick={clearOutput}
+            className="px-2 py-1 text-xs bg-slate-700 hover:bg-slate-600 rounded transition-colors text-slate-300"
           >
-            <X className="w-4 h-4" />
+            Clear
           </button>
-        )}
+          {onRestore && (
+            <button
+              onClick={onRestore}
+              className="p-1 hover:bg-slate-700 rounded transition-colors text-slate-400"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Error message */}
@@ -226,22 +205,62 @@ function TerminalWebSocket({ connection, containerId = null, isExpanded, onResto
         </div>
       )}
 
-      {/* Terminal container */}
+      {/* Terminal output */}
       <div 
-        ref={containerRef}
-        className="flex-1 p-2"
-        style={{
-          minHeight: 0,
-          overflow: 'hidden',
-        }}
-      />
+        ref={outputRef}
+        className="flex-1 p-3 overflow-y-auto font-mono text-sm"
+        style={{ minHeight: 0 }}
+      >
+        {output.length === 0 ? (
+          <div className="text-slate-500 text-xs">
+            Terminal output will appear here. Type commands below.
+          </div>
+        ) : (
+          output.map((line, index) => (
+            <div 
+              key={index} 
+              className={`whitespace-pre-wrap break-words mb-1 ${
+                line.type === 'input' ? 'text-cyan-400' :
+                line.type === 'error' ? 'text-red-400' :
+                line.type === 'success' ? 'text-green-400' :
+                line.type === 'system' ? 'text-yellow-400' :
+                'text-slate-300'
+              }`}
+            >
+              {line.text}
+            </div>
+          ))
+        )}
+      </div>
 
-      {/* Footer */}
-      <div className="px-3 py-1.5 bg-slate-800 border-t border-slate-700 text-xs text-slate-500 flex-shrink-0">
-        <span>{connection?.name || connection?.host || 'Unknown'}</span>
+      {/* Input area */}
+      <div className="flex-shrink-0 border-t border-slate-700 bg-slate-800">
+        <div className="flex items-center gap-2 px-3 py-2">
+          <span className="text-cyan-400 font-mono text-sm">$</span>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Type command and press Enter..."
+            disabled={status !== 'connected'}
+            className="flex-1 bg-slate-900 text-slate-200 text-sm font-mono px-2 py-1 rounded border border-slate-700 focus:border-cyan-500 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+          />
+          <button
+            onClick={sendCommand}
+            disabled={!input.trim() || status !== 'connected'}
+            className="p-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-700 disabled:cursor-not-allowed rounded transition-colors text-white"
+            title="Send command (or press Enter)"
+          >
+            <Send className="w-4 h-4" />
+          </button>
+        </div>
+        <div className="px-3 py-1 text-xs text-slate-500 border-t border-slate-700">
+          <span>↑↓ Navigate history • Enter to send • Connected to: {connection?.name || connection?.host || 'Unknown'}</span>
+        </div>
       </div>
     </div>
   );
 }
 
-export default TerminalWebSocket;
+export default SimpleTerminal;

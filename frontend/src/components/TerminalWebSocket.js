@@ -3,6 +3,8 @@ import { Terminal as TerminalIcon, X, AlertCircle } from 'lucide-react';
 import { Terminal } from 'xterm';
 import 'xterm/css/xterm.css';
 
+// No addons imported since we're not using them
+
 const WS_URL = process.env.REACT_APP_BACKEND_URL?.replace('http', 'ws') || 'ws://localhost:8001';
 
 function TerminalWebSocket({ connection, containerId = null, isExpanded, onRestore }) {

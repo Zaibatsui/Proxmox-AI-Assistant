@@ -55,17 +55,29 @@ backend:
 ## Frontend Features
 
 frontend:
-  - task: "Fix Terminal WebSocket component dimension errors"
+  - task: "Terminal Component - Switched to SimpleTerminal (no xterm dependency)"
     implemented: true
     working: "pending_test"
-    file: "frontend/src/components/TerminalWebSocket.js"
+    file: "frontend/src/components/TerminalWebSocket.js (now SimpleTerminal)"
     stuck_count: 0
     priority: "high"
     needs_retesting: true
     status_history:
       - working: "pending_test"
         agent: "main"
-        comment: "Fixed xterm.js runtime errors 'Cannot read properties of undefined (reading dimensions)'. Added: 1) isMounted ref to track component lifecycle 2) Try-catch blocks around fit() calls 3) Proper cleanup of timeouts 4) Safety checks for terminal.element existence before fitting 5) Improved error handling in reconnect function 6) Set refs to null after disposal. These changes prevent operations on unmounted/disposed terminal instances."
+        comment: "Replaced xterm-based terminal with SimpleTerminal component. Benefits: 1) No external dependencies (xterm package not needed) 2) Works in all environments without build issues 3) Zero-dependency terminal using only React and lucide-react 4) Features: WebSocket SSH connection, command history (↑↓), real-time output, clear button, send button, status indicators 5) Trade-offs: Plain text only (no ANSI colors), line-based input (not character-by-character), no VT100 emulation. Perfect for command execution, system admin, file operations. Not suitable for interactive editors (vim/nano) or TUI apps."
+
+  - task: "Fix Terminal WebSocket component dimension errors"
+    implemented: true
+    working: "superseded"
+    file: "frontend/src/components/TerminalWebSocket.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: "superseded"
+        agent: "main"
+        comment: "Original xterm-based terminal had dimension errors and build issues. Superseded by SimpleTerminal which has no dependencies and works universally."
 
 frontend:
   - task: "Settings page: Connections Management section enhancements"

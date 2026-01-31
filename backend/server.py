@@ -7193,19 +7193,57 @@ async def websocket_terminal(websocket: WebSocket):
             
             # Enter the VM/LXC using Proxmox CLI commands
             if conn_type == 'lxc':
-                # For LXC containers: use pct enter
+                # For LXC containers: use pct enter (works directly)
                 enter_cmd = f'pct enter {vmid}\n'
                 logger.info(f"Entering LXC container with: pct enter {vmid}")
+                shell_channel.send(enter_cmd)
+                await asyncio.sleep(0.5)
             else:
-                # For VMs: use qm terminal (requires serial console) or suggest alternative
-                # qm terminal requires serial console to be configured
-                enter_cmd = f'qm terminal {vmid}\n'
-                logger.info(f"Entering VM with: qm terminal {vmid}")
-                # Note: If qm terminal doesn't work, user needs serial console setup
-                # Alternative: SSH from host if VM has known IP
-            
-            shell_channel.send(enter_cmd)
-            await asyncio.sleep(0.5)  # Wait for pct/qm to connect
+                # For VMs: We need to SSH from the Proxmox host to the VM
+                # First, try to get the VM's IP address from Proxmox API
+                try:
+                    proxmox, _ = await get_proxmox_connection(user_id)
+                    vm_ip = None
+                    
+                    # Find VM and get its IP from guest agent
+                    for node in proxmox.nodes.get():
+                        node_name = node['node']
+                        try:
+                            agent_info = proxmox.nodes(node_name).qemu(vmid).agent('network-get-interfaces').get()
+                            for iface in agent_info.get('result', []):
+                                if iface.get('name') not in ['lo']:
+                                    for ip_info in iface.get('ip-addresses', []):
+                                        if ip_info.get('ip-address-type') == 'ipv4':
+                                            ip = ip_info.get('ip-address')
+                                            if ip and not ip.startswith('127.'):
+                                                vm_ip = ip
+                                                break
+                                if vm_ip:
+                                    break
+                        except Exception as e:
+                            logger.warning(f"Could not get VM IP from node {node_name}: {e}")
+                        if vm_ip:
+                            break
+                    
+                    if vm_ip:
+                        # SSH from Proxmox host to VM using the VM's IP
+                        # Try common usernames
+                        enter_cmd = f'ssh -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@{vm_ip}\n'
+                        logger.info(f"Entering VM {vmid} via SSH to {vm_ip}")
+                        shell_channel.send(enter_cmd)
+                        await asyncio.sleep(1.0)  # Wait for SSH prompt
+                    else:
+                        # Fallback: try qm terminal (requires serial console)
+                        logger.warning(f"Could not get VM {vmid} IP, falling back to qm terminal")
+                        enter_cmd = f'qm terminal {vmid}\n'
+                        logger.info(f"Entering VM with: qm terminal {vmid}")
+                        shell_channel.send(enter_cmd)
+                        await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.error(f"Error getting VM IP: {e}, falling back to qm terminal")
+                    enter_cmd = f'qm terminal {vmid}\n'
+                    shell_channel.send(enter_cmd)
+                    await asyncio.sleep(0.5)
             
         # For Proxmox host
         else:

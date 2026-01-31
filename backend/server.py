@@ -3279,7 +3279,14 @@ ai_tools = [
                     },
                     "vm_config": {
                         "type": "object",
-                        "description": "Configuration for creating a new VM (only for 'create' action). Include: name, cores, memory, disk, template, etc."
+                        "description": "Configuration for clone action. For clone: {template_id: 'source CT/VM ID', new_id: 'optional new ID', name: 'new name', storage: 'storage name like local-lvm'}",
+                        "properties": {
+                            "template_id": {"type": "string", "description": "Source VM/CT ID to clone from"},
+                            "new_id": {"type": "integer", "description": "New VM/CT ID (auto-generated if not specified)"},
+                            "name": {"type": "string", "description": "Name for the new VM/CT"},
+                            "storage": {"type": "string", "description": "Storage for the clone (e.g., local-lvm)"},
+                            "full_clone": {"type": "boolean", "description": "Full clone (true) or linked clone (false)"}
+                        }
                     },
                     "reason": {
                         "type": "string",

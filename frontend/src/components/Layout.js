@@ -90,7 +90,7 @@ function Layout({ children, onLogout, currentPage }) {
           <div className="mb-3 p-3 rounded-lg" style={{ backgroundColor: 'rgba(var(--theme-primary-rgb), 0.1)' }}>
             <p className="text-xs text-slate-400">Logged in as</p>
             <p className="text-sm font-semibold truncate theme-text">{username}</p>
-            <p className="text-[10px] text-slate-500 mt-2 pt-2 border-t border-slate-700">Version 3.2.0</p>
+            <p className="text-[10px] text-slate-500 mt-2 pt-2 border-t border-slate-700">Version 4.0.0</p>
           </div>
           <Button
             onClick={onLogout}

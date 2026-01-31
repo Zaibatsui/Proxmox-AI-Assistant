@@ -3948,6 +3948,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                 elif function_name == "list_directory":
                     try:
                         location = parse_location_string(function_args.get("location"))
+                        location = await enrich_location_with_credentials(location, current_user["user_id"])
                         ssh_client = await get_location_ssh_client(current_user["user_id"], location)
                         files = await location_list_directory(ssh_client, function_args.get("path", "/"), location)
                         ssh_client.close()
@@ -3957,6 +3958,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                             "files": [f.model_dump() for f in files]
                         }
                     except Exception as e:
+                        logger.error(f"list_directory error: {str(e)}")
                         function_response = {"error": str(e)}
                 elif function_name == "read_file":
                     try:

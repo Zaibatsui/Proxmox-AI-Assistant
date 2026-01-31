@@ -30,7 +30,7 @@ import socket
 from portainer_agent_client import PortainerAgentClient
 
 # Application version
-__version__ = "4.0.0"
+__version__ = "4.1.0"
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')

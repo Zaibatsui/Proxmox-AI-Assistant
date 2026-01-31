@@ -4860,38 +4860,95 @@ async def create_backup(ssh_client, user_id: str, username: str, file_path: str,
 
 
 async def enrich_location_with_credentials(location: Optional[FileLocation], user_id: str):
-    """Fetch SSH credentials from database and add to location object"""
+    """Fetch SSH credentials from database and add to location object
+    
+    For VMs: Tries to find SSH config by VM IP (gets IP from Proxmox first)
+    Falls back to using any available SSH config
+    """
     if not location or location.type not in ['vm', 'lxc']:
         return location
     
     try:
-        # Try to get Proxmox config to extract host
-        proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+        # For VMs, we need to get the IP first to find matching SSH config
+        if location.type == 'vm':
+            # Get VM IP from Proxmox API
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+            if proxmox_config:
+                from proxmoxer import ProxmoxAPI
+                
+                # Create Proxmox connection
+                host = proxmox_config['host']
+                if '://' in host:
+                    host = host.split('://', 1)[1]
+                host = host.split(':')[0].rstrip('/')
+                
+                # Connect to get VM IP
+                try:
+                    if proxmox_config.get('api_token_name') and proxmox_config.get('api_token_value'):
+                        proxmox = ProxmoxAPI(
+                            host,
+                            user=proxmox_config['user'],
+                            token_name=proxmox_config['api_token_name'],
+                            token_value=proxmox_config['api_token_value'],
+                            verify_ssl=False
+                        )
+                    else:
+                        proxmox = ProxmoxAPI(
+                            host,
+                            user=proxmox_config['user'],
+                            password=proxmox_config['password'],
+                            verify_ssl=False
+                        )
+                    
+                    # Find VM IP
+                    vm_ip = None
+                    for node in proxmox.nodes.get():
+                        try:
+                            agent_info = proxmox.nodes(node['node']).qemu(location.id).agent('network-get-interfaces').get()
+                            for iface in agent_info.get('result', []):
+                                if iface.get('name') not in ['lo']:
+                                    for ip_info in iface.get('ip-addresses', []):
+                                        if ip_info.get('ip-address-type') == 'ipv4':
+                                            ip_addr = ip_info.get('ip-address')
+                                            if not ip_addr.startswith('127.'):
+                                                vm_ip = ip_addr
+                                                break
+                                if vm_ip:
+                                    break
+                        except:
+                            pass
+                        if vm_ip:
+                            break
+                    
+                    # Look for SSH config with this VM IP
+                    if vm_ip:
+                        logger.info(f"Found VM {location.id} IP: {vm_ip}, looking for SSH config")
+                        ssh_config = await db.ssh_configs.find_one({
+                            "user_id": user_id,
+                            "host": vm_ip
+                        })
+                        
+                        if ssh_config:
+                            logger.info(f"Found SSH credentials for VM {location.id} (IP: {vm_ip}) from config: {ssh_config.get('name', 'unnamed')}")
+                            location.ssh_username = ssh_config.get('username', 'root')
+                            location.ssh_password = ssh_config.get('password')
+                            location.ssh_host = ssh_config.get('host')
+                            location.ssh_port = ssh_config.get('port', 22)
+                            return location
+                except Exception as e:
+                    logger.warning(f"Error getting VM IP for enrichment: {str(e)}")
         
-        if proxmox_config:
-            # Extract hostname
-            host = proxmox_config['host']
-            if '://' in host:
-                host = host.split('://', 1)[1]
-            host = host.split(':')[0].rstrip('/')
-            
-            # Look for SSH config matching this host
-            ssh_config = await db.ssh_configs.find_one({
-                "user_id": user_id,
-                "host": host
-            })
-            
-            if not ssh_config:
-                # Try to find any SSH config for this user
-                ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
-            
-            if ssh_config:
-                logger.info(f"Found SSH credentials for {location.type}:{location.id} from config: {ssh_config.get('name', 'unnamed')}")
-                location.ssh_username = ssh_config.get('username', 'root')
-                location.ssh_password = ssh_config.get('password')
-                location.ssh_host = ssh_config.get('host')
-                location.ssh_port = ssh_config.get('port', 22)
-                return location
+        # Fallback: Try to find any SSH config for this user
+        logger.info(f"No specific SSH config found for {location.type}:{location.id}, trying fallback")
+        ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+        
+        if ssh_config:
+            logger.info(f"Using fallback SSH credentials from config: {ssh_config.get('name', 'unnamed')}")
+            location.ssh_username = ssh_config.get('username', 'root')
+            location.ssh_password = ssh_config.get('password')
+            location.ssh_host = ssh_config.get('host')
+            location.ssh_port = ssh_config.get('port', 22)
+            return location
         
         logger.warning(f"No SSH credentials found for {location.type}:{location.id}")
     except Exception as e:

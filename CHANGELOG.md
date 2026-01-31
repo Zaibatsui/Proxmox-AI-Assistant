@@ -1,5 +1,40 @@
 # Proxmox AI Assistant - Changelog
 
+## Version 4.1.0 (January 2026)
+
+### AI Assistant Autonomy Upgrade
+
+The AI assistant now has significantly more freedom to execute tasks directly without requiring confirmation for every action.
+
+#### New AI Tools
+- **`execute_command`**: Run shell commands directly on host/VM/LXC without confirmation (for safe, non-destructive commands)
+- **`proxmox_api_call`**: Make direct Proxmox API calls (GET/POST/PUT/DELETE) for any operation
+
+#### Conversation Memory
+- Session ID now persists in localStorage across page reloads
+- AI maintains conversation context until you explicitly start a new chat
+- Added "New Chat" button in the UI to start fresh conversations
+
+#### Bug Fixes
+- **Fixed confirmation loop**: The `pending_action` was being overwritten to `None` at the end of every AI query, causing the AI to repeatedly propose actions instead of executing them. Now properly preserves pending actions.
+- **Fixed offline node handling**: VM/container operations (especially clone) now filter out offline nodes before attempting operations. Previously, operations would fail with "No route to host" when trying to connect to offline nodes.
+- **Fixed clone variable bug**: Clone operations were using wrong variable (`node_name` instead of `template_node`), causing operations to fail.
+
+#### Technical Changes
+- Updated `execute_vm_action()` to filter `online_nodes` from all nodes before operations
+- Modified session update logic to preserve `existing_pending` actions
+- Added extensive logging for debugging AI function calls and pending action flow
+
+### Upgrade Notes
+
+**From v4.0.0 to v4.1.0:**
+1. Update code from GitHub
+2. Restart backend and frontend
+3. No database migrations required
+4. Clear browser localStorage if you want to reset AI session (`localStorage.removeItem('ai_session_id')`)
+
+---
+
 ## Version 4.0.0 (January 2026)
 
 ### Major Changes - VM/LXC Connection Routing

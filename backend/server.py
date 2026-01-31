@@ -5791,11 +5791,20 @@ async def execute_vm_action(params: dict, user_id: str, dry_run: bool = False) -
         if dry_run:
             return f"[DRY RUN] Would execute '{action}' on VM/CT {vmid}"
         
+        # Get list of online nodes only
+        all_nodes = proxmox.nodes.get()
+        online_nodes = [n for n in all_nodes if n.get('status') == 'online']
+        
+        if not online_nodes:
+            return "✗ No online Proxmox nodes available"
+        
+        logger.info(f"execute_vm_action: Found {len(online_nodes)} online nodes out of {len(all_nodes)}")
+        
         # Find the VM/CT and its node
         node_name = None
         vm_type = None  # 'qemu' or 'lxc'
         
-        for node in proxmox.nodes.get():
+        for node in online_nodes:
             # Check QEMU VMs
             try:
                 proxmox.nodes(node['node']).qemu(vmid).status.current.get()
@@ -5820,36 +5829,43 @@ async def execute_vm_action(params: dict, user_id: str, dry_run: bool = False) -
             new_name = vm_config.get('name', f'clone-of-{template_id}')
             
             if not new_id:
-                # Find next available ID
+                # Find next available ID (only from online nodes)
                 all_ids = set()
-                for node in proxmox.nodes.get():
-                    for vm in proxmox.nodes(node['node']).qemu.get():
-                        all_ids.add(int(vm['vmid']))
-                    for ct in proxmox.nodes(node['node']).lxc.get():
-                        all_ids.add(int(ct['vmid']))
+                for node in online_nodes:
+                    try:
+                        for vm in proxmox.nodes(node['node']).qemu.get():
+                            all_ids.add(int(vm['vmid']))
+                    except:
+                        pass
+                    try:
+                        for ct in proxmox.nodes(node['node']).lxc.get():
+                            all_ids.add(int(ct['vmid']))
+                    except:
+                        pass
                 new_id = max(all_ids) + 1 if all_ids else 100
             
-            # Find template's node and type
-            for node in proxmox.nodes.get():
+            # Find template's node and type (only on online nodes)
+            template_node = None
+            for node in online_nodes:
                 try:
                     proxmox.nodes(node['node']).qemu(template_id).status.current.get()
-                    node_name = node['node']
+                    template_node = node['node']
                     vm_type = 'qemu'
                     break
                 except:
                     pass
                 try:
                     proxmox.nodes(node['node']).lxc(template_id).status.current.get()
-                    node_name = node['node']
+                    template_node = node['node']
                     vm_type = 'lxc'
                     break
                 except:
                     pass
             
-            if not node_name:
-                return f"✗ Template {template_id} not found"
+            if not template_node:
+                return f"✗ Template {template_id} not found on any online node"
             
-            logger.info(f"Cloning {vm_type} {template_id} to {new_id} on node {node_name}")
+            logger.info(f"Cloning {vm_type} {template_id} to {new_id} on node {template_node}")
             
             if vm_type == 'qemu':
                 proxmox.nodes(node_name).qemu(template_id).clone.post(

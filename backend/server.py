@@ -3527,9 +3527,11 @@ async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user
             }
             await db.conversation_sessions.insert_one(session)
         
-        # Check if this is a simple confirmation (yes, do it, proceed, etc.)
+        # Check if this is a simple confirmation (yes, do it, proceed, confirm, etc.)
         confirmation_keywords = ["yes", "do it", "proceed", "confirm", "execute", "go ahead", "sure", "ok", "okay"]
         is_confirmation = query.question.strip().lower() in confirmation_keywords
+        
+        logger.info(f"AI Query - is_confirmation: {is_confirmation}, pending_action: {session.get('pending_action')}")
         
         # If it's a confirmation and there's a pending action, execute it
         if is_confirmation and session.get("pending_action"):

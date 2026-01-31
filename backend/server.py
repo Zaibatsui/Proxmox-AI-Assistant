@@ -3187,8 +3187,55 @@ ai_tools = [
     {
         "type": "function",
         "function": {
+            "name": "execute_command",
+            "description": "Execute a shell command directly on the Proxmox host, VM, or container. Use this for read-only or safe commands that don't need confirmation. For destructive commands (rm, delete, format, etc), use propose_command_execution instead.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The shell command to execute"
+                    },
+                    "location": {
+                        "type": "string",
+                        "description": "Where to execute: 'host' for Proxmox host, 'lxc:CTID' for container, 'vm:VMID' for VM. Default is 'host'."
+                    }
+                },
+                "required": ["command"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "proxmox_api_call",
+            "description": "Make a direct Proxmox API call for operations not covered by other tools. Supports GET, POST, PUT, DELETE methods.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "method": {
+                        "type": "string",
+                        "enum": ["GET", "POST", "PUT", "DELETE"],
+                        "description": "HTTP method"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "description": "API endpoint path (e.g., 'nodes/pve/lxc/100/config', 'nodes/pve/qemu/101/status/start')"
+                    },
+                    "data": {
+                        "type": "object",
+                        "description": "Data to send with POST/PUT requests"
+                    }
+                },
+                "required": ["method", "endpoint"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
             "name": "propose_command_execution",
-            "description": "Propose execution of a shell command on the Proxmox host, VM, or container. ALWAYS use this for any command execution. System will evaluate risk and require user confirmation before execution.",
+            "description": "Propose execution of a DANGEROUS shell command that requires user confirmation (rm, delete, format, reboot, shutdown, etc). For safe read-only commands, use execute_command instead.",
             "parameters": {
                 "type": "object",
                 "properties": {

@@ -39,8 +39,15 @@ function AIAssistant({ onLogout }) {
 
   useEffect(() => {
     fetchHistory();
-    // Generate a new session ID when component mounts
-    setSessionId(`session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+    // Get or create persistent session ID from localStorage
+    const storedSessionId = localStorage.getItem('ai_session_id');
+    if (storedSessionId) {
+      setSessionId(storedSessionId);
+    } else {
+      const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      localStorage.setItem('ai_session_id', newSessionId);
+      setSessionId(newSessionId);
+    }
   }, []);
 
   const fetchHistory = async () => {

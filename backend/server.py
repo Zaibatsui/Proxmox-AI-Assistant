@@ -4015,6 +4015,8 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                 function_name = tool_call.function.name
                 function_args = json.loads(tool_call.function.arguments) if tool_call.function.arguments else {}
                 
+                logger.info(f"AI calling function: {function_name} with args: {json.dumps(function_args)[:200]}")
+                
                 # Execute the function
                 function_response = None
                 

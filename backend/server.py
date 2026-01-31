@@ -4295,6 +4295,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     await db.actions.insert_one(action_doc)
                     
                     # Store pending action in session for confirmation
+                    logger.info(f"Saving pending_action to session {session_id}")
                     await db.conversation_sessions.update_one(
                         {"id": session_id},
                         {"$set": {
@@ -4308,6 +4309,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                             "updated_at": datetime.now(timezone.utc).isoformat()
                         }}
                     )
+                    logger.info(f"Pending action saved for session {session_id}")
                     
                     function_response = {
                         "type": "vm_action_proposal",

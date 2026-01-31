@@ -5665,6 +5665,9 @@ async def execute_action(exec_data: ActionExecute, current_user: dict = Depends(
         elif action_type == "detach_from_vm":
             output = await execute_detach_from_vm_action(params, current_user["user_id"], exec_data.dry_run)
         
+        elif action_type == "vm_action":
+            output = await execute_vm_action(params, current_user["user_id"], exec_data.dry_run)
+        
         else:
             output = f"[NOT IMPLEMENTED] Action type '{action_type}' not yet implemented"
         

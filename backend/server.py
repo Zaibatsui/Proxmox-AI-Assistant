@@ -6293,13 +6293,30 @@ async def execute_command_on_location(ssh_client, command: str, location: Option
             "error": error,
             "success": exit_code == 0
         }
-    elif location.type == 'vm':
-        # Execute in VM via nested SSH
-        # This would require VM SSH credentials - for now, return error
-        raise HTTPException(
-            status_code=400,
-            detail="Direct command execution in VMs requires SSH credentials. Use propose_command_execution instead."
-        )
+    elif location.type in ['vm', 'qemu']:
+        # Execute in VM using qm guest exec (requires QEMU guest agent)
+        escaped_cmd = command.replace("\\", "\\\\").replace('"', '\\"')
+        vm_command = f'qm guest exec {location.id} -- bash -c "{escaped_cmd}"'
+        stdin, stdout, stderr = ssh_client.exec_command(vm_command)
+        exit_code = stdout.channel.recv_exit_status()
+        output = stdout.read().decode('utf-8')
+        error = stderr.read().decode('utf-8')
+        
+        # Check for guest agent errors
+        if "QEMU guest agent is not running" in error or "guest agent" in error.lower():
+            return {
+                "exit_code": 1,
+                "output": "",
+                "error": f"QEMU Guest Agent not running on VM {location.id}. Install qemu-guest-agent in the VM and enable it in Proxmox VM options.",
+                "success": False
+            }
+        
+        return {
+            "exit_code": exit_code,
+            "output": output,
+            "error": error,
+            "success": exit_code == 0
+        }
 
 async def docker_list_containers_func(ssh_client, location: Optional[FileLocation] = None, show_all: bool = True):
     """List Docker containers"""

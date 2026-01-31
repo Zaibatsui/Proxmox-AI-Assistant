@@ -5140,21 +5140,27 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                     actual_output = raw_output
                 
                 # Create mock file-like objects for stdout/stderr
+                class MockChannel:
+                    def __init__(self, exit_code):
+                        self._exit_code = exit_code
+                    
+                    def recv_exit_status(self):
+                        return self._exit_code
+                
                 class MockStdout:
                     def __init__(self, data, exit_code):
-                        self._data = data.encode('utf-8')
-                        self._pos = 0
-                        self.channel = type('obj', (object,), {'recv_exit_status': lambda: exit_code})()
+                        self._data = data.encode('utf-8') if isinstance(data, str) else data
+                        self.channel = MockChannel(exit_code)
                     
                     def read(self):
                         return self._data
                     
                     def decode(self, *args):
-                        return self._data.decode(*args)
+                        return self._data.decode(*args) if isinstance(self._data, bytes) else self._data
                 
                 class MockStderr:
                     def __init__(self, data):
-                        self._data = data.encode('utf-8')
+                        self._data = data.encode('utf-8') if isinstance(data, str) else data
                     
                     def read(self):
                         return self._data

@@ -5146,57 +5146,18 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
         raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
 
 async def exec_in_location(ssh_client, command: str, location: Optional[FileLocation] = None) -> tuple[int, str, str]:
-    """Execute command in the appropriate location (host, LXC, or VM)"""
-    if not location or location.type == "host":
-        # Direct execution on host
-        return await ssh_exec_command(ssh_client, command)
+    """Execute command in the appropriate location (host, LXC, or VM)
     
-    elif location.type == "lxc":
-        # Check if we're connected directly to the LXC container or via Proxmox host
-        if getattr(location, 'direct_ssh', False):
-            # Direct execution in LXC container (SSH client is connected directly to container)
-            return await ssh_exec_command(ssh_client, command)
-        else:
-            # Execute in LXC container using pct exec (SSH client is connected to Proxmox host)
-            lxc_command = f"pct exec {location.id} -- {command}"
-            return await ssh_exec_command(ssh_client, lxc_command)
+    The ssh_client is either:
+    1. A real Paramiko SSHClient (for host connections)
+    2. A LXCCommandWrapper (for LXC access via pct exec)
+    3. A VMCommandWrapper (for VM access via qm guest exec)
     
-    elif location.type == "vm" or location.type == "qemu":
-        # Check if we're connected directly to the VM or via Proxmox host
-        if getattr(location, 'direct_ssh', False):
-            # Direct execution in VM (SSH client is connected directly to VM)
-            return await ssh_exec_command(ssh_client, command)
-        else:
-            # For VMs accessed via Proxmox host, use qm guest exec with proper argument passing
-            # This REQUIRES qemu-guest-agent to be installed and running in the VM
-            import shlex
-            
-            # Escape the command for safe passing
-            escaped_command = command.replace("\\", "\\\\").replace('"', '\\"')
-            
-            # Use -- separator and pass the full command to bash -c
-            qemu_command = f'qm guest exec {location.id} -- bash -c "{escaped_command}"'
-            
-            exit_code, stdout, stderr = await ssh_exec_command(ssh_client, qemu_command)
-            
-            # Check for guest agent errors and provide helpful message
-            if "guest agent" in stderr.lower() or "not running" in stderr.lower():
-                raise HTTPException(
-                    status_code=503,
-                    detail=(
-                        f"QEMU Guest Agent not available on VM {location.id}. "
-                        "To access VM files, install and enable the guest agent:\n\n"
-                        "Inside the VM, run:\n"
-                        "• Debian/Ubuntu: apt-get install qemu-guest-agent && systemctl enable --now qemu-guest-agent\n"
-                        "• RHEL/CentOS: yum install qemu-guest-agent && systemctl enable --now qemu-guest-agent\n\n"
-                        "Then enable it in Proxmox VM settings (Options > QEMU Guest Agent > Enable)"
-                    )
-                )
-            
-            return exit_code, stdout, stderr
-    
-    else:
-        raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
+    The wrappers handle command routing automatically.
+    """
+    # All client types (real SSH or wrappers) expose exec_command
+    # The wrappers handle the pct/qm command wrapping internally
+    return await ssh_exec_command(ssh_client, command)
 
 async def location_file_exists(ssh_client, path: str, location: Optional[FileLocation] = None) -> bool:
     """Check if file exists in location"""

@@ -25,6 +25,17 @@ This file tracks the testing status of features in the application.
 ## Backend Features
 
 backend:
+  - task: "AI Assistant SSH credential integration for VM/LXC access"
+    implemented: true
+    working: "pending_test"
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "critical"
+    needs_retesting: true
+    status_history:
+      - working: "pending_test"
+        agent: "main"
+        comment: "MAJOR FIX: AI Assistant tools now fetch SSH credentials from database for VM/LXC operations. Created enrich_location_with_credentials() helper function that: 1) Fetches SSH config from ssh_configs collection 2) Populates FileLocation object with username, password, host, port 3) Enables AI to execute commands on VMs/LXCs with saved credentials. Updated list_directory and read_file tool handlers to call enrichment before SSH connection. AI can now access VMs/LXCs without asking for credentials - uses saved configs from Settings. Enhanced logging for credential lookup."
   - task: "Terminal WebSocket integration with SSH configs collection"
     implemented: true
     working: "pending_test"

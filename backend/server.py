@@ -3896,6 +3896,47 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         return FileLocation(type=loc_type, id=loc_id)
                     return None
                 
+                async def enrich_location_with_credentials(location: Optional[FileLocation], user_id: str):
+                    """Fetch SSH credentials from database and add to location object"""
+                    if not location or location.type not in ['vm', 'lxc']:
+                        return location
+                    
+                    try:
+                        # Try to find SSH config for this specific VM/LXC
+                        # First, try to get Proxmox config to extract host
+                        proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+                        
+                        if proxmox_config:
+                            # Extract hostname
+                            host = proxmox_config['host']
+                            if '://' in host:
+                                host = host.split('://', 1)[1]
+                            host = host.split(':')[0].rstrip('/')
+                            
+                            # Look for SSH config matching this host
+                            ssh_config = await db.ssh_configs.find_one({
+                                "user_id": user_id,
+                                "host": host
+                            })
+                            
+                            if not ssh_config:
+                                # Try to find any SSH config for this user
+                                ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+                            
+                            if ssh_config:
+                                logger.info(f"Found SSH credentials for {location.type}:{location.id} from config: {ssh_config.get('name', 'unnamed')}")
+                                location.ssh_username = ssh_config.get('username', 'root')
+                                location.ssh_password = ssh_config.get('password')
+                                location.ssh_host = ssh_config.get('host')
+                                location.ssh_port = ssh_config.get('port', 22)
+                                return location
+                        
+                        logger.warning(f"No SSH credentials found for {location.type}:{location.id}")
+                    except Exception as e:
+                        logger.error(f"Error enriching location with credentials: {str(e)}")
+                    
+                    return location
+                
                 if function_name == "get_proxmox_status":
                     function_response = env_data
                 elif function_name == "get_hardware_devices":

@@ -1,128 +1,164 @@
-<analysis>
-The AI engineer's work in this trajectory primarily focused on extending the Proxmox assistant's capabilities for file and Docker container management, enhancing the AI's interaction with these resources, and improving UI/UX. Key developments included implementing a backend fallback for Docker container listing (direct SSH when Portainer Agent fails), adding new AI tools for container file operations and command execution, and refining connection management. Significant effort was dedicated to debugging frontend-backend synchronization issues, such as the global location selector not updating, file browser showing incorrect content, and the Edit SSH Credentials button not functioning. The engineer also addressed authentication flow (session timeouts, credential saving), route mismatches, and cleaned up the codebase for deployment, including a version bump to 3.0.0. The immediate focus shifted to unifying connection management within the Settings page, enhancing its UI, and fixing API call errors stemming from incorrect URL prefixes.
-</analysis>
+<analysis>**original_problem_statement:**
+The user is experiencing a critical issue where the application fails to connect to the correct machine (VM/LXC) selected in the user interface. When a user selects a specific VM (e.g., VM 119), both the file browser and the terminal panels incorrectly display the content and session of the parent Proxmox host, even though the UI indicates a connection to the VM. This prevents the user from managing containers, viewing files, or using the terminal on the intended virtualized environment.
 
-<product_requirements>
-The overall goal is an AI-powered Proxmox assistant for hardware monitoring, misconfiguration detection, LLM-based fixes, and verified command execution via a web UI, integrated with real Proxmox environments and offering advanced customization.
+The core requirement is to establish a single connection to the Proxmox host and then have all subsequent interactions (file browsing, terminal, AI commands) for VMs, LXCs, or Docker containers be proxied or routed *through* that established host connection. This architecture mimics the behavior of the native Proxmox web UI and is essential for the application to function correctly, especially when it is not on the same local network as the Proxmox server.
 
-Key areas of focus and implementation status:
-*   **AI File Access**: Implemented for SSH/SFTP/FTP/Reverse Proxy, Proxmox host/VMs/CTs/Docker containers. The AI assistant can now list, read, write, and execute commands within containers, replicating file browser access.
-*   **AI Confirmation Workflow**: Implemented with UI modals and conversation memory.
-*   **Backup/Restore**: Backend endpoint exists; frontend integration is pending.
-*   **UI/UX Improvements**:
-    *   **Settings Page**: Advanced appearance controls, separate SSH/Proxmox configs, validation fixes, performance for test connections are implemented. A new Connections Management section is being built to unify connection profiles.
-    *   **File Browser**: Redesigned dual-pane with SFTP/SSH/FTP/Reverse Proxy/Proxmox backend, binary transfer, expandable panes, guest agent warnings, terminal toggle, editable path bar. The View Containers button and  modal are implemented. Fixed file listing for symlinks and location objects. Direct SSH access for VMs/LXC requiring explicit credentials has been added, along with an Edit SSH Credentials button.
-    *   **AI Assistant**: Credential management, conversation memory, Docker support, and  context fix implemented. Now also sends structured connection context.
-    *   **SSH Connection Test**: Implemented, including refined error handling for network issues.
-    *   **Dashboard Redesign**: Real-time health checks, optimized parallel API calls, manual refresh implemented.
-    *   **Session Management**: Auto-redirect to login on 401 errors.
-*   **Advanced App Appearance**: Fully implemented with backend persistence.
-*   **Login/Credentials**: Connection profile storage, global connection context implemented. VM/LXC SSH credentials can now be saved and edited.
-*   **Docker Container Access**: Backend for Portainer Agent API and direct Docker socket access via SSH. Frontend for View Containers button and  modal. The backend includes a fallback to direct Docker commands via SSH when Portainer Agent connection fails.
-</product_requirements>
+The user has also reported recurring issues with the terminal's stability and rendering, as well as problems setting up the project for local development due to package dependencies ().
 
-<key_technical_concepts>
-- **FastAPI**: Python backend for API, file operations, AI tools, Docker.
-- **React (Context API, , )**: JavaScript frontend for UI, global state management, component lifecycle.
-- **MongoDB**: NoSQL database for persistence (using UUIDs).
-- **Proxmoxer/Paramiko/ftplib**: Proxmox API, SSH, FTP for host/VM/LXC access.
-- **OpenAI SDK**: LLM integration, function calling, conversation memory.
-- **Shadcn UI/Tailwind CSS**: Frontend styling and component library.
-- **Docker/Docker Compose**: Containerization, Docker CLI tools via AI.
-- ** / **: SSH tunneling for Portainer Agent, HTTP requests.
-- **Axios Interceptors**: Global HTTP request/response handling for authentication.
-</key_technical_concepts>
+**User's preferred language**: English
 
-<code_architecture>
-The application uses a FastAPI backend, a React frontend, and MongoDB for data, all containerized.
+**what currently exists?**
+The application is a full-stack Proxmox assistant with a React frontend and FastAPI backend. It features a file browser, WebSocket terminal, AI assistant, and connection management. The codebase has been cleaned of test files, and the version has been bumped to 3.2.0. A temporary, dependency-free  component is currently active as a workaround for persistent rendering and build issues with the more advanced -based terminal. The backend contains logic to manage Proxmox and SSH connections, but the critical routing logic to access child resources (VMs/LXCs) via the host is flawed.
+
+**Last working item**:
+*   **Last item agent was working:** The agent was attempting to fix the critical connection routing bug. The user explicitly clarified that all VM/LXC access must be routed *through* the main Proxmox host connection, not via direct SSH to the VM's IP address. The agent acknowledged this correct architectural approach but the last implementation attempt still failed, resulting in SSH timeout errors as confirmed by logs.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** backend testing agent. However, final verification must be done by the user, as the agent's environment cannot access the user's local Proxmox setup. The agent will need to rely on logs provided by the user to debug.
+*   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+*   **Issue 1 (P0):** Broken Connection Routing to VMs/LXCs
+*   **Issue 2 (P1):** Unstable  Terminal Implementation
+
+**Issues Detail:**
+*   **Issue 1: Broken Connection Routing to VMs/LXCs**
+    *   **Attempted fixes:**
+        1.  **Direct SSH to VM IP:** The agent modified the backend to fetch the VM's IP address from the Proxmox API and then attempt a direct SSH connection from the application server. This failed with timeout errors because the user's local VM IPs (e.g., 192.168.1.114) are not reachable from the cloud-hosted preview environment.
+        2.  **Credential Enrichment:** Logic was added to enrich connection objects with SSH credentials from the database, but this was part of the flawed direct-connection approach.
+    *   **Next debug checklist:**
+        1.  Refactor the  function in .
+        2.  This function must **not** create a new direct SSH client to the VM's IP. Instead, it should use the established SSH client connected to the **Proxmox host**.
+        3.  For terminal sessions (), the logic should use the host's SSH channel to execute a command to enter the target machine, such as  (if QEMU guest agent is running) or .
+        4.  For file operations (e.g., ), the logic must perform a second hop. Use the host's SSH connection to execute SFTP or shell commands (AI_CONFIGURATION.md
+CHANGELOG.md
+PROXMOX_CONFIGURATION.md
+README.md
+SETUP_GUIDE.md
+backend
+docker-compose.yml
+frontend
+test_result.md, ) on the target VM. This can be achieved via nested SSH from the host () or by using Paramiko's transport to open new channels.
+    *   **Why fix this issue and what will be achieved with the fix?** This is the application's primary function. Fixing it will enable users to manage their entire Proxmox environment through a single, correctly routed interface.
+    *   **Status:** IN PROGRESS
+    *   **Is recurring issue?** Y
+    *   **Should Test frontend/backend/both after fix?** Backend
+    *   **Blocked on other issue:** None
+
+*   **Issue 2: Unstable  Terminal Implementation**
+    *   **Attempted fixes:** Multiple rewrites of the  component were attempted to solve a recurring  error and layout issues. This included adding safety checks, different initialization strategies, and custom CSS. The issue persisted, leading to a temporary replacement with a basic terminal.
+    *   **Next debug checklist:**
+        1.  This is a lower priority than the connection routing.
+        2.  When revisited, the focus should be on correctly managing the  lifecycle.
+        3.  Use a  on the terminal's parent container to reliably trigger the  method from .
+        4.  Ensure  is called before any addons are loaded or resize operations are attempted.
+    *   **Why fix this issue and what will be achieved with the fix?** It will restore the full-featured, interactive terminal experience, replacing the current basic text-only version.
+    *   **Status:** NOT STARTED (workaround in place)
+    *   **Is recurring issue?** Y
+    *   **Should Test frontend/backend/both after fix?** Frontend
+    *   **Blocked on other issue:** None
+
+**In progress Task List**:
+None. All efforts are focused on resolving the P0 routing issue.
+
+**Upcoming and Future Tasks**
+*   **(P1)** Restore and stabilize the  terminal feature to replace the  workaround.
+*   **(P2)** Implement the frontend UI for the existing backup/restore functionality.
+*   **(P3)** Integrate and test robust chunked file upload/download capabilities in the File Browser.
+
+**Completed work in this session**
+*   **Version Bump:** Application version was successfully updated to 3.2.0 in all relevant files (, , ).
+*   **Code Cleanup:** Removed junk files, old component backups, and  directories from the repository.
+*   **Terminal Workaround:** Implemented , a dependency-free terminal, and integrated it into  to provide basic terminal functionality while bypassing  issues.
+*   **Device Scanner Fix:** Corrected the device scanner logic to use SSH credentials from the database instead of relying on mock data.
+*   **Terminal WebSocket Authentication:** Secured the  endpoint by requiring a JWT token, allowing it to fetch credentials securely.
+
+**Earlier issues found/mentioned but not fixed**
+All known unfixed issues are captured in the **All Pending/In progress Issue list**.
+
+**Known issue recurrence from previous fork**
+*   **Issue recurrence in previous fork:** The core connection routing issue has been the main blocker for a significant part of the session, with multiple failed attempts. The terminal rendering error () has also been highly recurrent.
+*   **Recurrence count:** Connection Routing: 3+ major failed approaches. Terminal Error: 5+ attempts.
+*   **Status:** IN PROGRESS
+
+**Code Architecture**
 
 
+**Key Technical Concepts**
+*   **FastAPI**: Backend framework.
+*   **React**: Frontend library.
+*   **MongoDB**: Database for storing configurations.
+*   **WebSockets**: For real-time terminal communication.
+*   **Paramiko**: Python SSH library used for connecting to the Proxmox host.
+*   **Proxmoxer**: Python library for interacting with the Proxmox API.
 
--   **/app/backend/server.py**:
-    -   **Importance**: Centralizes API, Proxmoxer/Paramiko, OpenAI, SFTP, FTP, Reverse Proxy, Docker operations.
-    -   **Changes**:
-        *   Added .
-        *   Expanded ,  models; added  model (for , ).
-        *   Implemented , ,  endpoints with a fallback to direct Docker commands via SSH when Portainer Agent is unavailable or host IP not found.
-        *   Implemented CRUD for  ().
-        *   Updated  to include  and ensure  field is returned.
-        *   Enhanced  model to include  for structured connection passing.
-        *   Added new AI tools (, , ) and their handlers.
-        *   Modified  and  to use  flag, ,  for direct VM/LXC SSH, and to explicitly require credentials for LXC (no silent  fallback).
-        *   Improved SSH error logging with  for more precise diagnostics.
-        *   Fixed  serialization.
--   **/app/frontend/src/App.js**:
-    -   **Importance**: Main React application entry, routing, and global Axios interceptor for authentication.
-    -   **Changes**: Configured routing for , , . Wrapped routes with . Added Axios response interceptor to handle 401 errors by logging out and redirecting to the login page. Modified  to trigger connection reload on authentication status change. Fixed duplicate routes.
--   **/app/frontend/src/components/FilePane.js**:
-    -   **Importance**: Displays file system contents, handles navigation, and operations.
-    -   **Changes**:
-        *   Updated API calls to  request body.
-        *   Implemented an editable path bar and Go button.
-        *   Added a View Containers button for VM/CT connections.
-        *   Enhanced error handling for file operations and connection types, specifically to prompt for SSH credentials if  or similar errors occur.
-        *   Added state and UI for SSH credentials modal (, , , ).
-        *   Added  prop and  to expose a function to open the credentials modal, fixing re-render issues.
-        *   Updated  dependencies to track  and  for better re-rendering.
-        *   Improved connection object handling to avoid direct mutation and ensure re-renders after saving credentials.
--   **/app/frontend/src/components/ConnectionSelector.js**:
-    -   **Importance**: Global connection dropdown in the header.
-    -   **Changes**: Enhanced display of VM/CT names and guest agent warnings.
--   **/app/frontend/src/contexts/ConnectionContext.js**:
-    -   **Importance**: Manages global connection state, , , .
-    -   **Changes**: New context created. Modified  to be called only when authenticated and to expose it for manual reload. Added safety checks for  and  arrays.
--   **/app/frontend/src/pages/AIAssistant.js**:
-    -   **Importance**: AI chat interface.
-    -   **Changes**: Fixed  to  references. Added session ID and  as a structured  to AI queries. Improved display of the active AI location. Route fixed from  to  in .
--   **/app/frontend/src/pages/FileBrowserNew.js**:
-    -   **Importance**: The redesigned dual-pane file browser with extended capabilities.
-    -   **Changes**:
-        *   Integrated a toggle for  and  components.
-        *   Added a  modal for viewing Docker containers.
-        *   Passed  prop to .
-        *    now always syncs  with .
-        *   Added Edit SSH button to pane headers, passing  callback.
-        *   Enhanced UI/UX for Containers, Edit SSH, Change buttons with icons and improved styling.
-        *   Display connection details (, , ) in pane headers.
--   **/app/frontend/src/pages/Login.js**:
-    -   **Importance**: Login page.
-    -   **Changes**: Updated version display to 3.0.0.
--   **/app/frontend/src/pages/Settings.js**:
-    -   **Importance**: Manages application settings, including Proxmox API and SSH configurations.
-    -   **Changes**:
-        *   Refactored to separate Proxmox API from SSH configuration.
-        *   Implemented new Connections Management collapsible section with states for , , , , .
-        *   Added ,  functions.
-        *   Updated API calls to fix double  prefix.
-        *   Started implementing UI for connection status, sorting, and collapsible sections.
--   **/app/frontend/src/components/Layout.js**:
-    -   **Importance**: Application layout and navigation menu.
-    -   **Changes**: Updated version display to 3.0.0. Fixed navigation links for  (from ) and  (from ).
-</code_architecture>
+**key DB schema**
+*   : Stores Proxmox API connection details (host, port, user, token).
+*   : Stores SSH credentials for various hosts (host IP/name, port, user, password).
+*   : Stores user account information.
 
-<pending_tasks>
-- Implement frontend for backup restore functionality.
-- Fully complete the File Browser upgrade, specifically integrating robust chunked upload/download capabilities with thorough end-to-end testing for all connection types (SFTP, FTP, Reverse Proxy, Proxmox locations).
-- Ensure robust end-to-end testing for Reverse Proxy file browser connections.
-- Ensure the File Browser connection switching is robust and handles all error scenarios gracefully for all connection types.
-- Complete the Connections Management UI in  to display connection status (running/stopped with colors), alphabetical order, and collapsible sections.
-</pending_tasks>
+**changes in tech stack**
+*   The application has been temporarily reverted to a plain terminal () and is no longer using  and its addons due to persistent rendering errors and user build issues. The dependencies may still exist in .
 
-<current_work>
-Immediately before this summary, the AI engineer was in the process of enhancing the Connections Management section within the  page. The user requested:
-1.  **Status Indication**: Connections should show a red or green status based on whether they are running or not.
-2.  **Alphabetical Order**: Connections should be listed in alphabetical order.
-3.  **Grouped Collapsible Sections**: Connections should be grouped into Running and Stopped sections, with Running open by default and Stopped closed.
+**All files of reference**
+*   ****: **CRITICAL FILE.** The  function and the WebSocket endpoint () must be rewritten to proxy all VM/LXC actions through the main Proxmox host SSH connection.
+*   ****: Orchestrates the UI and currently uses . Will need to be updated if/when  is fixed.
+*   ****: The active, basic terminal component.
+*   ****: The original, feature-rich terminal component that is currently broken and needs fixing.
 
-The AI engineer's last actions involved:
-1.  Acknowledging the user's request for UI improvements.
-2.  Modifying  to initialize new state variables (, , , ) to manage these grouped and collapsible lists.
-3.  Adding a helper function  to process and display locations according to the new requirements.
-4.  Starting to update the UI within the  section to integrate this new rendering logic.
+**Areas that need refactoring**:
+The entire connection logic in  for accessing child resources (VMs, LXCs) is fundamentally flawed and needs a complete refactor. It should be redesigned around a jump host or proxy pattern, where all actions are executed through the single, persistent SSH connection to the Proxmox host.
 
-The goal is to transform the simple list of connections into a more organized and visually informative display within the Settings page, providing quick insights into the operational status of configured Proxmox hosts, VMs, CTs, and Docker containers.
-</current_work>
+**key api endpoints**
+*   : File and directory listing endpoint.
+*   : WebSocket endpoint for the interactive terminal.
+*   : AI assistant endpoint whose tools rely on the connection logic.
 
-<optional_next_step>
-I will continue by implementing the sorting, status display, and collapsible sections within the  tab in .
-</optional_next_step>
+**Critical Info for New Agent**
+*   **THE CORE ARCHITECTURE:** You **must not** attempt to connect directly to a VM's internal IP address. The user's explicit requirement is to proxy all communications (terminal, file operations, AI commands) for VMs and LXCs *through* the single SSH connection made to the parent Proxmox host. All previous attempts to connect directly have failed and are the wrong approach.
+*   **IMPLEMENTATION STRATEGY:** In , your main task is to rewrite  and the  endpoint. When a request for a VM is received:
+    1.  Get the established SSH client for the Proxmox host.
+    2.  Use that client's channel to execute commands on the host, like  for a terminal, or nested SSH () for file operations.
+*   **USER'S ENVIRONMENT:** The Proxmox server is on the user's local network and is not accessible to you. You cannot perform end-to-end testing. Your fix must be based on pure logic, and you will have to rely on the user to test and provide logs for debugging.
+*   **TERMINAL STATE:** The app is using a basic, dependency-free . Do not spend time on the  component () until the P0 routing issue is solved and verified by the user.
+
+**documents and test reports created in this job**
+*   /app/CHANGELOG.md
+*   /app/test_result.md
+*   /app/frontend/src/components/SimpleTerminal.js
+*   /app/frontend/src/components/TerminalWebSocket.css
+*   Several backup/WIP versions of  (, , , ).
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **User:** Critical issue report: File browser and terminal are connected to the host instead of the selected VM. AI needs to be fully connected to the selected location.
+2.  **Agent:** Calls troubleshoot agent.
+3.  **Troubleshoot Agent:** Diagnoses that the backend is trying to SSH to a local VM IP, which is not accessible.
+4.  **Agent:** Misinterprets the fix and suggests the user add a new SSH config for the VM's IP.
+5.  **User:** Corrects the agent, clarifying the architecture: access everything *through* the single Proxmox host connection.
+6.  **Agent:** Acknowledges the correct architecture and promises to fix it.
+7.  **(Agent implements a flawed fix)**
+8.  **User:** Reports it's still not working and asks the agent to check logs.
+9.  **Agent:** Analyzes logs and confirms the network timeout, finally understanding the direct connection is impossible.
+10. **User:** Reconfirms the desired architecture: access VMs from within the Proxmox environment, just like the Proxmox web UI does.
+
+**Project Health Check:**
+*   **Broken:** The application's core feature—managing VMs and LXCs—is non-functional due to a critical connection routing bug.
+*   **Mocked:** N/A. (The  is a temporary feature downgrade, not a mock).
+
+**3rd Party Integrations**
+*   OpenAI (via Emergent LLM Key)
+*   Proxmoxer
+*   Paramiko
+*   xterm.js (installed but not in use)
+
+**Testing status**
+*   **Testing agent used after significant changes:** YES (but not for the most recent, failed attempts on the core issue).
+*   **Troubleshoot agent used after agent stuck in loop:** YES (correctly identified the root cause of the network error).
+*   **Test files created:** None.
+*   **Known regressions:** The primary functionality of connecting to VMs is not working as intended.
+
+**Credentials to test flow:**
+Not applicable. The agent cannot access the user's local network.
+
+**What agent forgot to execute**
+The agent failed to implement the correct proxy/jump host architecture for VM/LXC connections. Despite the user's clear instructions and the troubleshoot agent's findings, the last implementation was still based on a flawed direct-connection model. The next step is to completely rewrite the connection logic to route all traffic through the main Proxmox host's SSH session.</analysis>

@@ -3223,8 +3223,8 @@ ai_tools = [
                 "properties": {
                     "action": {
                         "type": "string",
-                        "enum": ["start", "stop", "restart", "shutdown", "create", "delete"],
-                        "description": "The action to perform"
+                        "enum": ["start", "stop", "restart", "shutdown", "clone", "delete"],
+                        "description": "The action to perform. Use 'clone' to create a copy of an existing VM/container."
                     },
                     "vmid": {
                         "type": "string",

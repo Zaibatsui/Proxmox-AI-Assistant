@@ -103,7 +103,7 @@ function Login({ onLogin }) {
             </button>
           </div>
           <div className="mt-4 pt-4 border-t border-slate-800 text-center">
-            <p className="text-xs text-slate-500">Version 3.1.0</p>
+            <p className="text-xs text-slate-500">Version 3.2.0</p>
           </div>
         </CardContent>
       </Card>

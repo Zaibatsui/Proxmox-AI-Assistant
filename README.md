@@ -1,4 +1,4 @@
-# Proxmox AI Admin v4.0.0
+# Proxmox AI Admin v4.1.0
 
 <div align="center">
   <h3>AI-Powered Proxmox Management Assistant</h3>
@@ -7,23 +7,19 @@
 
 ---
 
-## What's New in v4.0.0
+## What's New in v4.1.0
 
-### VM/LXC Connection Routing (Major Fix)
-- **All VM and LXC access now routes through the Proxmox host** - works exactly like the Proxmox web UI
-- No need to be on the same local network as your VMs
-- Uses QEMU Guest Agent for VMs and `pct exec` for LXC containers
+### AI Assistant - Full Autonomy
+- **Direct command execution** - AI can run shell commands without confirmation for safe operations
+- **Proxmox API access** - AI can make direct API calls for any Proxmox operation
+- **VM/Container cloning** - Clone containers and VMs with a simple request
+- **Conversation memory** - AI remembers context across page reloads
+- **New Chat button** - Start fresh conversations when needed
 
-### Interactive Terminal
-- **Full terminal access** to VMs and LXC containers
-- LXC: Uses `pct enter` for direct shell access
-- VMs: SSHs from Proxmox host to VM using stored credentials
-- Automatic credential lookup from location settings
-
-### AI Assistant Improvements
-- AI can now execute commands directly inside VMs/LXCs
-- Docker container listing and management within VMs
-- File operations work correctly on selected locations
+### Major Bug Fixes
+- Fixed confirmation loop where AI would repeatedly propose actions instead of executing
+- Fixed offline node handling - operations now skip unreachable nodes
+- Fixed pending action persistence in conversation sessions
 
 ---
 

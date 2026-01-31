@@ -4941,12 +4941,45 @@ async def cleanup_old_backups():
 # ==================== LOCATION-AWARE FILE OPERATIONS ====================
 
 async def get_location_ssh_client(user_id: str, location: Optional[FileLocation] = None):
-    """Get SSH client based on location (host, LXC, or VM)"""
+    """Get SSH client based on location (host, LXC, or VM)
+    
+    For VMs/LXCs, returns a WRAPPER that executes commands through Proxmox host
+    using qm/pct commands instead of direct SSH to VM.
+    """
     if not location or location.type == "host":
         # Default: Proxmox host SSH
         return await get_ssh_client(user_id)
     
     elif location.type == "vm":
+        # Access VM through Proxmox host using qm command wrapper
+        # Returns a client that wraps commands in: qm guest exec <vmid> -- <command>
+        logger.info(f"Creating VM access wrapper for VM {location.id} through Proxmox host")
+        
+        # Get connection to Proxmox host
+        host_client = await get_ssh_client(user_id)
+        
+        # Create wrapper that executes commands in VM through host
+        class VMCommandWrapper:
+            def __init__(self, ssh_client, vmid):
+                self._client = ssh_client
+                self._vmid = vmid
+            
+            def exec_command(self, command, timeout=None):
+                """Execute command in VM using qm guest exec"""
+                # Wrap command to execute in VM through qm
+                wrapped_cmd = f"qm guest exec {self._vmid} -- {command}"
+                logger.info(f"Executing in VM {self._vmid}: {command}")
+                return self._client.exec_command(wrapped_cmd, timeout=timeout)
+            
+            def open_sftp(self):
+                """SFTP not directly supported through qm - would need alternative approach"""
+                raise NotImplementedError("SFTP access to VMs requires direct SSH. Use host connection instead.")
+            
+            def close(self):
+                """Close underlying host connection"""
+                return self._client.close()
+        
+        return VMCommandWrapper(host_client, location.id)
         # Direct SSH to VM
         if not location.ssh_username or not location.ssh_password:
             raise HTTPException(status_code=400, detail="VM SSH credentials required")

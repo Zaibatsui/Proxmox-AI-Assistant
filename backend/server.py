@@ -4676,13 +4676,20 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
             except:
                 pass
         
-        # Update session with pending action and messages
+        # Update session with messages - but DON'T overwrite pending_action if one was already set by a tool
+        # Check if there's already a pending action in the session
+        current_session = await db.conversation_sessions.find_one({"id": session_id})
+        existing_pending = current_session.get("pending_action") if current_session else None
+        
+        # Only set pending_action if we found one OR if there isn't one already
+        final_pending_action = pending_action if pending_action else existing_pending
+        
         await db.conversation_sessions.update_one(
             {"id": session_id},
             {
                 "$set": {
                     "messages": session["messages"],
-                    "pending_action": pending_action,
+                    "pending_action": final_pending_action,
                     "updated_at": datetime.now(timezone.utc).isoformat()
                 }
             }

@@ -7125,17 +7125,50 @@ async def websocket_terminal(websocket: WebSocket):
             shell_channel.send(f'docker exec -it {container_id} /bin/sh\n')
             await asyncio.sleep(0.5)  # Wait for shell to start
             
-        # For VMs/LXCs with SSH credentials
+        # For VMs/LXCs - fetch SSH credentials from database
         elif conn_type in ['vm', 'lxc'] and vmid:
+            # Try to get credentials from connection_data first (if passed)
             ssh_host = connection_data.get('ssh_host')
             ssh_port = connection_data.get('ssh_port', 22)
             ssh_username = connection_data.get('ssh_username')
             ssh_password = connection_data.get('ssh_password')
             
+            # If credentials not in connection_data, fetch from database
             if not all([ssh_host, ssh_username, ssh_password]):
-                await websocket.send_json({'type': 'error', 'data': 'SSH credentials required for VM/LXC connection'})
-                await websocket.close()
-                return
+                logger.info(f"Fetching SSH credentials from database for {conn_type} {vmid}")
+                
+                # Get Proxmox config to find host
+                proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+                if not proxmox_config:
+                    await websocket.send_json({'type': 'error', 'data': 'Proxmox configuration not found'})
+                    await websocket.close()
+                    return
+                
+                # Extract hostname
+                host = proxmox_config['host']
+                if '://' in host:
+                    host = host.split('://', 1)[1]
+                host = host.split(':')[0].rstrip('/')
+                
+                # Get SSH config
+                ssh_config = await db.ssh_configs.find_one({
+                    "user_id": user_id,
+                    "host": host
+                })
+                
+                if not ssh_config:
+                    ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+                
+                if not ssh_config:
+                    await websocket.send_json({'type': 'error', 'data': 'No SSH credentials found. Please configure in Settings → SSH Configuration.'})
+                    await websocket.close()
+                    return
+                
+                ssh_host = ssh_config.get('host')
+                ssh_username = ssh_config.get('username', 'root')
+                ssh_password = ssh_config.get('password')
+                ssh_port = ssh_config.get('port', 22)
+                logger.info(f"Found SSH credentials from database: {ssh_config.get('name', 'unnamed')}")
             
             logger.info(f"Connecting to {conn_type.upper()} {vmid} via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
             
@@ -7150,6 +7183,7 @@ async def websocket_terminal(websocket: WebSocket):
                     password=ssh_password,
                     timeout=10
                 )
+                logger.info(f"Successfully connected to {conn_type.upper()} {vmid}")
             except Exception as conn_err:
                 error_msg = f"SSH connection to {conn_type.upper()} {vmid} failed: {str(conn_err)}"
                 logger.error(error_msg)
@@ -7157,7 +7191,7 @@ async def websocket_terminal(websocket: WebSocket):
                 await websocket.close()
                 return
             
-            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
+            shell_channel = ssh_client.invoke_shell(term='xterm', width=100, height=20)
             
         # For Proxmox host
         else:

@@ -4681,8 +4681,12 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
         current_session = await db.conversation_sessions.find_one({"id": session_id})
         existing_pending = current_session.get("pending_action") if current_session else None
         
+        logger.info(f"End of query - existing_pending: {existing_pending}, parsed_pending: {pending_action}")
+        
         # Only set pending_action if we found one OR if there isn't one already
         final_pending_action = pending_action if pending_action else existing_pending
+        
+        logger.info(f"Final pending_action to save: {final_pending_action}")
         
         await db.conversation_sessions.update_one(
             {"id": session_id},

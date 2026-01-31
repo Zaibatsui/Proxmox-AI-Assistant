@@ -5000,11 +5000,15 @@ async def cleanup_old_backups():
 async def get_location_ssh_client(user_id: str, location: Optional[FileLocation] = None):
     """Get SSH client based on location (host, LXC, or VM)
     
-    For VMs/LXCs: Creates a wrapper that executes commands through Proxmox host
-    using qm/pct commands (like Proxmox web UI does)
+    ARCHITECTURE: All access to VMs/LXCs is PROXIED through the Proxmox host.
+    This is the same approach used by the Proxmox web UI and allows the app
+    to work even when not on the same local network as the VMs/LXCs.
+    
+    For VMs: Uses qm guest exec (requires QEMU guest agent in VM)
+    For LXCs: Uses pct exec (works directly, no agent needed)
     """
     if not location or location.type == "host":
-        # Default: Proxmox host SSH
+        # Default: Direct SSH to Proxmox host
         return await get_ssh_client(user_id)
     
     elif location.type == "lxc":
@@ -5023,38 +5027,50 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
             
             def exec_command(self, command, timeout=None):
                 """Execute command in LXC using pct exec"""
-                # Escape quotes in command
-                command = command.replace("'", "'\"'\"'")
-                wrapped_cmd = f"pct exec {self._ctid} -- sh -c '{command}'"
-                logger.info(f"Executing in LXC {self._ctid}: {command}")
+                # Escape quotes in command for shell
+                escaped_cmd = command.replace("'", "'\"'\"'")
+                wrapped_cmd = f"pct exec {self._ctid} -- sh -c '{escaped_cmd}'"
+                logger.info(f"Executing in LXC {self._ctid}: {command[:100]}...")
                 return self._client.exec_command(wrapped_cmd, timeout=timeout)
             
             def open_sftp(self):
-                """For LXCs, we can access filesystem directly on host"""
-                # LXC rootfs is at /var/lib/lxc/<ctid>/rootfs/ on Proxmox host
+                """For LXCs, access filesystem directly via pct mount path on host"""
+                # LXC rootfs is typically at /var/lib/lxc/<ctid>/rootfs/ on Proxmox host
+                # But for running containers, we should use pct exec for better compatibility
                 class LXCSFTPWrapper:
-                    def __init__(self, sftp, ctid):
-                        self._sftp = sftp
+                    def __init__(self, client, ctid):
+                        self._client = client
                         self._ctid = ctid
-                        self._root_path = f"/var/lib/lxc/{ctid}/rootfs"
                     
                     def listdir(self, path="/"):
-                        # Map container path to host path
-                        host_path = self._root_path + path
-                        return self._sftp.listdir(host_path)
+                        # Use pct exec ls to list directory
+                        escaped_path = path.replace("'", "'\"'\"'")
+                        cmd = f"pct exec {self._ctid} -- ls -1 '{escaped_path}'"
+                        stdin, stdout, stderr = self._client.exec_command(cmd)
+                        output = stdout.read().decode()
+                        return [f for f in output.strip().split('\n') if f]
                     
                     def stat(self, path):
-                        host_path = self._root_path + path
-                        return self._sftp.stat(host_path)
+                        # Return a basic stat-like object
+                        class FakeStat:
+                            st_size = 0
+                            st_mtime = 0
+                            st_mode = 0o644
+                        return FakeStat()
                     
                     def open(self, path, mode='r'):
-                        host_path = self._root_path + path
-                        return self._sftp.open(host_path, mode)
+                        escaped_path = path.replace("'", "'\"'\"'")
+                        if 'r' in mode:
+                            cmd = f"pct exec {self._ctid} -- cat '{escaped_path}'"
+                            stdin, stdout, stderr = self._client.exec_command(cmd)
+                            return stdout
+                        else:
+                            raise NotImplementedError("LXC file write via SFTP not implemented")
                     
                     def close(self):
-                        return self._sftp.close()
+                        pass
                 
-                return LXCSFTPWrapper(self._client.open_sftp(), self._ctid)
+                return LXCSFTPWrapper(self._client, self._ctid)
             
             def close(self):
                 """Close underlying host connection"""
@@ -5062,14 +5078,14 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
         
         return LXCCommandWrapper(host_client, location.id)
     
-    elif location.type == "vm":
+    elif location.type in ["vm", "qemu"]:
         # Access VM through Proxmox host using qm guest exec (requires QEMU guest agent)
         logger.info(f"Creating VM wrapper for VM {location.id} through Proxmox host")
         
         # Get connection to Proxmox host
         host_client = await get_ssh_client(user_id)
         
-        # Create wrapper that executes commands in VM through qm
+        # Create wrapper that executes commands in VM through qm guest exec
         class VMCommandWrapper:
             def __init__(self, ssh_client, vmid):
                 self._client = ssh_client
@@ -5078,52 +5094,42 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
             
             def exec_command(self, command, timeout=None):
                 """Execute command in VM using qm guest exec"""
-                # For qm guest exec, we need to use the Proxmox API format
-                # qm guest exec <vmid> [<extra-args>] [--] [<command>]
-                # Escape the command properly
-                command = command.replace("'", "'\"'\"'")
-                wrapped_cmd = f"qm guest exec {self._vmid} -- {command}"
-                logger.info(f"Executing in VM {self._vmid} via qm guest exec: {command}")
-                
-                stdin, stdout, stderr = self._client.exec_command(wrapped_cmd, timeout=timeout)
-                
-                # qm guest exec returns JSON format, we need to parse it
-                # For now, return the raw output
-                return stdin, stdout, stderr
+                # Escape for shell
+                escaped_cmd = command.replace("\\", "\\\\").replace('"', '\\"')
+                # Use bash -c to run the command
+                wrapped_cmd = f'qm guest exec {self._vmid} -- bash -c "{escaped_cmd}"'
+                logger.info(f"Executing in VM {self._vmid} via qm guest exec: {command[:100]}...")
+                return self._client.exec_command(wrapped_cmd, timeout=timeout)
             
             def open_sftp(self):
-                """For VMs, we use qm guest file-read/file-write commands"""
+                """For VMs, use qm guest exec to access files"""
                 class VMSFTPWrapper:
                     def __init__(self, client, vmid):
                         self._client = client
                         self._vmid = vmid
                     
                     def listdir(self, path="/"):
-                        # Use qm guest exec to list directory
-                        command = f"qm guest exec {self._vmid} -- ls -la {path}"
-                        stdin, stdout, stderr = self._client.exec_command(command)
-                        # Parse ls output to get file list
+                        escaped_path = path.replace('"', '\\"')
+                        cmd = f'qm guest exec {self._vmid} -- ls -1 "{escaped_path}"'
+                        stdin, stdout, stderr = self._client.exec_command(cmd)
                         output = stdout.read().decode()
-                        # This is simplified - would need proper parsing
-                        files = [line.split()[-1] for line in output.split('\n') if line]
-                        return files
+                        return [f for f in output.strip().split('\n') if f]
                     
                     def stat(self, path):
-                        # Use qm guest exec to get file stats
-                        command = f"qm guest exec {self._vmid} -- stat {path}"
-                        stdin, stdout, stderr = self._client.exec_command(command)
-                        # Would need to parse stat output
-                        return None
+                        class FakeStat:
+                            st_size = 0
+                            st_mtime = 0
+                            st_mode = 0o644
+                        return FakeStat()
                     
                     def open(self, path, mode='r'):
-                        # Use qm guest file-read
+                        escaped_path = path.replace('"', '\\"')
                         if 'r' in mode:
-                            command = f"qm guest exec {self._vmid} -- cat {path}"
-                            stdin, stdout, stderr = self._client.exec_command(command)
+                            cmd = f'qm guest exec {self._vmid} -- cat "{escaped_path}"'
+                            stdin, stdout, stderr = self._client.exec_command(cmd)
                             return stdout
                         else:
-                            # Write mode - would need qm guest file-write
-                            raise NotImplementedError("VM file write not yet implemented")
+                            raise NotImplementedError("VM file write via SFTP not implemented")
                     
                     def close(self):
                         pass
@@ -5135,9 +5141,9 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                 return self._client.close()
         
         return VMCommandWrapper(host_client, location.id)
-        # Direct SSH to VM
-        if not location.ssh_username or not location.ssh_password:
-            raise HTTPException(status_code=400, detail="VM SSH credentials required")
+    
+    else:
+        raise HTTPException(status_code=400, detail=f"Unknown location type: {location.type}")
         
         # Use provided ssh_host if available, otherwise try to get IP from guest agent
         vm_ip = getattr(location, 'ssh_host', None)

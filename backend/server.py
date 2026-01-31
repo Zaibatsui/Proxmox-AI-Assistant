@@ -3725,17 +3725,20 @@ async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user
             
             elif pending.get("type") == "vm_action":
                 # Execute VM/Container action (start, stop, restart, clone, etc.)
+                logger.info(f"Executing vm_action: {pending}")
                 try:
                     action_id = pending.get("action_id")
                     action = pending.get("action")
                     vmid = pending.get("vmid")
                     vm_config = pending.get("vm_config", {})
                     
+                    logger.info(f"Calling execute_vm_action with action={action}, vmid={vmid}, vm_config={vm_config}")
                     result = await execute_vm_action({
                         "action": action,
                         "vmid": vmid,
                         "vm_config": vm_config
                     }, current_user["user_id"], dry_run=False)
+                    logger.info(f"execute_vm_action result: {result}")
                     
                     if "✓" in result:
                         response_text = f"✅ **VM Action executed successfully!**\n\n{result}"

@@ -4099,6 +4099,89 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         "reason": function_args.get("reason"),
                         "requires_confirmation": True
                     }
+                elif function_name == "execute_command":
+                    # Direct command execution for safe/read-only commands
+                    command = function_args.get("command", "")
+                    location_str = function_args.get("location", "host")
+                    
+                    # Safety check - block obviously dangerous commands from direct execution
+                    dangerous_patterns = [
+                        "rm -rf /", "rm -rf /*", "dd if=", "mkfs", "> /dev/", 
+                        "chmod -R 777 /", ":(){ :|:& };:", "fork bomb",
+                        "mv /* ", "delete --no-preserve-root"
+                    ]
+                    
+                    is_dangerous = any(pattern in command.lower() for pattern in dangerous_patterns)
+                    if is_dangerous:
+                        function_response = {
+                            "error": "This command is too dangerous for direct execution. Use propose_command_execution instead.",
+                            "command": command
+                        }
+                    else:
+                        try:
+                            location = parse_location_string(location_str)
+                            location = await enrich_location_with_credentials(location, current_user["user_id"])
+                            ssh_client = await get_location_ssh_client(current_user["user_id"], location)
+                            result = await execute_command_on_location(ssh_client, command, location)
+                            ssh_client.close()
+                            
+                            function_response = {
+                                "command": command,
+                                "location": location_str,
+                                "exit_code": result.get("exit_code", -1),
+                                "output": result.get("output", "")[:5000],  # Limit output size
+                                "error": result.get("error", ""),
+                                "success": result.get("success", False)
+                            }
+                        except Exception as e:
+                            logger.error(f"execute_command error: {str(e)}")
+                            function_response = {"error": str(e), "command": command}
+                
+                elif function_name == "proxmox_api_call":
+                    # Direct Proxmox API access
+                    method = function_args.get("method", "GET").upper()
+                    endpoint = function_args.get("endpoint", "")
+                    data = function_args.get("data", {})
+                    
+                    try:
+                        proxmox, config = await get_proxmox_connection(current_user["user_id"])
+                        
+                        # Parse endpoint and make the call
+                        # Endpoint format: "nodes/pve/lxc/100/config"
+                        parts = endpoint.strip("/").split("/")
+                        
+                        # Build the API path dynamically
+                        api_obj = proxmox
+                        for part in parts:
+                            api_obj = getattr(api_obj, part) if hasattr(api_obj, part) else api_obj(part)
+                        
+                        # Execute based on method
+                        if method == "GET":
+                            result = api_obj.get()
+                        elif method == "POST":
+                            result = api_obj.post(**data) if data else api_obj.post()
+                        elif method == "PUT":
+                            result = api_obj.put(**data) if data else api_obj.put()
+                        elif method == "DELETE":
+                            result = api_obj.delete()
+                        else:
+                            result = {"error": f"Unknown method: {method}"}
+                        
+                        function_response = {
+                            "method": method,
+                            "endpoint": endpoint,
+                            "result": result,
+                            "success": True
+                        }
+                    except Exception as e:
+                        logger.error(f"proxmox_api_call error: {str(e)}")
+                        function_response = {
+                            "method": method,
+                            "endpoint": endpoint,
+                            "error": str(e),
+                            "success": False
+                        }
+                
                 elif function_name == "propose_command_execution":
                     # Evaluate risk level for the command
                     command = function_args.get("command", "")

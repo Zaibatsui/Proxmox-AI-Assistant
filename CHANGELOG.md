@@ -1,109 +1,58 @@
-# Proxmox AI Assistant - Version 3.2.0
+# Proxmox AI Assistant - Changelog
 
-## Release Notes - v3.2.0
+## Version 4.0.0 (January 2026)
 
-### Critical Fixes
+### Major Changes - VM/LXC Connection Routing
 
-#### SSH Credential Integration (Complete)
-- **File Browser Connection Fix**: Fixed critical bug where File Browser connected to Proxmox host instead of selected VM/LXC
-- **AI Assistant Integration**: AI tools now automatically fetch SSH credentials from database for VM/LXC operations
-- **Terminal WebSocket Integration**: Terminal connections now fetch credentials from database instead of requiring manual input
-- **Global Credential Enrichment**: Created `enrich_location_with_credentials()` function used across all endpoints
+This release fixes the fundamental architecture for accessing VMs and LXC containers. All access is now **proxied through the Proxmox host**, matching how the Proxmox web UI works.
 
-#### Terminal Component Replacement
-- **SimpleTerminal**: Replaced xterm-based terminal with SimpleTerminal component
-- **Zero Dependencies**: No external terminal packages required (xterm, @xterm/addon-fit, etc.)
-- **Universal Compatibility**: Works in all environments without build issues
-- **Features**: Command history (↑↓), real-time output, WebSocket SSH integration, status indicators
+#### Connection Architecture (Breaking Fix)
+- **All VM/LXC access routes through Proxmox host** - no direct network access to VMs required
+- Works from anywhere (cloud-hosted, different networks, VPNs)
+- Uses QEMU Guest Agent (`qm guest exec`) for VM command execution
+- Uses `pct exec` for LXC container command execution
 
-### Major Improvements
+#### Terminal Improvements
+- **LXC Containers**: Uses `pct enter` for direct shell access
+- **VMs**: SSHs from Proxmox host to VM using stored credentials from `location_credentials`
+- **Automatic credential lookup**: Terminal finds stored SSH username per VM/LXC
+- Clear status messages showing connection method and credentials used
 
-**SSH Credential Flow:**
-- Credentials saved once in Settings → SSH Configuration
-- Automatically used by: File Browser, AI Assistant, Terminal, Container operations
-- No repeated credential entry required
-- Fetches from `ssh_configs` MongoDB collection
+#### AI Assistant Fixes
+- AI can now properly execute commands inside VMs and LXCs
+- Docker container listing works correctly via `qm guest exec` JSON parsing
+- File operations work on selected locations (not just host)
 
-**File Browser:**
-- ✅ Correctly connects to selected VM/LXC (not host)
-- ✅ Shows actual VM/LXC filesystem
-- ✅ File operations execute on correct location
-- ✅ Container button lists Docker containers from VM/LXC
+#### Technical Changes
+- Rewrote `get_location_ssh_client()` to return wrapper objects for VMs/LXCs
+- Added `VMCommandWrapper` and `LXCCommandWrapper` classes that proxy commands
+- Fixed `qm guest exec` JSON output parsing (base64 decoding)
+- Fixed `execute_command_on_location()` to detect wrapper clients and avoid double-wrapping
+- Terminal WebSocket now looks up credentials from `location_credentials` collection
+- Removed dead code attempting direct SSH to VM IPs
 
-**AI Assistant:**
-- ✅ Can list files in VMs/LXCs without asking for credentials
-- ✅ Can read files from VMs/LXCs
-- ✅ Can execute commands (with user confirmation)
-- ✅ Enhanced logging for troubleshooting
-
-**Terminal:**
-- ✅ Connects to VMs/LXCs automatically
-- ✅ Shows correct hostname in prompt
-- ✅ Line-based input with command history
-- ✅ No build dependencies
-
-### Technical Changes
-
-**Backend (`server.py`):**
-- Added global `enrich_location_with_credentials()` function (line 4861)
-- Updated `/files/list` endpoint to enrich location credentials
-- Updated `/files/read` endpoint to enrich location credentials
-- Updated `/files/write` endpoint to enrich location credentials
-- Updated `/api/terminal/ws` WebSocket endpoint to fetch credentials
-- Enhanced logging throughout SSH connection handling
-
-**Frontend:**
-- Replaced `TerminalWebSocket.js` with `SimpleTerminal.js`
-- Removed xterm.js dependencies
-- Updated version display to 3.2.0
-
-**Database Schema:**
-- No changes - uses existing `ssh_configs` collection
-- No changes - uses existing `proxmox_configs` collection
-
-### Bug Fixes
-
-- Fixed File Browser connecting to host instead of VM/LXC
-- Fixed AI Assistant requiring manual SSH credentials
-- Fixed Terminal WebSocket requiring manual credentials
-- Fixed Container button not working for VMs/LXCs
-- Fixed dimension errors in terminal component
-- Fixed build issues with xterm package dependencies
-
-### Removed
-
-- xterm.js and related addons (no longer needed)
-- TerminalWebSocket_xterm_backup.js (old implementation)
-- Environment variable dependencies (PROXMOX_HOST, PROXMOX_SSH_USER, PROXMOX_SSH_PASSWORD)
-
-### Known Limitations
-
-**SimpleTerminal:**
-- Plain text only (no ANSI colors displayed)
-- Not suitable for interactive editors (vim, nano)
-- No TUI program support (htop, less)
-- Line-based input (not character-by-character)
-
-**Workaround:** Use external SSH client for interactive programs requiring full terminal emulation.
+#### Database Collections Used
+- `location_credentials`: Per-VM/LXC SSH credentials (ssh_username, ssh_host, ssh_port)
+- `ssh_configs`: Proxmox host SSH credentials
+- `proxmox_configs`: Proxmox API configuration
 
 ### Upgrade Notes
 
-**From v3.1.0 to v3.2.0:**
+**From v3.2.0 to v4.0.0:**
 1. Update code from GitHub
 2. Restart backend and frontend
 3. No database migrations required
-4. Existing SSH configs continue to work
-5. Terminal will use new SimpleTerminal automatically
+4. Ensure QEMU Guest Agent is installed in VMs for full functionality
 
-**Breaking Changes:**
-- None - fully backward compatible
+**Requirements for VM Access:**
+- QEMU Guest Agent installed and running in VMs
+- Guest Agent enabled in Proxmox VM options
+- SSH server running in VM (for terminal access)
+- Location credentials configured per VM
 
 ---
 
-
-# Proxmox AI Assistant - Version 3.1.0
-
-## Release Notes - v3.1.0
+## Version 3.2.0
 
 ### Major Features Added
 

@@ -5818,17 +5818,31 @@ async def execute_vm_action(params: dict, user_id: str, dry_run: bool = False) -
             if not node_name:
                 return f"✗ Template {template_id} not found"
             
+            logger.info(f"Cloning {vm_type} {template_id} to {new_id} on node {node_name}")
+            
             if vm_type == 'qemu':
                 proxmox.nodes(node_name).qemu(template_id).clone.post(
                     newid=new_id,
                     name=new_name,
-                    full=vm_config.get('full_clone', True)
+                    full=1 if vm_config.get('full_clone', True) else 0
                 )
             else:  # lxc
+                # For LXC, we need to specify storage for the clone
+                # Get storage from original container config or use default
+                try:
+                    ct_config = proxmox.nodes(node_name).lxc(template_id).config.get()
+                    # Extract storage from rootfs (format: "local-lvm:vm-100-disk-0,size=8G")
+                    rootfs = ct_config.get('rootfs', '')
+                    storage = rootfs.split(':')[0] if ':' in rootfs else 'local-lvm'
+                except:
+                    storage = 'local-lvm'
+                
+                logger.info(f"Cloning LXC {template_id} to {new_id} with storage {storage}")
                 proxmox.nodes(node_name).lxc(template_id).clone.post(
                     newid=new_id,
                     hostname=new_name,
-                    full=vm_config.get('full_clone', True)
+                    full=1 if vm_config.get('full_clone', True) else 0,
+                    storage=vm_config.get('storage', storage)
                 )
             
             return f"✓ Successfully cloned {vm_type.upper()} {template_id} to new ID {new_id} (name: {new_name})"

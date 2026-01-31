@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Send, Bot, User, Loader2, CheckCircle, ArrowRight, Server, HardDrive, Cpu, AlertCircle } from "lucide-react";
+import { MessageSquare, Send, Bot, User, Loader2, CheckCircle, ArrowRight, Server, HardDrive, Cpu, AlertCircle, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
 import ReactMarkdown from 'react-markdown';

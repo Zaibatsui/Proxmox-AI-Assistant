@@ -209,6 +209,15 @@ Store SSH credentials per VM for terminal access:
 
 ## Changelog
 
+### v4.1.0 (January 2026)
+- **AI Autonomy**: Added `execute_command` tool for direct safe command execution
+- **AI Autonomy**: Added `proxmox_api_call` tool for direct Proxmox API access
+- **AI Memory**: Session ID now persists in localStorage for conversation continuity
+- **New Chat**: Added "New Chat" button to start fresh conversations
+- **Bug Fix**: Fixed confirmation loop - pending actions now properly persist in session
+- **Bug Fix**: Clone operations now skip offline nodes
+- **Bug Fix**: Fixed variable name bug in clone execution (node_name → template_node)
+
 ### v4.0.0 (January 2026)
 - **Major**: Fixed VM/LXC connection routing - all access now proxied through Proxmox host
 - **Major**: Terminal now properly connects to VMs via SSH from host

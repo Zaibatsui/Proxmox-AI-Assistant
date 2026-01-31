@@ -6265,7 +6265,28 @@ async def rproxy_rename_file(profile: dict, old_path: str, new_path: str):
 # ==================== DOCKER HELPER FUNCTIONS ====================
 
 async def execute_command_on_location(ssh_client, command: str, location: Optional[FileLocation] = None):
-    """Execute a shell command on host, LXC, or VM"""
+    """Execute a shell command on host, LXC, or VM
+    
+    NOTE: If ssh_client is already a wrapper (VMCommandWrapper/LXCCommandWrapper),
+    we should NOT double-wrap the command. The wrapper handles routing automatically.
+    """
+    # Check if ssh_client is already a wrapper that handles command routing
+    client_type = getattr(ssh_client, '_type', None)
+    if client_type in ['vm', 'lxc']:
+        # Client is already a wrapper - just execute directly, no additional wrapping needed
+        stdin, stdout, stderr = ssh_client.exec_command(command)
+        exit_code = stdout.channel.recv_exit_status()
+        output = stdout.read().decode('utf-8')
+        error = stderr.read().decode('utf-8')
+        
+        return {
+            "exit_code": exit_code,
+            "output": output,
+            "error": error,
+            "success": exit_code == 0
+        }
+    
+    # Regular SSH client - check location type for routing
     if not location or location.type == 'host':
         # Execute on Proxmox host
         stdin, stdout, stderr = ssh_client.exec_command(command)

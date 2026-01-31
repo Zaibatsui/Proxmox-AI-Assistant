@@ -1,4 +1,4 @@
-# Test Results - AI-Powered Proxmox Assistant v3.1.0
+# Test Results - AI-Powered Proxmox Assistant v3.2.0
 
 This file tracks the testing status of features in the application.
 

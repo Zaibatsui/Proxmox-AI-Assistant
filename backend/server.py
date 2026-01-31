@@ -3666,6 +3666,71 @@ async def ai_query(query: AIQuery, current_user: dict = Depends(get_current_user
                 await db.ai_queries.insert_one(ai_response_obj)
                 
                 return AIResponse(**ai_response_obj)
+            
+            elif pending.get("type") == "vm_action":
+                # Execute VM/Container action (start, stop, restart, clone, etc.)
+                try:
+                    action_id = pending.get("action_id")
+                    action = pending.get("action")
+                    vmid = pending.get("vmid")
+                    vm_config = pending.get("vm_config", {})
+                    
+                    result = await execute_vm_action({
+                        "action": action,
+                        "vmid": vmid,
+                        "vm_config": vm_config
+                    }, current_user["user_id"], dry_run=False)
+                    
+                    if "✓" in result:
+                        response_text = f"✅ **VM Action executed successfully!**\n\n{result}"
+                        # Update action status in database
+                        await db.actions.update_one(
+                            {"id": action_id},
+                            {"$set": {"status": "executed", "execution_output": result}}
+                        )
+                    else:
+                        response_text = f"❌ **VM Action failed:**\n\n{result}"
+                        await db.actions.update_one(
+                            {"id": action_id},
+                            {"$set": {"status": "failed", "execution_output": result}}
+                        )
+                except Exception as e:
+                    response_text = f"❌ **Failed to execute VM action:** {str(e)}"
+                
+                # Clear pending action
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"pending_action": None, "updated_at": datetime.now(timezone.utc).isoformat()}}
+                )
+                
+                session["messages"].append({
+                    "role": "user",
+                    "content": query.question,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                session["messages"].append({
+                    "role": "assistant",
+                    "content": response_text,
+                    "timestamp": datetime.now(timezone.utc).isoformat()
+                })
+                
+                await db.conversation_sessions.update_one(
+                    {"id": session_id},
+                    {"$set": {"messages": session["messages"]}}
+                )
+                
+                ai_response_obj = {
+                    "id": str(uuid.uuid4()),
+                    "user_id": current_user["user_id"],
+                    "question": query.question,
+                    "answer": response_text,
+                    "suggested_commands": [],
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "session_id": session_id
+                }
+                await db.ai_queries.insert_one(ai_response_obj)
+                
+                return AIResponse(**ai_response_obj)
                 
         # Get user's API key first, fallback to environment variable
         keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})

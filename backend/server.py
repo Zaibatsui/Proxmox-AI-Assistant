@@ -4298,20 +4298,23 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     
                     # Store pending action in session for confirmation
                     logger.info(f"Saving pending_action to session {session_id}")
-                    await db.conversation_sessions.update_one(
-                        {"id": session_id},
-                        {"$set": {
-                            "pending_action": {
-                                "type": "vm_action",
-                                "action_id": action_id,
-                                "action": action,
-                                "vmid": vmid,
-                                "vm_config": vm_config
-                            },
-                            "updated_at": datetime.now(timezone.utc).isoformat()
-                        }}
-                    )
-                    logger.info(f"Pending action saved for session {session_id}")
+                    try:
+                        update_result = await db.conversation_sessions.update_one(
+                            {"id": session_id},
+                            {"$set": {
+                                "pending_action": {
+                                    "type": "vm_action",
+                                    "action_id": action_id,
+                                    "action": action,
+                                    "vmid": vmid,
+                                    "vm_config": vm_config
+                                },
+                                "updated_at": datetime.now(timezone.utc).isoformat()
+                            }}
+                        )
+                        logger.info(f"Update result - matched: {update_result.matched_count}, modified: {update_result.modified_count}")
+                    except Exception as e:
+                        logger.error(f"Failed to save pending_action: {str(e)}")
                     
                     function_response = {
                         "type": "vm_action_proposal",

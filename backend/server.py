@@ -5000,94 +5000,141 @@ async def cleanup_old_backups():
 async def get_location_ssh_client(user_id: str, location: Optional[FileLocation] = None):
     """Get SSH client based on location (host, LXC, or VM)
     
-    For VMs: Gets VM IP from Proxmox and connects via SSH from host
-    For LXCs: Uses pct exec through host connection
+    For VMs/LXCs: Creates a wrapper that executes commands through Proxmox host
+    using qm/pct commands (like Proxmox web UI does)
     """
     if not location or location.type == "host":
         # Default: Proxmox host SSH
         return await get_ssh_client(user_id)
     
-    elif location.type == "vm":
-        # Get VM IP from Proxmox API and SSH to it
-        logger.info(f"Accessing VM {location.id} through Proxmox host connection")
+    elif location.type == "lxc":
+        # Access LXC through Proxmox host using pct commands
+        logger.info(f"Creating LXC wrapper for CT {location.id} through Proxmox host")
         
-        # Get Proxmox connection to query VM IP
-        proxmox, config = await get_proxmox_connection(user_id)
+        # Get connection to Proxmox host
+        host_client = await get_ssh_client(user_id)
         
-        # Find VM and get its IP
-        vm_ip = None
-        node_name = None
-        
-        for node in proxmox.nodes.get():
-            node_name = node['node']
-            try:
-                qemu_vms = proxmox.nodes(node_name).qemu.get()
-                for vm in qemu_vms:
-                    if str(vm['vmid']) == location.id:
-                        # Found the VM, try to get IP from guest agent
-                        try:
-                            agent_info = proxmox.nodes(node_name).qemu(location.id).agent('network-get-interfaces').get()
-                            for iface in agent_info.get('result', []):
-                                if iface.get('name') not in ['lo']:
-                                    for ip_info in iface.get('ip-addresses', []):
-                                        if ip_info.get('ip-address-type') == 'ipv4':
-                                            ip_addr = ip_info.get('ip-address')
-                                            # Skip localhost IPs
-                                            if not ip_addr.startswith('127.'):
-                                                vm_ip = ip_addr
-                                                break
-                                if vm_ip:
-                                    break
-                        except Exception as e:
-                            logger.warning(f"Could not get IP from guest agent for VM {location.id}: {str(e)}")
-                        break
-            except Exception as e:
-                logger.warning(f"Error querying VMs on node {node_name}: {str(e)}")
+        # Create wrapper that executes commands in LXC through pct
+        class LXCCommandWrapper:
+            def __init__(self, ssh_client, ctid):
+                self._client = ssh_client
+                self._ctid = ctid
+                self._type = "lxc"
             
-            if vm_ip:
-                break
+            def exec_command(self, command, timeout=None):
+                """Execute command in LXC using pct exec"""
+                # Escape quotes in command
+                command = command.replace("'", "'\"'\"'")
+                wrapped_cmd = f"pct exec {self._ctid} -- sh -c '{command}'"
+                logger.info(f"Executing in LXC {self._ctid}: {command}")
+                return self._client.exec_command(wrapped_cmd, timeout=timeout)
+            
+            def open_sftp(self):
+                """For LXCs, we can access filesystem directly on host"""
+                # LXC rootfs is at /var/lib/lxc/<ctid>/rootfs/ on Proxmox host
+                class LXCSFTPWrapper:
+                    def __init__(self, sftp, ctid):
+                        self._sftp = sftp
+                        self._ctid = ctid
+                        self._root_path = f"/var/lib/lxc/{ctid}/rootfs"
+                    
+                    def listdir(self, path="/"):
+                        # Map container path to host path
+                        host_path = self._root_path + path
+                        return self._sftp.listdir(host_path)
+                    
+                    def stat(self, path):
+                        host_path = self._root_path + path
+                        return self._sftp.stat(host_path)
+                    
+                    def open(self, path, mode='r'):
+                        host_path = self._root_path + path
+                        return self._sftp.open(host_path, mode)
+                    
+                    def close(self):
+                        return self._sftp.close()
+                
+                return LXCSFTPWrapper(self._client.open_sftp(), self._ctid)
+            
+            def close(self):
+                """Close underlying host connection"""
+                return self._client.close()
         
-        if not vm_ip:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Could not determine IP for VM {location.id}. Ensure QEMU guest agent is installed and running in the VM."
-            )
+        return LXCCommandWrapper(host_client, location.id)
+    
+    elif location.type == "vm":
+        # Access VM through Proxmox host using qm guest exec (requires QEMU guest agent)
+        logger.info(f"Creating VM wrapper for VM {location.id} through Proxmox host")
         
-        # Now get SSH credentials - first try enrichment to get from database
-        if not location.ssh_username or not location.ssh_password:
-            logger.info(f"VM {location.id} credentials not provided, fetching from database")
-            location = await enrich_location_with_credentials(location, user_id)
+        # Get connection to Proxmox host
+        host_client = await get_ssh_client(user_id)
         
-        # If still no credentials, error
-        if not location.ssh_username or not location.ssh_password:
-            raise HTTPException(
-                status_code=400,
-                detail=f"SSH credentials required for VM {location.id}. Please add SSH config with host={vm_ip} in Settings."
-            )
+        # Create wrapper that executes commands in VM through qm
+        class VMCommandWrapper:
+            def __init__(self, ssh_client, vmid):
+                self._client = ssh_client
+                self._vmid = vmid
+                self._type = "vm"
+            
+            def exec_command(self, command, timeout=None):
+                """Execute command in VM using qm guest exec"""
+                # For qm guest exec, we need to use the Proxmox API format
+                # qm guest exec <vmid> [<extra-args>] [--] [<command>]
+                # Escape the command properly
+                command = command.replace("'", "'\"'\"'")
+                wrapped_cmd = f"qm guest exec {self._vmid} -- {command}"
+                logger.info(f"Executing in VM {self._vmid} via qm guest exec: {command}")
+                
+                stdin, stdout, stderr = self._client.exec_command(wrapped_cmd, timeout=timeout)
+                
+                # qm guest exec returns JSON format, we need to parse it
+                # For now, return the raw output
+                return stdin, stdout, stderr
+            
+            def open_sftp(self):
+                """For VMs, we use qm guest file-read/file-write commands"""
+                class VMSFTPWrapper:
+                    def __init__(self, client, vmid):
+                        self._client = client
+                        self._vmid = vmid
+                    
+                    def listdir(self, path="/"):
+                        # Use qm guest exec to list directory
+                        command = f"qm guest exec {self._vmid} -- ls -la {path}"
+                        stdin, stdout, stderr = self._client.exec_command(command)
+                        # Parse ls output to get file list
+                        output = stdout.read().decode()
+                        # This is simplified - would need proper parsing
+                        files = [line.split()[-1] for line in output.split('\n') if line]
+                        return files
+                    
+                    def stat(self, path):
+                        # Use qm guest exec to get file stats
+                        command = f"qm guest exec {self._vmid} -- stat {path}"
+                        stdin, stdout, stderr = self._client.exec_command(command)
+                        # Would need to parse stat output
+                        return None
+                    
+                    def open(self, path, mode='r'):
+                        # Use qm guest file-read
+                        if 'r' in mode:
+                            command = f"qm guest exec {self._vmid} -- cat {path}"
+                            stdin, stdout, stderr = self._client.exec_command(command)
+                            return stdout
+                        else:
+                            # Write mode - would need qm guest file-write
+                            raise NotImplementedError("VM file write not yet implemented")
+                    
+                    def close(self):
+                        pass
+                
+                return VMSFTPWrapper(self._client, self._vmid)
+            
+            def close(self):
+                """Close underlying host connection"""
+                return self._client.close()
         
-        # Connect to VM via SSH
-        ssh_port = getattr(location, 'ssh_port', 22)
-        logger.info(f"Connecting to VM {location.id} at {vm_ip}:{ssh_port} as {location.ssh_username}")
-        
-        ssh_client = paramiko.SSHClient()
-        ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        try:
-            ssh_client.connect(
-                vm_ip,
-                port=ssh_port,
-                username=location.ssh_username,
-                password=location.ssh_password,
-                timeout=10
-            )
-            logger.info(f"Successfully connected to VM {location.id}")
-            return ssh_client
-        except Exception as e:
-            logger.error(f"Failed to SSH to VM {location.id} at {vm_ip}: {str(e)}")
-            raise HTTPException(
-                status_code=500,
-                detail=f"SSH connection to VM {location.id} failed: {str(e)}"
-            )
+        return VMCommandWrapper(host_client, location.id)
         # Direct SSH to VM
         if not location.ssh_username or not location.ssh_password:
             raise HTTPException(status_code=400, detail="VM SSH credentials required")

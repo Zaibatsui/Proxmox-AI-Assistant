@@ -5507,6 +5507,135 @@ async def execute_detach_from_vm_action(params: dict, user_id: str, dry_run: boo
     except Exception as e:
         return f"✗ Failed to detach device: {str(e)}"
 
+async def execute_vm_action(params: dict, user_id: str, dry_run: bool = False) -> str:
+    """Execute VM/Container actions: start, stop, restart, shutdown, clone"""
+    try:
+        proxmox, config = await get_proxmox_connection(user_id)
+        
+        action = params.get('action')
+        vmid = params.get('vmid')
+        vm_config = params.get('vm_config', {})
+        
+        if dry_run:
+            return f"[DRY RUN] Would execute '{action}' on VM/CT {vmid}"
+        
+        # Find the VM/CT and its node
+        node_name = None
+        vm_type = None  # 'qemu' or 'lxc'
+        
+        for node in proxmox.nodes.get():
+            # Check QEMU VMs
+            try:
+                proxmox.nodes(node['node']).qemu(vmid).status.current.get()
+                node_name = node['node']
+                vm_type = 'qemu'
+                break
+            except:
+                pass
+            # Check LXC containers
+            try:
+                proxmox.nodes(node['node']).lxc(vmid).status.current.get()
+                node_name = node['node']
+                vm_type = 'lxc'
+                break
+            except:
+                pass
+        
+        if action == 'clone':
+            # Clone a VM or container
+            template_id = vm_config.get('template_id') or vmid
+            new_id = vm_config.get('new_id')
+            new_name = vm_config.get('name', f'clone-of-{template_id}')
+            
+            if not new_id:
+                # Find next available ID
+                all_ids = set()
+                for node in proxmox.nodes.get():
+                    for vm in proxmox.nodes(node['node']).qemu.get():
+                        all_ids.add(int(vm['vmid']))
+                    for ct in proxmox.nodes(node['node']).lxc.get():
+                        all_ids.add(int(ct['vmid']))
+                new_id = max(all_ids) + 1 if all_ids else 100
+            
+            # Find template's node and type
+            for node in proxmox.nodes.get():
+                try:
+                    proxmox.nodes(node['node']).qemu(template_id).status.current.get()
+                    node_name = node['node']
+                    vm_type = 'qemu'
+                    break
+                except:
+                    pass
+                try:
+                    proxmox.nodes(node['node']).lxc(template_id).status.current.get()
+                    node_name = node['node']
+                    vm_type = 'lxc'
+                    break
+                except:
+                    pass
+            
+            if not node_name:
+                return f"✗ Template {template_id} not found"
+            
+            if vm_type == 'qemu':
+                proxmox.nodes(node_name).qemu(template_id).clone.post(
+                    newid=new_id,
+                    name=new_name,
+                    full=vm_config.get('full_clone', True)
+                )
+            else:  # lxc
+                proxmox.nodes(node_name).lxc(template_id).clone.post(
+                    newid=new_id,
+                    hostname=new_name,
+                    full=vm_config.get('full_clone', True)
+                )
+            
+            return f"✓ Successfully cloned {vm_type.upper()} {template_id} to new ID {new_id} (name: {new_name})"
+        
+        if not node_name:
+            return f"✗ VM/Container {vmid} not found"
+        
+        # Execute the action
+        if vm_type == 'qemu':
+            vm_api = proxmox.nodes(node_name).qemu(vmid)
+            if action == 'start':
+                vm_api.status.start.post()
+                return f"✓ Started VM {vmid}"
+            elif action == 'stop':
+                vm_api.status.stop.post()
+                return f"✓ Stopped VM {vmid}"
+            elif action == 'restart':
+                vm_api.status.reboot.post()
+                return f"✓ Restarted VM {vmid}"
+            elif action == 'shutdown':
+                vm_api.status.shutdown.post()
+                return f"✓ Initiated graceful shutdown of VM {vmid}"
+            elif action == 'delete':
+                vm_api.delete()
+                return f"✓ Deleted VM {vmid}"
+        else:  # lxc
+            ct_api = proxmox.nodes(node_name).lxc(vmid)
+            if action == 'start':
+                ct_api.status.start.post()
+                return f"✓ Started container {vmid}"
+            elif action == 'stop':
+                ct_api.status.stop.post()
+                return f"✓ Stopped container {vmid}"
+            elif action == 'restart':
+                ct_api.status.reboot.post()
+                return f"✓ Restarted container {vmid}"
+            elif action == 'shutdown':
+                ct_api.status.shutdown.post()
+                return f"✓ Initiated graceful shutdown of container {vmid}"
+            elif action == 'delete':
+                ct_api.delete()
+                return f"✓ Deleted container {vmid}"
+        
+        return f"✗ Unknown action: {action}"
+        
+    except Exception as e:
+        return f"✗ Failed to execute VM action: {str(e)}"
+
 @api_router.post("/actions/execute")
 async def execute_action(exec_data: ActionExecute, current_user: dict = Depends(get_current_user)):
     action_doc = await db.actions.find_one({"id": exec_data.action_id, "user_id": current_user["user_id"]})

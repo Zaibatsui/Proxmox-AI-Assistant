@@ -328,9 +328,19 @@ function AIAssistant({ onLogout }) {
   return (
     <Layout onLogout={onLogout} currentPage="assistant">
       <div className="h-[calc(100vh-6rem)] flex flex-col" data-testid="ai-assistant">
-        <div className="mb-4 flex-shrink-0">
-          <h1 className="text-3xl font-bold text-slate-100 mb-1">AI Assistant</h1>
-          <p className="text-sm text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
+        <div className="mb-4 flex-shrink-0 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-100 mb-1">AI Assistant</h1>
+            <p className="text-sm text-slate-400">Ask questions about hardware passthrough, IOMMU, and driver configuration</p>
+          </div>
+          <button
+            onClick={startNewConversation}
+            className="px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-lg text-sm flex items-center gap-2 transition-colors"
+            title="Start a new conversation (clears context)"
+          >
+            <RotateCcw className="w-4 h-4" />
+            New Chat
+          </button>
         </div>
 
         {/* Current Connection Display */}

@@ -7092,52 +7092,43 @@ async def websocket_terminal(websocket: WebSocket):
             shell_channel.send(f'docker exec -it {container_id} /bin/sh\n')
             await asyncio.sleep(0.5)  # Wait for shell to start
             
-        # For VMs/LXCs - fetch SSH credentials from database
-        elif conn_type in ['vm', 'lxc'] and vmid:
-            # Try to get credentials from connection_data first (if passed)
-            ssh_host = connection_data.get('ssh_host')
-            ssh_port = connection_data.get('ssh_port', 22)
-            ssh_username = connection_data.get('ssh_username')
-            ssh_password = connection_data.get('ssh_password')
+        # For VMs/LXCs - PROXY through Proxmox host using pct enter / qm terminal
+        elif conn_type in ['vm', 'lxc', 'qemu'] and vmid:
+            logger.info(f"Setting up terminal for {conn_type.upper()} {vmid} via Proxmox host proxy")
             
-            # If credentials not in connection_data, fetch from database
-            if not all([ssh_host, ssh_username, ssh_password]):
-                logger.info(f"Fetching SSH credentials from database for {conn_type} {vmid}")
-                
-                # Get Proxmox config to find host
-                proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
-                if not proxmox_config:
-                    await websocket.send_json({'type': 'error', 'data': 'Proxmox configuration not found'})
-                    await websocket.close()
-                    return
-                
-                # Extract hostname
-                host = proxmox_config['host']
-                if '://' in host:
-                    host = host.split('://', 1)[1]
-                host = host.split(':')[0].rstrip('/')
-                
-                # Get SSH config
-                ssh_config = await db.ssh_configs.find_one({
-                    "user_id": user_id,
-                    "host": host
-                })
-                
-                if not ssh_config:
-                    ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
-                
-                if not ssh_config:
-                    await websocket.send_json({'type': 'error', 'data': 'No SSH credentials found. Please configure in Settings → SSH Configuration.'})
-                    await websocket.close()
-                    return
-                
-                ssh_host = ssh_config.get('host')
-                ssh_username = ssh_config.get('username', 'root')
-                ssh_password = ssh_config.get('password')
-                ssh_port = ssh_config.get('port', 22)
-                logger.info(f"Found SSH credentials from database: {ssh_config.get('name', 'unnamed')}")
+            # Get Proxmox config to find host
+            proxmox_config = await db.proxmox_configs.find_one({"user_id": user_id})
+            if not proxmox_config:
+                await websocket.send_json({'type': 'error', 'data': 'Proxmox configuration not found'})
+                await websocket.close()
+                return
             
-            logger.info(f"Connecting to {conn_type.upper()} {vmid} via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
+            # Extract hostname from Proxmox config
+            host = proxmox_config['host']
+            if '://' in host:
+                host = host.split('://', 1)[1]
+            host = host.split(':')[0].rstrip('/')
+            
+            # Get SSH config for Proxmox host
+            ssh_config = await db.ssh_configs.find_one({
+                "user_id": user_id,
+                "host": host
+            })
+            
+            if not ssh_config:
+                ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
+            
+            if not ssh_config:
+                await websocket.send_json({'type': 'error', 'data': 'No SSH credentials found for Proxmox host. Please configure in Settings → SSH Configuration.'})
+                await websocket.close()
+                return
+            
+            ssh_host = ssh_config.get('host')
+            ssh_username = ssh_config.get('username', 'root')
+            ssh_password = ssh_config.get('password')
+            ssh_port = ssh_config.get('port', 22)
+            
+            logger.info(f"Connecting to Proxmox host {ssh_host}:{ssh_port} to access {conn_type.upper()} {vmid}")
             
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -7150,15 +7141,33 @@ async def websocket_terminal(websocket: WebSocket):
                     password=ssh_password,
                     timeout=10
                 )
-                logger.info(f"Successfully connected to {conn_type.upper()} {vmid}")
+                logger.info(f"Connected to Proxmox host, now entering {conn_type.upper()} {vmid}")
             except Exception as conn_err:
-                error_msg = f"SSH connection to {conn_type.upper()} {vmid} failed: {str(conn_err)}"
+                error_msg = f"SSH connection to Proxmox host failed: {str(conn_err)}"
                 logger.error(error_msg)
                 await websocket.send_json({'type': 'error', 'data': error_msg})
                 await websocket.close()
                 return
             
-            shell_channel = ssh_client.invoke_shell(term='xterm', width=100, height=20)
+            # Open interactive shell on Proxmox host
+            shell_channel = ssh_client.invoke_shell(term='xterm', width=120, height=30)
+            await asyncio.sleep(0.3)  # Wait for shell to initialize
+            
+            # Enter the VM/LXC using Proxmox CLI commands
+            if conn_type == 'lxc':
+                # For LXC containers: use pct enter
+                enter_cmd = f'pct enter {vmid}\n'
+                logger.info(f"Entering LXC container with: pct enter {vmid}")
+            else:
+                # For VMs: use qm terminal (requires serial console) or suggest alternative
+                # qm terminal requires serial console to be configured
+                enter_cmd = f'qm terminal {vmid}\n'
+                logger.info(f"Entering VM with: qm terminal {vmid}")
+                # Note: If qm terminal doesn't work, user needs serial console setup
+                # Alternative: SSH from host if VM has known IP
+            
+            shell_channel.send(enter_cmd)
+            await asyncio.sleep(0.5)  # Wait for pct/qm to connect
             
         # For Proxmox host
         else:

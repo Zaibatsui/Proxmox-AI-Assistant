@@ -7296,13 +7296,33 @@ async def websocket_terminal(websocket: WebSocket):
                             break
                     
                     if vm_ip:
-                        await websocket.send_json({
-                            'type': 'output',
-                            'data': f'*** Found VM IP: {vm_ip}\r\n*** SSHing to VM (enter password when prompted)...\r\n\r\n'
+                        # Try to find SSH credentials for this VM's IP
+                        vm_ssh_config = await db.ssh_configs.find_one({
+                            "user_id": user_id,
+                            "host": vm_ip
                         })
+                        
+                        if vm_ssh_config:
+                            ssh_user = vm_ssh_config.get('username', 'root')
+                            await websocket.send_json({
+                                'type': 'output',
+                                'data': f'*** Found VM IP: {vm_ip}\r\n*** Using stored credentials for user: {ssh_user}\r\n\r\n'
+                            })
+                        else:
+                            # No stored credentials - default to root but inform user
+                            ssh_user = 'root'
+                            await websocket.send_json({
+                                'type': 'output',
+                                'data': f'*** Found VM IP: {vm_ip}\r\n*** No SSH config found for this VM. Using default user: root\r\n'
+                            })
+                            await websocket.send_json({
+                                'type': 'output',
+                                'data': '*** Tip: Add SSH config in Settings for this VM IP to save credentials.\r\n\r\n'
+                            })
+                        
                         # SSH from Proxmox host to VM
-                        enter_cmd = f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{vm_ip}\n'
-                        logger.info(f"Entering VM {vmid} via SSH to {vm_ip}")
+                        enter_cmd = f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null {ssh_user}@{vm_ip}\n'
+                        logger.info(f"Entering VM {vmid} via SSH to {ssh_user}@{vm_ip}")
                         shell_channel.send(enter_cmd)
                         await asyncio.sleep(0.5)
                     else:

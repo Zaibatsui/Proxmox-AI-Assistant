@@ -5093,13 +5093,73 @@ async def get_location_ssh_client(user_id: str, location: Optional[FileLocation]
                 self._type = "vm"
             
             def exec_command(self, command, timeout=None):
-                """Execute command in VM using qm guest exec"""
+                """Execute command in VM using qm guest exec
+                
+                qm guest exec returns JSON output like:
+                {"out-data":"base64-encoded-output","exited":true,"exitcode":0}
+                
+                We need to parse this and return proper stdout/stderr-like objects.
+                """
                 # Escape for shell
                 escaped_cmd = command.replace("\\", "\\\\").replace('"', '\\"')
                 # Use bash -c to run the command
                 wrapped_cmd = f'qm guest exec {self._vmid} -- bash -c "{escaped_cmd}"'
                 logger.info(f"Executing in VM {self._vmid} via qm guest exec: {command[:100]}...")
-                return self._client.exec_command(wrapped_cmd, timeout=timeout)
+                
+                stdin, stdout, stderr = self._client.exec_command(wrapped_cmd, timeout=timeout)
+                
+                # Read the raw output (which is JSON from qm guest exec)
+                raw_output = stdout.read().decode('utf-8')
+                raw_stderr = stderr.read().decode('utf-8')
+                exit_status = stdout.channel.recv_exit_status()
+                
+                # Try to parse qm guest exec JSON output
+                actual_output = ""
+                actual_exitcode = exit_status
+                
+                try:
+                    import json
+                    import base64
+                    result = json.loads(raw_output.strip())
+                    
+                    # qm guest exec returns base64-encoded output in "out-data"
+                    if 'out-data' in result:
+                        try:
+                            actual_output = base64.b64decode(result['out-data']).decode('utf-8')
+                        except:
+                            actual_output = result['out-data']  # Not base64
+                    
+                    if 'exitcode' in result:
+                        actual_exitcode = result['exitcode']
+                        
+                except json.JSONDecodeError:
+                    # Not JSON - might be an error message or raw output
+                    actual_output = raw_output
+                except Exception as e:
+                    logger.warning(f"Error parsing qm guest exec output: {e}")
+                    actual_output = raw_output
+                
+                # Create mock file-like objects for stdout/stderr
+                class MockStdout:
+                    def __init__(self, data, exit_code):
+                        self._data = data.encode('utf-8')
+                        self._pos = 0
+                        self.channel = type('obj', (object,), {'recv_exit_status': lambda: exit_code})()
+                    
+                    def read(self):
+                        return self._data
+                    
+                    def decode(self, *args):
+                        return self._data.decode(*args)
+                
+                class MockStderr:
+                    def __init__(self, data):
+                        self._data = data.encode('utf-8')
+                    
+                    def read(self):
+                        return self._data
+                
+                return stdin, MockStdout(actual_output, actual_exitcode), MockStderr(raw_stderr)
             
             def open_sftp(self):
                 """For VMs, use qm guest exec to access files"""

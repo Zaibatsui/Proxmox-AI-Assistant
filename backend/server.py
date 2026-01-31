@@ -7265,29 +7265,69 @@ async def websocket_terminal(websocket: WebSocket):
                 shell_channel.send(enter_cmd)
                 await asyncio.sleep(0.5)
             else:
-                # For VMs: use qm terminal (requires serial console to be configured in VM)
-                # Send a message first explaining the requirement
+                # For VMs: SSH from Proxmox host to VM using guest agent to get IP
                 await websocket.send_json({
                     'type': 'output', 
-                    'data': f'\r\n*** Connecting to VM {vmid} via serial console (qm terminal)...\r\n'
-                })
-                await websocket.send_json({
-                    'type': 'output',
-                    'data': '*** Note: If no output appears, the VM may need serial console configured.\r\n'
-                })
-                await websocket.send_json({
-                    'type': 'output',
-                    'data': '*** In Proxmox: VM > Hardware > Add > Serial Port (serial0)\r\n'
-                })
-                await websocket.send_json({
-                    'type': 'output',
-                    'data': '*** Then in VM: enable getty on ttyS0 or configure grub for serial console.\r\n\r\n'
+                    'data': f'\r\n*** Connecting to VM {vmid}...\r\n'
                 })
                 
-                enter_cmd = f'qm terminal {vmid}\n'
-                logger.info(f"Entering VM {vmid} with: qm terminal {vmid}")
-                shell_channel.send(enter_cmd)
-                await asyncio.sleep(0.5)
+                try:
+                    # Get VM IP from guest agent
+                    proxmox, _ = await get_proxmox_connection(user_id)
+                    vm_ip = None
+                    
+                    for node in proxmox.nodes.get():
+                        node_name = node['node']
+                        try:
+                            agent_info = proxmox.nodes(node_name).qemu(vmid).agent('network-get-interfaces').get()
+                            for iface in agent_info.get('result', []):
+                                if iface.get('name') not in ['lo', 'docker0', 'br-']:
+                                    for ip_info in iface.get('ip-addresses', []):
+                                        if ip_info.get('ip-address-type') == 'ipv4':
+                                            ip = ip_info.get('ip-address')
+                                            if ip and not ip.startswith('127.') and not ip.startswith('172.'):
+                                                vm_ip = ip
+                                                break
+                                if vm_ip:
+                                    break
+                        except:
+                            pass
+                        if vm_ip:
+                            break
+                    
+                    if vm_ip:
+                        await websocket.send_json({
+                            'type': 'output',
+                            'data': f'*** Found VM IP: {vm_ip}\r\n*** SSHing to VM (enter password when prompted)...\r\n\r\n'
+                        })
+                        # SSH from Proxmox host to VM
+                        enter_cmd = f'ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@{vm_ip}\n'
+                        logger.info(f"Entering VM {vmid} via SSH to {vm_ip}")
+                        shell_channel.send(enter_cmd)
+                        await asyncio.sleep(0.5)
+                    else:
+                        # Fallback to qm terminal if no IP found
+                        await websocket.send_json({
+                            'type': 'output',
+                            'data': '*** Could not get VM IP. Trying serial console (qm terminal)...\r\n'
+                        })
+                        await websocket.send_json({
+                            'type': 'output',
+                            'data': '*** Note: Serial console requires configuration in VM.\r\n\r\n'
+                        })
+                        enter_cmd = f'qm terminal {vmid}\n'
+                        logger.info(f"Entering VM {vmid} with qm terminal (no IP found)")
+                        shell_channel.send(enter_cmd)
+                        await asyncio.sleep(0.5)
+                except Exception as e:
+                    logger.error(f"Error getting VM IP for terminal: {e}")
+                    await websocket.send_json({
+                        'type': 'output',
+                        'data': f'*** Error getting VM IP: {str(e)}\r\n*** Trying serial console...\r\n\r\n'
+                    })
+                    enter_cmd = f'qm terminal {vmid}\n'
+                    shell_channel.send(enter_cmd)
+                    await asyncio.sleep(0.5)
             
         # For Proxmox host
         else:

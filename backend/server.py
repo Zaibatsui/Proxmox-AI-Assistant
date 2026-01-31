@@ -5608,6 +5608,12 @@ async def get_dashboard_stats(current_user: dict = Depends(get_current_user)):
 @api_router.post("/files/list", response_model=List[FileInfo])
 async def list_files(request: FileListRequest, current_user: dict = Depends(get_current_user)):
     """List files and directories at path"""
+    # Enrich location with SSH credentials from database if needed
+    if request.location and request.location.type in ['vm', 'lxc']:
+        if not request.location.ssh_username or not request.location.ssh_password:
+            logger.info(f"Enriching {request.location.type}:{request.location.id} with credentials from database")
+            request.location = await enrich_location_with_credentials(request.location, current_user["user_id"])
+    
     ssh_client = await get_location_ssh_client(current_user["user_id"], request.location)
     
     try:

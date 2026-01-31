@@ -4042,6 +4042,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                 elif function_name == "propose_vm_action":
                     action = function_args.get("action")
                     vmid = function_args.get("vmid")
+                    vm_config = function_args.get("vm_config", {})
                     
                     # Evaluate risk level
                     risk_level = "low"
@@ -4056,19 +4057,53 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                     elif action == "restart":
                         risk_level = "medium"
                         risk_factors.append("Brief service interruption during restart")
-                    elif action == "create":
+                    elif action in ["create", "clone"]:
                         risk_level = "low"
                         risk_factors.append("Resource allocation - new VM will consume storage/memory")
                     
+                    # Create action in database for execution
+                    action_id = str(uuid.uuid4())
+                    action_doc = {
+                        "id": action_id,
+                        "user_id": current_user["user_id"],
+                        "action_type": "vm_action",
+                        "parameters": {
+                            "action": action,
+                            "vmid": vmid,
+                            "vm_config": vm_config
+                        },
+                        "status": "pending",
+                        "risk_level": risk_level,
+                        "created_at": datetime.now(timezone.utc).isoformat()
+                    }
+                    await db.actions.insert_one(action_doc)
+                    
+                    # Store pending action in session for confirmation
+                    await db.conversation_sessions.update_one(
+                        {"id": session_id},
+                        {"$set": {
+                            "pending_action": {
+                                "type": "vm_action",
+                                "action_id": action_id,
+                                "action": action,
+                                "vmid": vmid,
+                                "vm_config": vm_config
+                            },
+                            "updated_at": datetime.now(timezone.utc).isoformat()
+                        }}
+                    )
+                    
                     function_response = {
                         "type": "vm_action_proposal",
+                        "action_id": action_id,
                         "action": action,
                         "vmid": vmid,
-                        "vm_config": function_args.get("vm_config"),
+                        "vm_config": vm_config,
                         "reason": function_args.get("reason"),
                         "risk_level": risk_level,
                         "risk_factors": risk_factors,
-                        "requires_confirmation": True
+                        "requires_confirmation": True,
+                        "message": f"Action '{action}' proposed. Say 'yes' or 'confirm' to execute."
                     }
                 elif function_name == "docker_list_containers":
                     # List Docker containers - no confirmation needed (read-only)

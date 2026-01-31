@@ -50,6 +50,15 @@ function AIAssistant({ onLogout }) {
     }
   }, []);
 
+  // Start a new conversation session
+  const startNewConversation = () => {
+    const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    localStorage.setItem('ai_session_id', newSessionId);
+    setSessionId(newSessionId);
+    setConversations([]);
+    toast.success("Started new conversation");
+  };
+
   const fetchHistory = async () => {
     try {
       const response = await axios.get(`${API}/ai/history?limit=10`);

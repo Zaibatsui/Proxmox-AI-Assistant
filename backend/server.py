@@ -7296,14 +7296,22 @@ async def websocket_terminal(websocket: WebSocket):
                             break
                     
                     if vm_ip:
-                        # Try to find SSH credentials for this VM's IP
-                        vm_ssh_config = await db.ssh_configs.find_one({
+                        # Try to find SSH credentials for this VM in location_credentials
+                        vm_creds = await db.location_credentials.find_one({
                             "user_id": user_id,
-                            "host": vm_ip
+                            "location_type": "vm",
+                            "location_id": str(vmid)
                         })
                         
-                        if vm_ssh_config:
-                            ssh_user = vm_ssh_config.get('username', 'root')
+                        if not vm_creds:
+                            # Also try ssh_configs by IP
+                            vm_creds = await db.ssh_configs.find_one({
+                                "user_id": user_id,
+                                "host": vm_ip
+                            })
+                        
+                        if vm_creds:
+                            ssh_user = vm_creds.get('ssh_username') or vm_creds.get('username', 'root')
                             await websocket.send_json({
                                 'type': 'output',
                                 'data': f'*** Found VM IP: {vm_ip}\r\n*** Using stored credentials for user: {ssh_user}\r\n\r\n'

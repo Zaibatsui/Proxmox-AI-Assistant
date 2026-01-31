@@ -3963,6 +3963,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                 elif function_name == "read_file":
                     try:
                         location = parse_location_string(function_args.get("location"))
+                        location = await enrich_location_with_credentials(location, current_user["user_id"])
                         ssh_client = await get_location_ssh_client(current_user["user_id"], location)
                         file_content = await location_read_file(ssh_client, function_args.get("path"), location)
                         ssh_client.close()
@@ -3973,6 +3974,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                             "size": file_content.size
                         }
                     except Exception as e:
+                        logger.error(f"read_file error: {str(e)}")
                         function_response = {"error": str(e)}
                 elif function_name == "propose_file_edit":
                     # This is a special case - we don't execute it, we return a proposal

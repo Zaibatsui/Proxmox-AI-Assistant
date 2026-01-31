@@ -15,7 +15,7 @@ Build a comprehensive Proxmox management assistant that provides:
 - Must use Proxmox CLI tools (`pct enter`, `qm terminal`, `pct exec`, `qm guest exec`) from the host
 
 ## Current Version
-3.2.0
+4.0.0
 
 ## Tech Stack
 - **Frontend**: React, TailwindCSS, Shadcn UI

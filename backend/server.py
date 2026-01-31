@@ -4255,6 +4255,7 @@ Be conversational, helpful, and ALWAYS reference their actual environment!"""
                         "requires_confirmation": True
                     }
                 elif function_name == "propose_vm_action":
+                    logger.info(f"propose_vm_action called with args: {function_args}")
                     action = function_args.get("action")
                     vmid = function_args.get("vmid")
                     vm_config = function_args.get("vm_config", {})

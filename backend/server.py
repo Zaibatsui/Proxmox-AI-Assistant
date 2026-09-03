@@ -253,6 +253,31 @@ class ConnectionProfileUpdate(BaseModel):
     private_key: Optional[str] = None
     base_path: Optional[str] = None
     notes: Optional[str] = None
+    # As with SSH configs: a blank field means "leave the stored value alone".
+    # Removal has to be asked for explicitly.
+    clear_password: bool = False
+    clear_private_key: bool = False
+
+
+def profile_credential_flags(profile: dict) -> dict:
+    """
+    Describe which credentials a profile holds, without revealing them.
+
+    Credential values must never leave the server: the UI only needs to know
+    what is set so it can show state and offer to remove it.
+    """
+    return {
+        "has_password": bool(profile.get("password")),
+        "has_private_key": bool(profile.get("private_key")),
+    }
+
+
+def strip_profile_credentials(profile: dict) -> dict:
+    """Replace a profile's stored credentials with has_* flags, in place."""
+    profile.update(profile_credential_flags(profile))
+    profile.pop("password", None)
+    profile.pop("private_key", None)
+    return profile
 
 class FileUploadChunk(BaseModel):
     path: str
@@ -1849,12 +1874,12 @@ async def get_connection_profiles(current_user: dict = Depends(get_current_user)
         if isinstance(profile.get('updated_at'), datetime):
             profile['updated_at'] = profile['updated_at'].isoformat()
         
-        # Don't send passwords/keys in list view
-        if 'password' in profile:
-            profile['password'] = '******' if profile['password'] else None
-        if 'private_key' in profile:
-            profile['private_key'] = '******' if profile['private_key'] else None
-    
+        # Report which credentials exist, never the credentials themselves. The
+        # previous '******' placeholder was indistinguishable from a real value
+        # once it reached the edit form, where saving could write it back over
+        # the genuine one.
+        strip_profile_credentials(profile)
+
     return {"profiles": profiles}
 
 @api_router.get("/proxmox-locations")
@@ -2062,23 +2087,29 @@ async def create_connection_profile(profile_data: ConnectionProfileCreate, curre
 
 @api_router.get("/connection-profiles/{profile_id}")
 async def get_connection_profile(profile_id: str, current_user: dict = Depends(get_current_user)):
-    """Get a specific connection profile (with credentials)"""
+    """
+    Get a specific connection profile.
+
+    Credentials are reported as has_password / has_private_key rather than
+    returned. This endpoint previously sent the stored password and private key
+    to the browser every time a profile was opened for editing.
+    """
     profile = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
-    
+
     if not profile:
         raise HTTPException(status_code=404, detail="Connection profile not found")
-    
+
     # Remove MongoDB _id field for JSON serialization
     if '_id' in profile:
         del profile['_id']
-    
+
     # Convert datetime fields to ISO strings if needed
     if isinstance(profile.get('created_at'), datetime):
         profile['created_at'] = profile['created_at'].isoformat()
     if isinstance(profile.get('updated_at'), datetime):
         profile['updated_at'] = profile['updated_at'].isoformat()
-    
-    return profile
+
+    return strip_profile_credentials(profile)
 
 @api_router.put("/connection-profiles/{profile_id}")
 async def update_connection_profile(profile_id: str, profile_data: ConnectionProfileUpdate, current_user: dict = Depends(get_current_user)):
@@ -2088,18 +2119,63 @@ async def update_connection_profile(profile_id: str, profile_data: ConnectionPro
     if not existing:
         raise HTTPException(status_code=404, detail="Connection profile not found")
     
-    # Update only provided fields
-    update_data = {k: v for k, v in profile_data.model_dump(exclude_unset=True).items() if v is not None}
+    payload = profile_data.model_dump(exclude_unset=True)
+    clear_password = payload.pop('clear_password', False)
+    clear_private_key = payload.pop('clear_private_key', False)
+
+    # Empty values never overwrite stored ones -- a blank credential field in
+    # the form means "no change", not "erase". Removal uses the clear_* flags.
+    update_data = {k: v for k, v in payload.items() if v is not None and v != ""}
+
+    unset_data = {}
+    if clear_password:
+        unset_data['password'] = ""
+        update_data.pop('password', None)
+    if clear_private_key:
+        unset_data['private_key'] = ""
+        update_data.pop('private_key', None)
+
+    will_have_password = (
+        'password' in update_data
+        or (bool(existing.get('password')) and not clear_password)
+    )
+    will_have_key = (
+        'private_key' in update_data
+        or (bool(existing.get('private_key')) and not clear_private_key)
+    )
+    if not will_have_password and not will_have_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Refusing to remove the last credential. Add a private key or "
+                   "password before removing the other, otherwise this profile "
+                   "could no longer connect."
+        )
+
+    if 'private_key' in update_data:
+        try:
+            load_ssh_private_key(update_data['private_key'])
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        update_data['private_key'] = normalize_private_key(update_data['private_key'])
+
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
-    
+
+    mongo_update = {"$set": update_data}
+    if unset_data:
+        mongo_update["$unset"] = unset_data
+
     await db.connection_profiles.update_one(
         {"id": profile_id, "user_id": current_user["user_id"]},
-        {"$set": update_data}
+        mongo_update
     )
-    
-    await log_audit(current_user["user_id"], "connection_profile_updated", {"id": profile_id})
-    
-    return {"message": "Connection profile updated"}
+
+    await log_audit(current_user["user_id"], "connection_profile_updated", {
+        "id": profile_id,
+        "cleared": sorted(unset_data.keys()),
+    })
+
+    updated = await db.connection_profiles.find_one({"id": profile_id, "user_id": current_user["user_id"]})
+    return {"message": "Connection profile updated", **profile_credential_flags(updated or {})}
 
 @api_router.delete("/connection-profiles/{profile_id}")
 async def delete_connection_profile(profile_id: str, current_user: dict = Depends(get_current_user)):

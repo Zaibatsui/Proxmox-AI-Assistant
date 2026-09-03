@@ -47,6 +47,10 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     base_path: '/',
     notes: ''
   });
+  // Which credentials the profile being edited has stored. The values never
+  // reach the browser -- only whether each one is set.
+  const [storedCreds, setStoredCreds] = useState({ has_password: false, has_private_key: false });
+  const [clearingCred, setClearingCred] = useState(false);
 
   // Sync local profiles state with ConnectionContext
   useEffect(() => {
@@ -160,15 +164,26 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     try {
       if (editingProfile) {
-        // Update existing
-        await axios.put(`${API}/api/connection-profiles/${editingProfile.id}`, formData);
+        // Blank credential fields mean "keep what is stored" -- the server no
+        // longer sends them down, so posting an empty string back would
+        // otherwise erase a working credential.
+        const dataToSend = { ...formData };
+        if (!dataToSend.password) delete dataToSend.password;
+        if (!dataToSend.private_key) delete dataToSend.private_key;
+        await axios.put(`${API}/api/connection-profiles/${editingProfile.id}`, dataToSend);
         toast.success('Connection profile updated');
       } else {
-        // Create new
-        await axios.post(`${API}/api/connection-profiles`, formData);
+        if (!formData.password && !formData.private_key) {
+          toast.error('Provide a private key or a password');
+          return;
+        }
+        const dataToSend = { ...formData };
+        if (!dataToSend.password) delete dataToSend.password;
+        if (!dataToSend.private_key) delete dataToSend.private_key;
+        await axios.post(`${API}/api/connection-profiles`, dataToSend);
         toast.success('Connection profile created');
       }
       
@@ -183,18 +198,24 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
 
   const handleEdit = async (profile) => {
     try {
-      // Load full profile with credentials
+      // Credentials are deliberately not returned by this endpoint -- only
+      // has_password / has_private_key, so nothing secret reaches the browser.
       const response = await axios.get(`${API}/api/connection-profiles/${profile.id}`);
       const fullProfile = response.data;
-      
+
+      setStoredCreds({
+        has_password: !!fullProfile.has_password,
+        has_private_key: !!fullProfile.has_private_key
+      });
+
       setFormData({
         name: fullProfile.name,
         connection_type: fullProfile.connection_type,
         host: fullProfile.host,
         port: fullProfile.port,
         username: fullProfile.username,
-        password: fullProfile.password || '',
-        private_key: fullProfile.private_key || '',
+        password: '',
+        private_key: '',
         base_path: fullProfile.base_path || '/',
         notes: fullProfile.notes || ''
       });
@@ -225,6 +246,36 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
     }
   };
 
+  // Removing a stored credential is a separate, explicit action so it cannot
+  // happen by opening the form and pressing Save. The server refuses if it
+  // would leave the profile with no way to authenticate.
+  const clearCredential = async (which) => {
+    if (!editingProfile) return;
+
+    const label = which === 'password' ? 'password' : 'private key';
+    if (!window.confirm(
+      `Remove the stored ${label} for "${editingProfile.name}"?\n\n` +
+      `It will be deleted from the database and cannot be recovered.`
+    )) return;
+
+    setClearingCred(true);
+    try {
+      const { data } = await axios.put(`${API}/api/connection-profiles/${editingProfile.id}`, {
+        [which === 'password' ? 'clear_password' : 'clear_private_key']: true
+      });
+      setStoredCreds({
+        has_password: !!data.has_password,
+        has_private_key: !!data.has_private_key
+      });
+      toast.success(`Stored ${label} removed`);
+      loadProfiles();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to remove ${label}`);
+    } finally {
+      setClearingCred(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -237,6 +288,7 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
       base_path: '/',
       notes: ''
     });
+    setStoredCreds({ has_password: false, has_private_key: false });
     setEditingProfile(null);
   };
 
@@ -408,6 +460,32 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
                     <div className="text-xs text-slate-400 truncate">
                       {profile.connection_type.toUpperCase()} • {profile.host}:{profile.port}
                     </div>
+                    <div className="flex items-center gap-1 mt-1">
+                      {profile.has_private_key && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25"
+                          title="An SSH private key is stored for this profile"
+                        >
+                          KEY
+                        </span>
+                      )}
+                      {profile.has_password && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                          title="A password is stored in plain text. Add a key and remove it."
+                        >
+                          PASSWORD
+                        </span>
+                      )}
+                      {!profile.has_private_key && !profile.has_password && (
+                        <span
+                          className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-600/30 text-slate-400 border border-slate-600"
+                          title="No credentials stored — this profile cannot connect"
+                        >
+                          NO CREDENTIALS
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 
@@ -555,33 +633,94 @@ function ConnectionManager({ onSelectConnection, selectedConnection }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1">
-                  Password
-                </label>
-                <input
-                  type="password"
-                  value={formData.password}
-                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none"
-                  placeholder="••••••••"
-                />
-              </div>
+              <div className="rounded border border-slate-700 bg-slate-800/40 p-3 space-y-3">
+                {editingProfile && (
+                  <div className="text-xs text-slate-400">
+                    {storedCreds.has_private_key || storedCreds.has_password ? (
+                      <span>
+                        Stored credentials:{' '}
+                        {storedCreds.has_private_key && (
+                          <span className="text-emerald-400 font-medium">private key</span>
+                        )}
+                        {storedCreds.has_private_key && storedCreds.has_password && ' and '}
+                        {storedCreds.has_password && (
+                          <span className="text-amber-400 font-medium">password (plain text)</span>
+                        )}
+                        . Leave the fields below blank to keep them.
+                      </span>
+                    ) : (
+                      <span className="text-orange-400">
+                        No credentials stored — this profile cannot connect.
+                      </span>
+                    )}
+                  </div>
+                )}
 
-              {(formData.connection_type === 'ssh' || formData.connection_type === 'sftp') && (
                 <div>
-                  <label className="block text-sm font-medium text-slate-300 mb-1">
-                    Private Key (Optional)
-                  </label>
-                  <textarea
-                    value={formData.private_key}
-                    onChange={(e) => setFormData({ ...formData, private_key: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none font-mono text-xs"
-                    placeholder="-----BEGIN RSA PRIVATE KEY-----"
-                    rows={4}
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-sm font-medium text-slate-300">
+                      Password
+                      {storedCreds.has_password && (
+                        <span className="ml-2 text-xs font-normal text-amber-400">stored</span>
+                      )}
+                    </label>
+                    {editingProfile && storedCreds.has_password && (
+                      <button
+                        type="button"
+                        disabled={clearingCred}
+                        onClick={() => clearCredential('password')}
+                        className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                      >
+                        <Trash2 className="w-3 h-3" /> Remove
+                      </button>
+                    )}
+                  </div>
+                  <input
+                    type="password"
+                    autoComplete="new-password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none"
+                    placeholder={storedCreds.has_password ? 'Stored — type here only to replace it' : '••••••••'}
                   />
                 </div>
-              )}
+
+                {(formData.connection_type === 'ssh' || formData.connection_type === 'sftp') && (
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-sm font-medium text-slate-300">
+                        Private Key
+                        {storedCreds.has_private_key && (
+                          <span className="ml-2 text-xs font-normal text-emerald-400">stored</span>
+                        )}
+                      </label>
+                      {editingProfile && storedCreds.has_private_key && (
+                        <button
+                          type="button"
+                          disabled={clearingCred}
+                          onClick={() => clearCredential('private_key')}
+                          className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300 disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3 h-3" /> Remove
+                        </button>
+                      )}
+                    </div>
+                    <textarea
+                      value={formData.private_key}
+                      onChange={(e) => setFormData({ ...formData, private_key: e.target.value })}
+                      className="w-full px-3 py-2 bg-slate-800 text-white rounded border border-slate-700 focus:border-amber-500 focus:outline-none font-mono text-xs"
+                      placeholder={storedCreds.has_private_key
+                        ? 'Stored — paste a new key here only to replace it'
+                        : '-----BEGIN OPENSSH PRIVATE KEY-----'}
+                      rows={4}
+                      spellCheck={false}
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Preferred over a password. Must have no passphrase.
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div>
                 <label className="block text-sm font-medium text-slate-300 mb-1">

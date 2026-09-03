@@ -156,9 +156,18 @@ function Settings({ onLogout }) {
       setApiTestStatus(response.data.api);
       setSshTestStatus(response.data.ssh);
     } catch (error) {
+      // This endpoint checks the Proxmox API config first and aborts before it
+      // reaches SSH, so a failure here says nothing about whether SSH works.
+      // Reporting it as an SSH failure sends people looking in the wrong place.
+      const detail = error.response?.data?.detail || "Configuration not found";
       const errorData = {
-        api: { status: "failed", error: error.response?.data?.detail || "Configuration not found" },
-        ssh: { status: "failed", error: "Configuration not found" }
+        api: { status: "failed", error: detail },
+        ssh: {
+          status: "not_tested",
+          error: "Not tested — the combined test stops when the Proxmox API "
+               + "configuration is unavailable. Use Test SSH to check the SSH "
+               + "connection on its own."
+        }
       };
       setConnectionStatus(errorData);
       setApiTestStatus(errorData.api);
@@ -255,15 +264,33 @@ function Settings({ onLogout }) {
     }
   };
 
+  // Tests the SSH configuration by itself. The older /proxmox/test-connection
+  // checks the Proxmox API config first and aborts before it reaches SSH, so a
+  // missing API config surfaced as an unrelated "SSH Connection Error".
   const testSshConnection = async () => {
+    if (sshConfigs.length === 0) {
+      setSshTestStatus({ status: "failed", error: "Save an SSH configuration first." });
+      return;
+    }
+
     setTestingSsh(true);
     try {
-      const response = await axios.post(`${API}/proxmox/test-connection`);
-      setSshTestStatus(response.data.ssh);
-      toast.success(response.data.ssh.status === "success" ? "SSH Connected!" : "SSH Connection Failed");
+      const { data } = await axios.post(`${API}/ssh/configs/${sshConfigs[0].id}/test`);
+      setSshTestStatus(data);
+      if (data.status === "success") {
+        const how = data.auth_method === "key" ? "private key"
+                  : data.auth_method === "password" ? "password"
+                  : "the container's own SSH keys";
+        toast.success(`SSH connected using ${how}`);
+      } else {
+        toast.error("SSH connection failed");
+      }
     } catch (error) {
-      setSshTestStatus({ status: "failed", error: error.response?.data?.detail || "Connection failed" });
-      toast.error("SSH Connection Failed");
+      setSshTestStatus({
+        status: "failed",
+        error: error.response?.data?.detail || error.message || "Could not reach the server"
+      });
+      toast.error("SSH connection failed");
     } finally {
       setTestingSsh(false);
     }
@@ -1313,8 +1340,8 @@ function Settings({ onLogout }) {
                       className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 font-mono text-xs"
                     />
                     <p className="text-xs text-slate-500">
-                      Paste the whole file including the BEGIN and END lines. Ed25519, RSA,
-                      ECDSA and DSA are accepted. The key must have no passphrase — the app
+                      Paste the whole file including the BEGIN and END lines. Ed25519, RSA
+                      and ECDSA are accepted. The key must have no passphrase — the app
                       connects unattended and cannot answer a prompt.
                     </p>
                   </div>
@@ -1370,12 +1397,37 @@ function Settings({ onLogout }) {
                   )}
                 </div>
 
-                {/* SSH Error Display */}
-                {sshTestStatus && sshTestStatus.error && (
+                {/* SSH test result */}
+                {sshTestStatus && sshTestStatus.status === "success" && (
+                  <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                    <p className="text-sm font-semibold text-emerald-400 mb-1 flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4" /> SSH connected
+                    </p>
+                    <p className="text-xs text-emerald-300">
+                      {sshTestStatus.auth_method === "key"
+                        ? "Authenticated with the stored private key."
+                        : sshTestStatus.auth_method === "password"
+                        ? "Authenticated with the stored password. Add a private key and remove the password to stop storing it in plain text."
+                        : "Authenticated using SSH keys inside the backend container, not a stored credential."}
+                    </p>
+                  </div>
+                )}
+
+                {sshTestStatus && sshTestStatus.status === "not_tested" && sshTestStatus.error && (
+                  <div className="p-4 bg-slate-500/10 border border-slate-600 rounded-lg">
+                    <p className="text-sm font-semibold text-slate-300 mb-1">SSH not tested</p>
+                    <p className="text-xs text-slate-400 break-words">{sshTestStatus.error}</p>
+                  </div>
+                )}
+
+                {sshTestStatus && sshTestStatus.status === "failed" && sshTestStatus.error && (
                   <div className="p-4 bg-orange-500/10 border border-orange-500/20 rounded-lg">
-                    <p className="text-sm font-semibold text-orange-400 mb-1">SSH Connection Error:</p>
-                    <p className="text-xs text-orange-300">{sshTestStatus.error}</p>
-                    <p className="text-xs text-slate-400 mt-2">Note: SSH is only required for device scanning. VM management works via API only.</p>
+                    <p className="text-sm font-semibold text-orange-400 mb-1">SSH connection failed:</p>
+                    <p className="text-xs text-orange-300 break-words">{sshTestStatus.error}</p>
+                    <p className="text-xs text-slate-400 mt-2">
+                      This tests only the SSH connection above. The Proxmox API is configured
+                      separately and is not affected by this result.
+                    </p>
                   </div>
                 )}
 
@@ -1398,7 +1450,7 @@ function Settings({ onLogout }) {
                   </Button>
                   <Button
                     onClick={testSshConnection}
-                    disabled={testingSsh || !config}
+                    disabled={testingSsh || sshConfigs.length === 0}
                     className="flex-1 bg-cyan-600 hover:bg-cyan-700 text-white"
                   >
                     {testingSsh ? (

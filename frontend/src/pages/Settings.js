@@ -68,6 +68,10 @@ function Settings({ onLogout }) {
   // What the server has stored. The values are never sent to the browser --
   // only whether each one is set, so the form can show state and offer removal.
   const [sshStored, setSshStored] = useState({ has_password: false, has_private_key: false });
+  // Every VM/container credential in the database, read independently of the
+  // Proxmox API so they stay visible and removable when it is unavailable.
+  const [storedCredentials, setStoredCredentials] = useState([]);
+  const [loadingStoredCreds, setLoadingStoredCreds] = useState(false);
   const [savingSsh, setSavingSsh] = useState(false);
   
   // Connections Management state - use data from ConnectionContext
@@ -189,7 +193,9 @@ function Settings({ onLogout }) {
             ssh_host: loc.ssh_host,
             ssh_port: loc.ssh_port || 22,
             ssh_username: loc.ssh_username,
-            hasPassword: !!loc.ssh_password
+            // The server reports whether a credential exists rather than
+            // sending its value, so read the flag instead of the secret.
+            hasPassword: !!loc.has_password
           };
         }
       });
@@ -244,9 +250,51 @@ function Settings({ onLogout }) {
       await axios.delete(`${API}/location-credentials/${location.type}/${location.vmid}`);
       toast.success('Credentials deleted');
       reloadConnections(true); // Force refresh from ConnectionContext
+      fetchStoredCredentials();
     } catch (error) {
       console.error('Failed to delete credentials:', error);
       toast.error('Failed to delete credentials');
+    }
+  };
+
+  // Read straight from the credential store rather than from the Proxmox
+  // locations list. Locations require a working Proxmox API connection, so
+  // credentials were invisible whenever that was broken -- and credentials for
+  // a VM that no longer exists were invisible always, while still stored.
+  const fetchStoredCredentials = async () => {
+    setLoadingStoredCreds(true);
+    try {
+      const { data } = await axios.get(`${API}/location-credentials`);
+      setStoredCredentials(data.credentials || []);
+    } catch (error) {
+      console.error('Failed to load stored credentials:', error);
+      setStoredCredentials([]);
+    } finally {
+      setLoadingStoredCreds(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStoredCredentials();
+  }, []);
+
+  const removeStoredCredential = async (cred) => {
+    const label = `${cred.location_type.toUpperCase()} ${cred.location_id}`;
+    if (!window.confirm(
+      `Delete the stored credentials for ${label}?\n\n` +
+      `Host: ${cred.ssh_host || 'unknown'}\n` +
+      `User: ${cred.ssh_username}\n\n` +
+      `This removes them from the database. It does NOT change the password on ` +
+      `the machine itself — rotate it there if it may have been exposed.`
+    )) return;
+
+    try {
+      await axios.delete(`${API}/location-credentials/${cred.location_type}/${cred.location_id}`);
+      toast.success(`Credentials for ${label} deleted`);
+      fetchStoredCredentials();
+      reloadConnections(true);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Failed to delete credentials');
     }
   };
 
@@ -1481,6 +1529,87 @@ function Settings({ onLogout }) {
                 </CollapsibleContent>
             </Card>
             </Collapsible>
+
+            {/* Stored VM / container credentials. Read from the credential
+                store rather than the Proxmox locations list, so they remain
+                visible and removable when the Proxmox API is unreachable or
+                the machine no longer exists. */}
+            <Card className="bg-slate-900/50 border-slate-800">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-slate-100 flex items-center gap-2">
+                      <Key className="w-5 h-5 text-amber-400" />
+                      Stored VM &amp; Container Credentials
+                    </CardTitle>
+                    <CardDescription className="text-slate-400">
+                      Every credential saved for a VM or container, whatever its current state
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={fetchStoredCredentials}
+                    disabled={loadingStoredCreds}
+                    className="text-slate-400 hover:text-slate-200"
+                  >
+                    <RefreshCw className={`w-4 h-4 ${loadingStoredCreds ? 'animate-spin' : ''}`} />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {storedCredentials.length === 0 ? (
+                  <p className="text-sm text-slate-500">
+                    {loadingStoredCreds ? 'Loading…' : 'No VM or container credentials are stored.'}
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {storedCredentials.map((cred) => (
+                      <div
+                        key={`${cred.location_type}_${cred.location_id}`}
+                        className="flex items-center justify-between gap-3 p-3 rounded-lg bg-slate-800/50 border border-slate-700"
+                      >
+                        <div className="min-w-0">
+                          <div className="text-sm font-medium text-slate-200">
+                            {cred.location_type?.toUpperCase()} {cred.location_id}
+                          </div>
+                          <div className="text-xs text-slate-400 truncate">
+                            {cred.ssh_username}@{cred.ssh_host || 'unknown host'}:{cred.ssh_port}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {cred.has_private_key && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                              KEY
+                            </span>
+                          )}
+                          {cred.has_password && (
+                            <span
+                              className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-500/15 text-amber-400 border border-amber-500/25"
+                              title="Stored in plain text"
+                            >
+                              PASSWORD
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => removeStoredCredential(cred)}
+                            className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                          >
+                            <Trash2 className="w-3 h-3 mr-1" /> Delete
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                    <p className="text-xs text-slate-500 pt-1">
+                      Deleting removes the credential from this app only. It does not change
+                      the password on the machine — rotate it there if it may have been exposed.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
         {/* SSH Credential Edit Modal */}
         {showCredentialModal && (

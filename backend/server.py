@@ -142,6 +142,11 @@ class SSHConfigUpdate(BaseModel):
     username: Optional[str] = None
     password: Optional[str] = None
     private_key: Optional[str] = None
+    # Removing a stored credential needs an explicit instruction. An omitted or
+    # empty password field means "leave it alone" -- otherwise merely opening
+    # the settings form and saving would wipe it.
+    clear_password: bool = False
+    clear_private_key: bool = False
 
 class SSHConfigResponse(BaseModel):
     id: str
@@ -149,6 +154,10 @@ class SSHConfigResponse(BaseModel):
     host: str
     port: int
     username: str
+    # Which credentials are stored. Never the values themselves -- the UI only
+    # needs to know what is set so it can show state and offer to remove it.
+    has_password: bool = False
+    has_private_key: bool = False
     created_at: datetime
     updated_at: datetime
 
@@ -1120,6 +1129,20 @@ async def update_proxmox_config(config: ProxmoxConfigUpdate, current_user: dict 
 @api_router.post("/ssh/configs", response_model=SSHConfigResponse)
 async def create_ssh_config(config: SSHConfigCreate, current_user: dict = Depends(get_current_user)):
     """Create a new SSH configuration"""
+    if not config.password and not config.private_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Provide either an SSH private key or a password. A key is "
+                   "preferred: it is specific to this app and can be revoked "
+                   "without changing the account's password."
+        )
+
+    if config.private_key:
+        try:
+            load_ssh_private_key(config.private_key)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
     ssh_config = SSHConfig(
         user_id=current_user["user_id"],
         **config.model_dump()
@@ -1138,6 +1161,8 @@ async def create_ssh_config(config: SSHConfigCreate, current_user: dict = Depend
         host=ssh_config.host,
         port=ssh_config.port,
         username=ssh_config.username,
+        has_password=bool(ssh_config.password),
+        has_private_key=bool(ssh_config.private_key),
         created_at=ssh_config.created_at,
         updated_at=ssh_config.updated_at
     )
@@ -1161,6 +1186,8 @@ async def list_ssh_configs(current_user: dict = Depends(get_current_user)):
             host=config_doc['host'],
             port=config_doc.get('port', 22),
             username=config_doc['username'],
+            has_password=bool(config_doc.get('password')),
+            has_private_key=bool(config_doc.get('private_key')),
             created_at=config_doc['created_at'],
             updated_at=config_doc['updated_at']
         ))
@@ -1185,6 +1212,8 @@ async def get_ssh_config(config_id: str, current_user: dict = Depends(get_curren
         host=config_doc['host'],
         port=config_doc.get('port', 22),
         username=config_doc['username'],
+        has_password=bool(config_doc.get('password')),
+        has_private_key=bool(config_doc.get('private_key')),
         created_at=config_doc['created_at'],
         updated_at=config_doc['updated_at']
     )
@@ -1196,25 +1225,63 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
     if not existing_config:
         raise HTTPException(status_code=404, detail="SSH configuration not found")
     
-    # Update only provided fields - exclude None values and empty strings
-    update_data = {k: v for k, v in config.model_dump(exclude_unset=True).items() if v is not None and v != ""}
-    
-    # CRITICAL: Never update password to None or empty string
-    # If password field exists but is empty/None, remove it from update
-    if 'password' in update_data and not update_data['password']:
-        del update_data['password']
-        logger.info(f"Preserving existing password for SSH config {config_id}")
-    elif 'password' in update_data:
-        logger.info(f"Updating password for SSH config {config_id}")
-    
-    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
-    
-    if update_data:
-        await db.ssh_configs.update_one(
-            {"id": config_id, "user_id": current_user["user_id"]},
-            {"$set": update_data}
+    payload = config.model_dump(exclude_unset=True)
+    clear_password = payload.pop('clear_password', False)
+    clear_private_key = payload.pop('clear_private_key', False)
+
+    # An empty value never overwrites a stored one. Blanking a field in the UI
+    # means "no change"; removing a credential is done via the clear_* flags so
+    # it cannot happen by accident.
+    update_data = {k: v for k, v in payload.items() if v is not None and v != ""}
+
+    unset_data = {}
+    if clear_password:
+        unset_data['password'] = ""
+        update_data.pop('password', None)
+    if clear_private_key:
+        unset_data['private_key'] = ""
+        update_data.pop('private_key', None)
+
+    # Refuse to leave the config with no way to authenticate.
+    will_have_password = (
+        'password' in update_data
+        or (bool(existing_config.get('password')) and not clear_password)
+    )
+    will_have_key = (
+        'private_key' in update_data
+        or (bool(existing_config.get('private_key')) and not clear_private_key)
+    )
+    if not will_have_password and not will_have_key:
+        raise HTTPException(
+            status_code=400,
+            detail="Refusing to remove the last credential. Add an SSH private key "
+                   "before removing the password (or vice versa), otherwise this "
+                   "configuration could no longer connect."
         )
-        await log_audit(current_user["user_id"], "ssh_config_updated", {"config_id": config_id})
+
+    if 'private_key' in update_data:
+        # Fail here rather than at connection time, where the error surfaces as
+        # an opaque SSH failure long after the user has left the settings page.
+        try:
+            load_ssh_private_key(update_data['private_key'])
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+
+    update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
+
+    mongo_update = {"$set": update_data}
+    if unset_data:
+        mongo_update["$unset"] = unset_data
+
+    await db.ssh_configs.update_one(
+        {"id": config_id, "user_id": current_user["user_id"]},
+        mongo_update
+    )
+    await log_audit(current_user["user_id"], "ssh_config_updated", {
+        "config_id": config_id,
+        "cleared": sorted(unset_data.keys()),
+        "set": sorted(k for k in update_data if k != 'updated_at'),
+    })
     
     # Fetch updated config
     updated_config = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
@@ -1229,6 +1296,8 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
         host=updated_config['host'],
         port=updated_config.get('port', 22),
         username=updated_config['username'],
+        has_password=bool(updated_config.get('password')),
+        has_private_key=bool(updated_config.get('private_key')),
         created_at=updated_config['created_at'],
         updated_at=updated_config['updated_at']
     )

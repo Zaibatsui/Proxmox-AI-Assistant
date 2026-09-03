@@ -7,9 +7,20 @@ services:
     container_name: proxmox-ai-mongodb
     restart: unless-stopped
     environment:
-      MONGO_INITDB_DATABASE: proxmox_ai_admin
+      MONGO_INITDB_DATABASE: ${MONGO_DB_NAME:?set MONGO_DB_NAME in .env}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USERNAME:?set MONGO_ROOT_USERNAME in .env}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:?set MONGO_ROOT_PASSWORD in .env}
+    # MONGO_INITDB_ROOT_* above is ONLY honoured when /data/db is empty. The
+    # mongodb_data volume already has data, so those vars alone will not enable
+    # auth on this stack -- '--auth' is set explicitly so enforcement does not
+    # depend on first-run initialisation. See SECURITY_FIX_NOTES.md for the
+    # one-time step that creates the root user on the existing volume.
+    command: ["mongod", "--auth"]
+    # Bound to loopback: the backend reaches Mongo over the compose network as
+    # 'mongodb:27017', so this publish is only for local admin tools. Delete
+    # these two lines entirely if you never use mongosh/Compass from the host.
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"
     volumes:
       - mongodb_data:/data/db
       - mongodb_config:/data/configdb
@@ -24,11 +35,11 @@ services:
     container_name: proxmox-ai-backend
     restart: unless-stopped
     environment:
-      - MONGO_URL=mongodb://mongodb:27017
-      - DB_NAME=proxmox_ai_admin
-      - CORS_ORIGINS=*
-      - JWT_SECRET=proxmox-ai-admin-secret-key-change-in-production
-      - OPENAI_API_KEY=
+      - MONGO_URL=${MONGO_URL:?set MONGO_URL in .env}
+      - DB_NAME=${MONGO_DB_NAME:?set MONGO_DB_NAME in .env}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost:3000}
+      - JWT_SECRET=${JWT_SECRET:?set JWT_SECRET in .env}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
     ports:
       - "8001:8001"
     depends_on:
@@ -47,7 +58,7 @@ services:
     container_name: proxmox-ai-frontend
     restart: unless-stopped
     environment:
-      - REACT_APP_BACKEND_URL=http://192.168.1.56:8001
+      - REACT_APP_BACKEND_URL=${REACT_APP_BACKEND_URL:-http://localhost:8001}
     ports:
       - "3000:3000"
     depends_on:

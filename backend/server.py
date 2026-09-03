@@ -48,7 +48,15 @@ api_router = APIRouter(prefix="/api")
 
 # Security
 security = HTTPBearer()
-JWT_SECRET = os.environ.get('JWT_SECRET', 'proxmox-ai-admin-secret-key-change-in-production')
+# No default: a shipped fallback secret is a public signing key, and anyone
+# holding it can mint a token for any user and read every stored credential.
+JWT_SECRET = os.environ.get('JWT_SECRET')
+if not JWT_SECRET:
+    raise RuntimeError(
+        "JWT_SECRET is not set. Generate one with "
+        "`python -c \"import secrets; print(secrets.token_urlsafe(48))\"` "
+        "and set it in .env before starting the backend."
+    )
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_HOURS = 24
 
@@ -606,6 +614,71 @@ async def get_proxmox_connection(user_id: str):
         logger.error(f"Proxmox connection error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to connect to Proxmox: {str(e)}")
 
+def load_ssh_private_key(key_data: str, passphrase: Optional[str] = None):
+    """
+    Load an SSH private key from its PEM/OpenSSH text, trying each key type.
+
+    paramiko has no format-sniffing loader, so the only way to accept a key of
+    unknown type is to attempt each class in turn.
+    """
+    errors = []
+    for key_cls in (paramiko.Ed25519Key, paramiko.RSAKey,
+                    paramiko.ECDSAKey, paramiko.DSSKey):
+        try:
+            return key_cls.from_private_key(io.StringIO(key_data),
+                                            password=passphrase)
+        except Exception as e:
+            errors.append(f"{key_cls.__name__}: {e}")
+    raise ValueError(
+        "Could not load SSH private key as any supported type "
+        f"({'; '.join(errors)}). If the key has a passphrase, it must be "
+        "supplied; encrypted keys cannot be loaded without one."
+    )
+
+
+def ssh_connect(ssh_client, host, username='root', port=22, password=None,
+                private_key=None, passphrase=None, timeout=15):
+    """
+    Connect an SSHClient, preferring a stored private key over a stored password.
+
+    Returns the auth method used ('key', 'password' or 'agent') for logging.
+    Prefer this over calling ssh_client.connect() directly so that every code
+    path honours a key when one is configured.
+    """
+    if private_key:
+        ssh_client.connect(
+            host,
+            port=port,
+            username=username,
+            pkey=load_ssh_private_key(private_key, passphrase),
+            timeout=timeout,
+            look_for_keys=False,
+            allow_agent=False,
+        )
+        return "key"
+    if password:
+        ssh_client.connect(
+            host,
+            port=port,
+            username=username,
+            password=password,
+            timeout=timeout,
+            look_for_keys=False,
+            allow_agent=False,
+        )
+        return "password"
+    # Neither configured: fall back to keys/agent inside the backend container.
+    ssh_client.connect(
+        host,
+        port=port,
+        username=username,
+        timeout=timeout,
+        look_for_keys=True,
+        allow_agent=True,
+    )
+    return "agent"
+
+
 async def get_ssh_credentials(user_id: str, ssh_config_id: Optional[str] = None):
     """
     Get SSH credentials for a user.
@@ -810,39 +883,27 @@ async def scan_proxmox_devices(user_id: str) -> List[PCIDevice]:
         
         ssh_username = ssh_config.get('username', 'root')
         ssh_password = ssh_config.get('password')
+        ssh_private_key = ssh_config.get('private_key')
         ssh_port = ssh_config.get('port', 22)
-        
+
         logger.info(f"Attempting SSH connection to {host}:{ssh_port} as {ssh_username}")
         logger.info(f"SSH config found: {ssh_config.get('name', 'Unnamed config')}")
-        
+
         # SSH to the node and run lspci
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
+
         try:
-            # Try password auth first if password provided
-            if ssh_password:
-                ssh_client.connect(
-                    host,
-                    port=ssh_port,
-                    username=ssh_username, 
-                    password=ssh_password,
-                    timeout=15,  # Increased timeout for public connections
-                    look_for_keys=False,
-                    allow_agent=False
-                )
-                logger.info("SSH connection successful with password")
-            else:
-                # Try key-based auth
-                ssh_client.connect(
-                    host,
-                    port=ssh_port,
-                    username=ssh_username, 
-                    timeout=15,  # Increased timeout for public connections
-                    look_for_keys=True, 
-                    allow_agent=True
-                )
-                logger.info("SSH connection successful with keys")
+            auth_method = ssh_connect(
+                ssh_client,
+                host,
+                username=ssh_username,
+                port=ssh_port,
+                password=ssh_password,
+                private_key=ssh_private_key,
+                timeout=15,  # Increased timeout for public connections
+            )
+            logger.info(f"SSH connection successful with {auth_method}")
         except Exception as ssh_err:
             logger.error(f"SSH connection failed: {str(ssh_err)}")
             logger.error(f"Connection details: host={host}, port={ssh_port}, username={ssh_username}, has_password={bool(ssh_password)}")
@@ -1463,12 +1524,12 @@ async def health_check(current_user: dict = Depends(get_current_user)):
         
         ssh_username = config.get('ssh_username', 'root')
         ssh_password = config.get('ssh_password')
-        
-        if ssh_password:
-            ssh_client.connect(host, username=ssh_username, password=ssh_password, timeout=10, look_for_keys=False, allow_agent=False)
-        else:
-            ssh_client.connect(host, username=ssh_username, timeout=10, look_for_keys=True, allow_agent=True)
-        
+        ssh_private_key = config.get('ssh_private_key')
+
+        ssh_connect(ssh_client, host, username=ssh_username,
+                    password=ssh_password, private_key=ssh_private_key,
+                    timeout=10)
+
         stdin, stdout, stderr = ssh_client.exec_command('echo "test"')
         result = stdout.read().decode().strip()
         if result == "test":
@@ -1479,7 +1540,7 @@ async def health_check(current_user: dict = Depends(get_current_user)):
     
     # Check OpenAI API - just check if key is configured
     try:
-        api_keys_doc = await db.api_keys.find_one({"user_id": current_user["user_id"]})
+        api_keys_doc = await db.user_api_keys.find_one({"user_id": current_user["user_id"]})
         if api_keys_doc and api_keys_doc.get("openai_api_key"):
             # Key exists - mark as connected
             # We don't test it here to avoid slow health checks
@@ -4853,45 +4914,32 @@ async def get_ssh_client(user_id: str):
     # First try to get SSH credentials from proxmox_configs (legacy)
     ssh_username = config_doc.get('ssh_username')
     ssh_password = config_doc.get('ssh_password')
-    
+    ssh_private_key = config_doc.get('ssh_private_key')
+
     # If not found, try from ssh_configs collection
-    if not ssh_username or not ssh_password:
+    if not ssh_username or not (ssh_password or ssh_private_key):
         ssh_config = await db.ssh_configs.find_one({"user_id": user_id})
         if ssh_config:
             ssh_username = ssh_config.get('username', 'root')  # Changed from ssh_username
             ssh_password = ssh_config.get('password')  # Changed from ssh_password
+            ssh_private_key = ssh_config.get('private_key')
             logger.info(f"Using SSH credentials from ssh_configs collection for user {user_id}")
         else:
             ssh_username = ssh_username or 'root'
-    
-    if not ssh_password:
-        logger.warning(f"No SSH password configured for user {user_id}. Configure SSH in Settings > SSH Configuration.")
-    
+
+    if not ssh_password and not ssh_private_key:
+        logger.warning(f"No SSH key or password configured for user {user_id}. Configure SSH in Settings > SSH Configuration.")
+
     try:
         ssh_client = paramiko.SSHClient()
         ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        
-        if ssh_password:
-            logger.info(f"Connecting to {hostname} as {ssh_username}")
-            ssh_client.connect(
-                hostname,
-                username=ssh_username,
-                password=ssh_password,
-                timeout=10,
-                allow_agent=False,
-                look_for_keys=False
-            )
-        else:
-            logger.info(f"Attempting SSH key authentication to {hostname} as {ssh_username}")
-            ssh_client.connect(
-                hostname,
-                username=ssh_username,
-                timeout=10,
-                look_for_keys=True,
-                allow_agent=True
-            )
-        
-        logger.info(f"SSH connection successful to {hostname}")
+
+        logger.info(f"Connecting to {hostname} as {ssh_username}")
+        auth_method = ssh_connect(
+            ssh_client, hostname, username=ssh_username,
+            password=ssh_password, private_key=ssh_private_key, timeout=10,
+        )
+        logger.info(f"SSH connection successful to {hostname} using {auth_method} auth")
         return ssh_client
     except paramiko.AuthenticationException as e:
         logger.error(f"SSH authentication failed for {hostname}: {str(e)}")
@@ -7465,18 +7513,16 @@ async def execute_command_endpoint(request: CommandExecuteRequest, current_user:
             
             username = proxmox_config.get("ssh_username", "root")
             password = proxmox_config.get("ssh_password")
-            
+            private_key = proxmox_config.get("ssh_private_key")
+
             # Execute command in container via docker exec
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             try:
-                ssh_client.connect(
-                    hostname=host,
-                    username=username,
-                    password=password,
-                    timeout=10
-                )
+                ssh_connect(ssh_client, host, username=username,
+                            password=password, private_key=private_key,
+                            timeout=10)
                 
                 # Build docker exec command
                 docker_command = f"docker exec {container_id} sh -c 'cd {request.working_directory} && {request.command}'"
@@ -7603,21 +7649,18 @@ async def websocket_terminal(websocket: WebSocket):
             ssh_host = ssh_config.get('host')
             ssh_username = ssh_config.get('username', 'root')
             ssh_password = ssh_config.get('password')
+            ssh_private_key = ssh_config.get('private_key')
             ssh_port = ssh_config.get('port', 22)
-            
+
             logger.info(f"Connecting to Docker host via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
-            
+
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             try:
-                ssh_client.connect(
-                    hostname=ssh_host,
-                    port=ssh_port,
-                    username=ssh_username,
-                    password=ssh_password,
-                    timeout=10
-                )
+                ssh_connect(ssh_client, ssh_host, username=ssh_username,
+                            port=ssh_port, password=ssh_password,
+                            private_key=ssh_private_key, timeout=10)
             except Exception as conn_err:
                 error_msg = f"SSH connection to Docker host failed: {str(conn_err)}"
                 logger.error(error_msg)
@@ -7664,21 +7707,18 @@ async def websocket_terminal(websocket: WebSocket):
             ssh_host = ssh_config.get('host')
             ssh_username = ssh_config.get('username', 'root')
             ssh_password = ssh_config.get('password')
+            ssh_private_key = ssh_config.get('private_key')
             ssh_port = ssh_config.get('port', 22)
-            
+
             logger.info(f"Connecting to Proxmox host {ssh_host}:{ssh_port} to access {conn_type.upper()} {vmid}")
-            
+
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             try:
-                ssh_client.connect(
-                    hostname=ssh_host,
-                    port=ssh_port,
-                    username=ssh_username,
-                    password=ssh_password,
-                    timeout=10
-                )
+                ssh_connect(ssh_client, ssh_host, username=ssh_username,
+                            port=ssh_port, password=ssh_password,
+                            private_key=ssh_private_key, timeout=10)
                 logger.info(f"Connected to Proxmox host, now entering {conn_type.upper()} {vmid}")
             except Exception as conn_err:
                 error_msg = f"SSH connection to Proxmox host failed: {str(conn_err)}"
@@ -7824,21 +7864,18 @@ async def websocket_terminal(websocket: WebSocket):
             ssh_host = ssh_config.get('host')
             ssh_username = ssh_config.get('username', 'root')
             ssh_password = ssh_config.get('password')
+            ssh_private_key = ssh_config.get('private_key')
             ssh_port = ssh_config.get('port', 22)
-            
+
             logger.info(f"Connecting to Proxmox host via SSH: {ssh_username}@{ssh_host}:{ssh_port}")
-            
+
             ssh_client = paramiko.SSHClient()
             ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            
+
             try:
-                ssh_client.connect(
-                    hostname=ssh_host,
-                    port=ssh_port,
-                    username=ssh_username,
-                    password=ssh_password,
-                    timeout=10
-                )
+                ssh_connect(ssh_client, ssh_host, username=ssh_username,
+                            port=ssh_port, password=ssh_password,
+                            private_key=ssh_private_key, timeout=10)
             except Exception as conn_err:
                 error_msg = f"SSH connection to Proxmox host failed: {str(conn_err)}"
                 logger.error(error_msg)

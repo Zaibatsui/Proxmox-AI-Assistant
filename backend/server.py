@@ -1532,15 +1532,52 @@ async def get_location_credentials(location_type: str, location_id: str, current
         if not credentials:
             raise HTTPException(status_code=404, detail="No credentials found for this location")
         
+        # The stored password is deliberately not returned. Nothing in the UI
+        # needs its value -- only whether one is set.
         return {
+            "location_type": credentials.get("location_type"),
+            "location_id": credentials.get("location_id"),
+            "ssh_host": credentials.get("ssh_host"),
+            "ssh_port": credentials.get("ssh_port", 22),
             "ssh_username": credentials["ssh_username"],
-            "ssh_password": credentials["ssh_password"]
+            "has_password": bool(credentials.get("ssh_password")),
+            "has_private_key": bool(credentials.get("ssh_private_key")),
         }
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Failed to get location credentials: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to get credentials: {str(e)}")
+
+@api_router.get("/location-credentials")
+async def list_location_credentials(current_user: dict = Depends(get_current_user)):
+    """
+    List every stored VM/container credential for this user.
+
+    Deliberately independent of the Proxmox API: credentials were previously
+    only visible through /proxmox-locations, so they could not be reviewed or
+    removed when the API config was broken, and credentials for a VM that no
+    longer exists were invisible entirely while remaining in the database.
+    """
+    docs = await db.location_credentials.find({"user_id": current_user["user_id"]}).to_list(length=None)
+
+    items = []
+    for d in docs:
+        items.append({
+            "location_type": d.get("location_type"),
+            "location_id": d.get("location_id"),
+            "ssh_host": d.get("ssh_host"),
+            "ssh_port": d.get("ssh_port", 22),
+            "ssh_username": d.get("ssh_username"),
+            "has_password": bool(d.get("ssh_password")),
+            "has_private_key": bool(d.get("ssh_private_key")),
+            "created_at": d.get("created_at"),
+            "updated_at": d.get("updated_at"),
+        })
+
+    items.sort(key=lambda i: (i["location_type"] or "", i["location_id"] or ""))
+    return {"credentials": items}
+
 
 @api_router.delete("/location-credentials/{location_type}/{location_id}")
 async def delete_location_credentials(location_type: str, location_id: str, current_user: dict = Depends(get_current_user)):
@@ -1954,9 +1991,12 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                     
                     # Add credentials if they exist
                     if stored_creds:
+                        # Report that a credential exists, never its value. This
+                        # previously sent every stored VM password to the browser.
                         vm_location["ssh_host"] = stored_creds.get("ssh_host")
                         vm_location["ssh_username"] = stored_creds["ssh_username"]
-                        vm_location["ssh_password"] = stored_creds["ssh_password"]
+                        vm_location["has_credentials"] = True
+                        vm_location["has_password"] = bool(stored_creds.get("ssh_password"))
                     
                     locations.append(vm_location)
             except:
@@ -1986,7 +2026,8 @@ async def get_proxmox_locations(current_user: dict = Depends(get_current_user)):
                     if stored_creds:
                         ct_location["ssh_host"] = stored_creds.get("ssh_host")
                         ct_location["ssh_username"] = stored_creds["ssh_username"]
-                        ct_location["ssh_password"] = stored_creds["ssh_password"]
+                        ct_location["has_credentials"] = True
+                        ct_location["has_password"] = bool(stored_creds.get("ssh_password"))
                     
                     locations.append(ct_location)
             except:

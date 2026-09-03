@@ -5,6 +5,7 @@ import Layout from "../components/Layout";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
@@ -58,11 +59,15 @@ function Settings({ onLogout }) {
   const [sshConfigs, setSshConfigs] = useState([]);
   const [sshFormData, setSshFormData] = useState({
     name: "Proxmox Host SSH",
-    host: "proxmox.zaibatsui.co.uk",
+    host: "",
     port: 22,
     username: "root",
-    password: ""
+    password: "",
+    private_key: ""
   });
+  // What the server has stored. The values are never sent to the browser --
+  // only whether each one is set, so the form can show state and offer removal.
+  const [sshStored, setSshStored] = useState({ has_password: false, has_private_key: false });
   const [savingSsh, setSavingSsh] = useState(false);
   
   // Connections Management state - use data from ConnectionContext
@@ -359,7 +364,12 @@ function Settings({ onLogout }) {
           host: firstConfig.host,
           port: firstConfig.port,
           username: firstConfig.username,
-          password: "" // Don't show password
+          password: "",    // Credentials are never sent back to the browser
+          private_key: ""
+        });
+        setSshStored({
+          has_password: !!firstConfig.has_password,
+          has_private_key: !!firstConfig.has_private_key
         });
       }
     } catch (error) {
@@ -377,22 +387,26 @@ function Settings({ onLogout }) {
     try {
       // Check if we're updating an existing config or creating new one
       if (sshConfigs.length > 0) {
-        // Update first config
+        // Update first config. Empty credential fields are omitted entirely:
+        // blank means "leave what's stored alone", never "erase it". Removal is
+        // a separate, explicit action.
         const configId = sshConfigs[0].id;
         const dataToSend = { ...sshFormData };
-        if (!dataToSend.password) {
-          delete dataToSend.password; // Don't send empty password on update
-        }
+        if (!dataToSend.password) delete dataToSend.password;
+        if (!dataToSend.private_key) delete dataToSend.private_key;
         await axios.put(`${API}/ssh/configs/${configId}`, dataToSend);
         toast.success("SSH configuration updated successfully");
       } else {
         // Create new config
-        if (!sshFormData.password) {
-          toast.error("Password is required for new SSH configuration");
+        if (!sshFormData.password && !sshFormData.private_key) {
+          toast.error("Provide an SSH private key or a password");
           setSavingSsh(false);
           return;
         }
-        await axios.post(`${API}/ssh/configs`, sshFormData);
+        const dataToSend = { ...sshFormData };
+        if (!dataToSend.password) delete dataToSend.password;
+        if (!dataToSend.private_key) delete dataToSend.private_key;
+        await axios.post(`${API}/ssh/configs`, dataToSend);
         toast.success("SSH configuration created successfully");
       }
       
@@ -401,6 +415,34 @@ function Settings({ onLogout }) {
       await testSshConnection();
     } catch (error) {
       toast.error(error.response?.data?.detail || "Failed to save SSH configuration");
+    } finally {
+      setSavingSsh(false);
+    }
+  };
+
+  // Removing a stored credential is deliberate and separate from saving, so it
+  // cannot happen by simply opening the form and pressing Save. The backend
+  // refuses if it would leave the config with no way to authenticate.
+  const handleClearSshCredential = async (which) => {
+    if (sshConfigs.length === 0) return;
+
+    const label = which === "password" ? "password" : "private key";
+    if (!window.confirm(
+      `Remove the stored SSH ${label}?\n\n` +
+      `It will be deleted from the database and cannot be recovered. ` +
+      `The other credential will be used from now on.`
+    )) return;
+
+    setSavingSsh(true);
+    try {
+      await axios.put(`${API}/ssh/configs/${sshConfigs[0].id}`, {
+        [which === "password" ? "clear_password" : "clear_private_key"]: true
+      });
+      toast.success(`Stored SSH ${label} removed`);
+      await fetchSSHConfigs();
+      await testSshConnection();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || `Failed to remove SSH ${label}`);
     } finally {
       setSavingSsh(false);
     }
@@ -1223,24 +1265,109 @@ function Settings({ onLogout }) {
                   <p className="text-xs text-slate-500">SSH username for accessing Proxmox host</p>
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="ssh_password" className="text-slate-200">
-                    SSH Password {sshConfigs.length > 0 && <span className="text-slate-500 font-normal text-xs">(Optional for updates)</span>}
-                  </Label>
-                  <Input
-                    id="ssh_password"
-                    type="password"
-                    placeholder={sshConfigs.length > 0 ? "Leave empty to keep existing password" : "Enter SSH password"}
-                    value={sshFormData.password}
-                    onChange={(e) => setSshFormData({ ...sshFormData, password: e.target.value })}
-                    className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
-                  />
-                  <p className="text-xs text-slate-500">
-                    {sshConfigs.length > 0 
-                      ? "Leave empty to keep existing password" 
-                      : "SSH password (or use SSH keys)"
-                    }
-                  </p>
+                <div className="rounded-lg border border-slate-700 bg-slate-800/40 p-4 space-y-4">
+                  <div className="flex items-start gap-2">
+                    <Key className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                    <p className="text-xs text-slate-400">
+                      A private key is preferred over a password. It is specific to this
+                      app, can be revoked by editing <code className="text-slate-300">authorized_keys</code> on
+                      the host without changing the account password, and cannot be used
+                      to log into the Proxmox web UI or console.
+                      When both are stored, the key is used.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="ssh_private_key" className="text-slate-200">
+                        SSH Private Key
+                        {sshStored.has_private_key && (
+                          <span className="ml-2 text-xs font-normal text-emerald-400">stored</span>
+                        )}
+                      </Label>
+                      {sshStored.has_private_key && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={savingSsh}
+                          onClick={() => handleClearSshCredential("private_key")}
+                          className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" /> Remove
+                        </Button>
+                      )}
+                    </div>
+                    <Textarea
+                      id="ssh_private_key"
+                      rows={6}
+                      spellCheck={false}
+                      autoComplete="off"
+                      placeholder={
+                        sshStored.has_private_key
+                          ? "A key is stored. Paste a new one here only to replace it."
+                          : "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----"
+                      }
+                      value={sshFormData.private_key}
+                      onChange={(e) => setSshFormData({ ...sshFormData, private_key: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 font-mono text-xs"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Paste the whole file including the BEGIN and END lines. Ed25519, RSA,
+                      ECDSA and DSA are accepted. The key must have no passphrase — the app
+                      connects unattended and cannot answer a prompt.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor="ssh_password" className="text-slate-200">
+                        SSH Password
+                        {sshStored.has_password && (
+                          <span className="ml-2 text-xs font-normal text-amber-400">stored in plain text</span>
+                        )}
+                      </Label>
+                      {sshStored.has_password && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          disabled={savingSsh}
+                          onClick={() => handleClearSshCredential("password")}
+                          className="h-7 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="w-3 h-3 mr-1" /> Remove
+                        </Button>
+                      )}
+                    </div>
+                    <Input
+                      id="ssh_password"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder={
+                        sshStored.has_password
+                          ? "A password is stored. Type here only to replace it."
+                          : "Only needed if you are not using a key"
+                      }
+                      value={sshFormData.password}
+                      onChange={(e) => setSshFormData({ ...sshFormData, password: e.target.value })}
+                      className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500"
+                    />
+                    <p className="text-xs text-slate-500">
+                      Leaving either field blank keeps whatever is already stored — it never
+                      erases it. Use Remove for that.
+                    </p>
+                  </div>
+
+                  {sshStored.has_password && sshStored.has_private_key && (
+                    <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+                      <p className="text-xs text-amber-300">
+                        Both a key and a password are stored. The key is what gets used, so
+                        the password is redundant — remove it so there is no plain-text
+                        credential left in the database.
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* SSH Error Display */}

@@ -623,6 +623,33 @@ async def get_proxmox_connection(user_id: str):
         logger.error(f"Proxmox connection error: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to connect to Proxmox: {str(e)}")
 
+def normalize_private_key(key_data: str) -> str:
+    """
+    Repair the mangling a key picks up in transit.
+
+    Pasting through a browser textarea routinely introduces CRLF line endings
+    or drops the trailing newline, and paramiko rejects a key for either --
+    with a parse error that gives no hint as to the real cause.
+    """
+    if not key_data:
+        return key_data
+    return key_data.replace('\r\n', '\n').replace('\r', '\n').strip() + '\n'
+
+
+# Resolved at import rather than named directly: paramiko 4.0 removed DSSKey
+# along with DSA support, so referencing it unconditionally raises AttributeError
+# on 4.x while omitting it would drop DSA keys on 3.x. Ordered most to least
+# common.
+SSH_KEY_CLASSES = tuple(
+    cls for cls in (
+        getattr(paramiko, 'Ed25519Key', None),
+        getattr(paramiko, 'RSAKey', None),
+        getattr(paramiko, 'ECDSAKey', None),
+        getattr(paramiko, 'DSSKey', None),
+    ) if cls is not None
+)
+
+
 def load_ssh_private_key(key_data: str, passphrase: Optional[str] = None):
     """
     Load an SSH private key from its PEM/OpenSSH text, trying each key type.
@@ -630,9 +657,9 @@ def load_ssh_private_key(key_data: str, passphrase: Optional[str] = None):
     paramiko has no format-sniffing loader, so the only way to accept a key of
     unknown type is to attempt each class in turn.
     """
+    key_data = normalize_private_key(key_data)
     errors = []
-    for key_cls in (paramiko.Ed25519Key, paramiko.RSAKey,
-                    paramiko.ECDSAKey, paramiko.DSSKey):
+    for key_cls in SSH_KEY_CLASSES:
         try:
             return key_cls.from_private_key(io.StringIO(key_data),
                                             password=passphrase)
@@ -1142,6 +1169,8 @@ async def create_ssh_config(config: SSHConfigCreate, current_user: dict = Depend
             load_ssh_private_key(config.private_key)
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
+        # Store the repaired form, so every later read gets a key that parses.
+        config.private_key = normalize_private_key(config.private_key)
 
     ssh_config = SSHConfig(
         user_id=current_user["user_id"],
@@ -1266,6 +1295,7 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
             load_ssh_private_key(update_data['private_key'])
         except ValueError as e:
             raise HTTPException(status_code=400, detail=str(e))
+        update_data['private_key'] = normalize_private_key(update_data['private_key'])
 
     update_data['updated_at'] = datetime.now(timezone.utc).isoformat()
 

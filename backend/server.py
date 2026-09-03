@@ -1332,6 +1332,61 @@ async def update_ssh_config(config_id: str, config: SSHConfigUpdate, current_use
         updated_at=updated_config['updated_at']
     )
 
+@api_router.post("/ssh/configs/{config_id}/test")
+async def test_ssh_config(config_id: str, current_user: dict = Depends(get_current_user)):
+    """
+    Test one SSH configuration on its own.
+
+    Deliberately independent of the Proxmox API config: /proxmox/test-connection
+    checks the API first and aborts before reaching SSH, so a missing or broken
+    API config made it impossible to tell whether SSH itself worked.
+    """
+    config_doc = await db.ssh_configs.find_one({"id": config_id, "user_id": current_user["user_id"]})
+    if not config_doc:
+        raise HTTPException(status_code=404, detail="SSH configuration not found")
+
+    if not config_doc.get('host'):
+        raise HTTPException(status_code=400, detail="This SSH configuration has no host set.")
+
+    if not config_doc.get('password') and not config_doc.get('private_key'):
+        return {
+            "status": "failed",
+            "error": "No credential stored. Add an SSH private key (preferred) or a password."
+        }
+
+    ssh_client = paramiko.SSHClient()
+    ssh_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    try:
+        auth_method = ssh_connect(
+            ssh_client,
+            config_doc['host'],
+            username=config_doc.get('username', 'root'),
+            port=config_doc.get('port', 22),
+            password=config_doc.get('password'),
+            private_key=config_doc.get('private_key'),
+            timeout=10,
+        )
+        stdin, stdout, stderr = ssh_client.exec_command('echo ok', timeout=10)
+        output = stdout.read().decode('utf-8', errors='replace').strip()
+        if output != 'ok':
+            return {
+                "status": "failed",
+                "auth_method": auth_method,
+                "error": f"Connected, but the test command returned unexpected output: {output!r}"
+            }
+        return {"status": "success", "auth_method": auth_method}
+    except Exception as e:
+        # A failed test is a normal result, not a server error -- returning 200
+        # keeps it distinguishable from the endpoint itself breaking.
+        logger.info(f"SSH test failed for config {config_id}: {e}")
+        return {"status": "failed", "error": str(e)}
+    finally:
+        try:
+            ssh_client.close()
+        except Exception:
+            pass
+
+
 @api_router.delete("/ssh/configs/{config_id}")
 async def delete_ssh_config(config_id: str, current_user: dict = Depends(get_current_user)):
     """Delete an SSH configuration"""
